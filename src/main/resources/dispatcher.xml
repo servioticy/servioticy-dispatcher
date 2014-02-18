@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<context>
+	<compoAPI>http://testbed.compose-project.eu:8010/thngs/</compoAPI>
+	<kestrels>
+		<kestrel>
+			<ip>172.20.200.229</ip>
+		</kestrel>
+		<kestrel>
+			<ip>172.20.200.230</ip>
+		</kestrel>
+		<port>2229</port>
+	</kestrels>
+	<pubsub>
+		<selfAddresses>
+			<selfAddress>
+				<computerName>minerva-1001</computerName>
+				<localAddress>172.20.11.1</localAddress>
+				<externalAddress>147.83.30.136</externalAddress>
+<!-- 			This one is for the demo purposes, in the final version several ports may exist to map externally -->
+				<externalPort>8086</externalPort>
+			</selfAddress>
+		</selfAddresses>
+		<bootstraps>
+			<bootstrap>
+				<name>bootstrap</name>
+				<address>147.83.30.136</address>
+				<port>8085</port>
+			</bootstrap>
+		</bootstraps>
+	</pubsub>
+</context>
