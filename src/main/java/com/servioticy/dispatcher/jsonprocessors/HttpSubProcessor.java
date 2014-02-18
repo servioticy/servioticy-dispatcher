@@ -21,10 +21,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.servioticy.datamodel.HttpSubscription;
-import com.servioticy.datamodel.SO;
-import com.servioticy.datamodel.SOChannel;
-import com.servioticy.datamodel.SOStream;
-import com.servioticy.datamodel.Subscription;
 
 import com.servioticy.restclient.RestClient;
 
@@ -59,7 +55,7 @@ public class HttpSubProcessor {
 	
 	public HttpSubscription replaceAliases(){	
 		
-		this.httpSubs.setUrl( aliases.replace(httpSubs.getUrl()) );
+		this.httpSubs.setDestination( aliases.replace(httpSubs.getDestination()) );
 		this.httpSubs.setBody( aliases.replace(httpSubs.getBody()) );
 		
 		if(this.httpSubs.getHeaders() != null){
@@ -74,7 +70,7 @@ public class HttpSubProcessor {
 	}
 	
 	public void compileJSONPaths(){
-		this.url = new JsonPathReplacer(httpSubs.getUrl());
+		this.url = new JsonPathReplacer(httpSubs.getDestination());
 		this.body = new JsonPathReplacer(httpSubs.getBody());
 		
 		this.headers = new HashMap<JsonPathReplacer, JsonPathReplacer>();

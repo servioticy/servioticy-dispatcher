@@ -71,7 +71,7 @@ public class StreamDispatcherBolt implements IRichBolt {
 		try{
 			rr = restClient.restRequest(
 					SDispatcherContext.restBaseURL
-						+ soSub.getUrl(), null, RestClient.GET,
+						+ soSub.getDestination(), null, RestClient.GET,
 						null);
 			sostr = rr.getResponse();
 		} catch (Exception e) {
@@ -81,12 +81,12 @@ public class StreamDispatcherBolt implements IRichBolt {
 		}
 		// TODO Could be useful to delete the unused groups from the SO. Open discussion.
 		try{
-			SOProcessor sop = new SOProcessor(sostr, soSub.getUrl());
+			SOProcessor sop = new SOProcessor(sostr, soSub.getDestination());
 			sostr = sop.replaceAliases();
 			sop.compileJSONPaths();
 			for( String streamId: sop.getStreamsByDocId( soSub.getGroupId() ) ){
 				this.collector.emit(	input, 
-										new Values(	soSub.getUrl(),
+										new Values(	soSub.getDestination(),
 													streamId,
 													sostr,
 													soSub.getGroupId(),
