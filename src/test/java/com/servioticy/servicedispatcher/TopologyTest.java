@@ -1,4 +1,3 @@
-package com.servioticy.servicedispatcher;
 /*******************************************************************************
  * Copyright 2014 Barcelona Supercomputing Center (BSC)
  *
@@ -14,6 +13,7 @@ package com.servioticy.servicedispatcher;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/ 
+package com.servioticy.servicedispatcher;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
@@ -25,6 +25,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOSubscription;
 import com.servioticy.datamodel.Subscription;
 import com.servioticy.datamodel.Subscriptions;
@@ -60,7 +61,7 @@ import backtype.storm.tuple.Values;
 public class TopologyTest {
 	
 	@Test
-	public void testFactoryDefault() {
+	public void testExampleTopology() {
 //		try {
 //			
 //		} catch (QueueClientException e) {
@@ -77,15 +78,54 @@ public class TopologyTest {
 		ObjectMapper mapper = new ObjectMapper();
 		
 		// Subscriptions document
-		Subscriptions subscriptions = new Subscriptions();
-		SOSubscription subscription = new SOSubscription();
-		subscription.setId(subId);
-		subscription.setCallback("internal");
-		subscription.setDestination(destSoid1);
-		subscription.setGroupId("group1");
-		ArrayList<Subscription> subscriptionsArr = new ArrayList<Subscription>();
-		subscriptionsArr.add(subscription);
-		subscriptions.setSubscriptions(subscriptionsArr);
+		String subscriptions =	"{" +
+									"\"subscriptions\": [" +
+										"{" +
+											"\"callback\": \"internal\"," +
+										    "\"destination\": \"" + destSoid1 + "\"," +
+										    "\"customFields\": {" + 
+										        "\"groupId\": \"group1\"" + 
+										    "}" + 
+									    "}" +
+									 "]" +
+								"}";
+		// Subscriber SO
+		String so =				"{" +
+									"\"aliases\":[" +
+										"{\"@nearDistance@\": \"0.0001\"}," +
+										"{\"@latGroup1@\": \"\"}," +
+										"{\"@latGroup2@\": \"\"}," +
+										"{\"@longGroup1@\": \"\"}," +
+										"{\"@longGroup2@\": \"\"}," +
+										"{\"@latDistance@\": \"\"}," +
+										"{\"@longDistance@\": \"\"}," +
+										"{\"@distance@\": \"\"}" +
+									"]," +
+									"\"groups\":{" +
+										"\"group1\":{" +
+											"\"members\":[" +
+												"\"origin2\"," +
+												"\"origin3\"" +
+											"]," +
+											"\"stream\": \"location\"" +
+										"}," +
+										"\"group2\":{" +
+											"\"members\":[" +
+												"\"origin3\"," +
+												"\"origin4\"" +
+											"]," +
+											"\"stream\": \"location\"" +
+										"}" +
+									"}," +
+									"\"streams\":{" +
+										"\"proximity\":{" +
+											
+										"}," +
+										"\"near\":{" +
+										
+										"}" +
+									"}" +
+								"}";
 		
 		// Mocking up the rest calls...
 		RestClient restClient = mock(RestClient.class);
