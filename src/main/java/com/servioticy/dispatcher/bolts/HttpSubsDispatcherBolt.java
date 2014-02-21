@@ -46,12 +46,22 @@ public class HttpSubsDispatcherBolt implements IRichBolt {
 	private SUCache suCache;
 	private RestClient restClient;
 	
+	public HttpSubsDispatcherBolt(){
+	}
+	
+	// For testing purposes
+	public HttpSubsDispatcherBolt(RestClient restClient){
+		this.restClient = restClient;
+	}
+	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
 		this.collector = collector;
 		this.context = context;
 		this.suCache = new SUCache(25);
-		this.restClient = new RestClient();
+		if(restClient == null){
+			restClient = new RestClient();
+		}
 	}
 
 	public void execute(Tuple input) {

@@ -20,7 +20,7 @@ import java.util.Map;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.servioticy.datamodel.SOSubscription;
-import com.servioticy.dispatcher.SDispatcherContext;
+import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
 
 import com.servioticy.restclient.RestClient;
@@ -47,11 +47,21 @@ public class StreamDispatcherBolt implements IRichBolt {
 	private TopologyContext context;
 	private RestClient restClient;
 	
+	public StreamDispatcherBolt(){
+	}
+	
+	// For testing purposes
+	public StreamDispatcherBolt(RestClient restClient){
+		this.restClient = restClient;
+	}
+	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
 		this.collector = collector;
 		this.context = context;
-		this.restClient = new RestClient();
+		if(restClient == null){
+			restClient = new RestClient();
+		}
 	}
 
 	public void execute(Tuple input) {
@@ -70,7 +80,7 @@ public class StreamDispatcherBolt implements IRichBolt {
 		}
 		try{
 			rr = restClient.restRequest(
-					SDispatcherContext.restBaseURL
+					DispatcherContext.restBaseURL
 						+ soSub.getDestination(), null, RestClient.GET,
 						null);
 			sostr = rr.getResponse();

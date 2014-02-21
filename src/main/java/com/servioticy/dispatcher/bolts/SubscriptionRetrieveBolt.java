@@ -22,7 +22,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 import com.servioticy.datamodel.Subscription;
 import com.servioticy.datamodel.Subscriptions;
-import com.servioticy.dispatcher.SDispatcherContext;
+import com.servioticy.dispatcher.DispatcherContext;
 
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
@@ -49,11 +49,21 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 	private TopologyContext context;
 	private RestClient restClient;
 	
+	public SubscriptionRetrieveBolt(){
+	}
+	
+	// For testing purposes
+	public SubscriptionRetrieveBolt(RestClient restClient){
+		this.restClient = restClient;
+	}
+	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
 		this.collector = collector;
 		this.context = context;
-		this.restClient = new RestClient();
+		if(restClient == null){
+			restClient = new RestClient();
+		}
 	}
 
 	public void execute(Tuple input) {
@@ -64,7 +74,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 
 		try {
 			subscriptionsRR = restClient.restRequest(
-					SDispatcherContext.restBaseURL
+					DispatcherContext.restBaseURL
 							+ input.getStringByField("soid") + "/streams/"
 							+ input.getStringByField("streamid")
 							+ "/subscriptions/", null, RestClient.GET,

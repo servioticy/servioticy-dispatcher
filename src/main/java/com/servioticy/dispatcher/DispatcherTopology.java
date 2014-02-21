@@ -38,7 +38,7 @@ import backtype.storm.tuple.Fields;
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
-public class SDispatcherTopology {
+public class DispatcherTopology {
 	
 	/**
 	 * @param args
@@ -48,11 +48,11 @@ public class SDispatcherTopology {
 	 */
 	public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException {
 		// TODO Auto-generated method stub
-		SDispatcherContext.loadConf();
+		DispatcherContext.loadConf();
 
 		TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(SDispatcherContext.kestrelIPs), SDispatcherContext.kestrelPort, "services", new ServiceDescriptorScheme()), 5);
+        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelIPs), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 5);
         
         builder.setBolt("checkopid", new CheckOpidBolt(), 1)
         	.shuffleGrouping("dispatcher");
@@ -78,7 +78,7 @@ public class SDispatcherTopology {
         }else{
         	conf.setMaxTaskParallelism(3);
         	LocalCluster cluster = new LocalCluster();
-        	cluster.submitTopology("service-dispatcher", conf, builder.createTopology());
+        	cluster.submitTopology("dispatcher", conf, builder.createTopology());
 
         }
 

@@ -28,7 +28,7 @@ import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
-public class SDispatcherContext {
+public class DispatcherContext {
 	static final public String DEFAULT_CONFIG_PATH = "/dispatcher.xml";
 	
 	static final public String PUBLISHER_LOCAL_ADDRESS = "publocaddress";
@@ -46,55 +46,55 @@ public class SDispatcherContext {
 	
 	
 	public static void loadConf(){
-		String path = SDispatcherContext.DEFAULT_CONFIG_PATH;
+		String path = DispatcherContext.DEFAULT_CONFIG_PATH;
 		HierarchicalConfiguration config;
 		try {
-			config = new XMLConfiguration(SDispatcherContext.class.getResource(path));
+			config = new XMLConfiguration(DispatcherContext.class.getResource(path));
 			config.setExpressionEngine(new XPathExpressionEngine());
 			
 			if(config.containsKey("compoAPI")){
-				SDispatcherContext.restBaseURL = config.getString("compoAPI");
+				DispatcherContext.restBaseURL = config.getString("compoAPI");
 			}
 			if(config.containsKey("kestrels/kestrel[1]/ip")){
 				ArrayList<String> kestrel = new ArrayList<String>();
 				for(int i=1; config.containsKey("kestrels/kestrel[" + i + "]/ip"); i++){
 					kestrel.add(config.getString("kestrels/kestrel[" + i + "]/ip"));
 				}
-				SDispatcherContext.kestrelIPs = (String[]) kestrel.toArray(new String[]{});
+				DispatcherContext.kestrelIPs = (String[]) kestrel.toArray(new String[]{});
 			}
 			if(config.containsKey("kestrels/port")){
-				SDispatcherContext.kestrelPort = config.getInt("kestrels/port");
+				DispatcherContext.kestrelPort = config.getInt("kestrels/port");
 			}
 			if(config.containsKey("pubsub/selfAddresses/selfAddress[1]/computerName")){
 				Map<String, Properties> pubProperties = new HashMap<String, Properties>();
 				for(int i=1; config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/computerName"); i++){
 					Properties props = new Properties();
 					if(config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/localAddress")){
-						props.setProperty(SDispatcherContext.PUBLISHER_LOCAL_ADDRESS, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/localAddress"));
+						props.setProperty(DispatcherContext.PUBLISHER_LOCAL_ADDRESS, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/localAddress"));
 					}
 					if(config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/externalAddress")){
-						props.setProperty(SDispatcherContext.PUBLISHER_EXTERNAL_ADDRESS, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/externalAddress"));
+						props.setProperty(DispatcherContext.PUBLISHER_EXTERNAL_ADDRESS, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/externalAddress"));
 					}
 					if(config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/externalPort")){
-						props.setProperty(SDispatcherContext.PUBLISHER_EXTERNAL_PORT, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/externalPort"));
+						props.setProperty(DispatcherContext.PUBLISHER_EXTERNAL_PORT, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/externalPort"));
 					}
 					pubProperties.put(config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/computerName"), props);
 				}
-				SDispatcherContext.pubProperties = pubProperties;
+				DispatcherContext.pubProperties = pubProperties;
 			}
 			if(config.containsKey("pubsub/bootstraps/bootstrap[1]/name")){
 				Map<String, Properties> bootstrapsProperties = new HashMap<String, Properties>();
 				for(int i=1; config.containsKey("pubsub/bootstraps/bootstrap[" + i + "]/name"); i++){
 					Properties props = new Properties();
 					if(config.containsKey("pubsub/bootstraps/bootstrap[" + i + "]/address")){
-						props.setProperty(SDispatcherContext.BOOTSTRAP_ADDRESS, config.getString("pubsub/bootstraps/bootstrap[" + i + "]/address"));
+						props.setProperty(DispatcherContext.BOOTSTRAP_ADDRESS, config.getString("pubsub/bootstraps/bootstrap[" + i + "]/address"));
 					}
 					if(config.containsKey("pubsub/bootstraps/bootstrap[" + i + "]/port")){
-						props.setProperty(SDispatcherContext.BOOTSTRAP_PORT, config.getString("pubsub/bootstraps/bootstrap[" + i + "]/port"));
+						props.setProperty(DispatcherContext.BOOTSTRAP_PORT, config.getString("pubsub/bootstraps/bootstrap[" + i + "]/port"));
 					}
 					bootstrapsProperties.put(config.getString("pubsub/bootstraps/bootstrap[" + i + "]/name"), props);
 				}
-				SDispatcherContext.bootstrapsProperties = bootstrapsProperties;
+				DispatcherContext.bootstrapsProperties = bootstrapsProperties;
 			}
 			
 		}catch(Exception e){

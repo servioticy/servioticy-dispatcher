@@ -27,7 +27,7 @@ import com.servioticy.datamodel.GroupLUReq;
 import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SensorUpdate;
-import com.servioticy.dispatcher.SDispatcherContext;
+import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
 import com.servioticy.queueclient.QueueClient;
@@ -63,8 +63,9 @@ public class StreamProcessorBolt implements IRichBolt {
 	}
 	
 	// For testing purposes
-	public StreamProcessorBolt(QueueClient qc){
+	public StreamProcessorBolt(QueueClient qc, RestClient restClient){
 		this.qc = qc;
+		this.restClient = restClient;
 	}
 	
 	public void prepare(Map stormConf, TopologyContext context,
@@ -72,7 +73,9 @@ public class StreamProcessorBolt implements IRichBolt {
 		this.collector = collector;
 		this.context = context;
 		this.suCache = new SUCache(25);
-		this.restClient = new RestClient();
+		if(restClient == null){
+			restClient = new RestClient();
+		}
 	}
 	
 	private Map<String, String> getGroupDocs(Set<String> docIds, String soId, SO so) throws IOException, RestClientException, RestClientErrorCodeException{
@@ -92,7 +95,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			String lastSU;
 			try {
 				rr = restClient.restRequest(
-						SDispatcherContext.restBaseURL
+						DispatcherContext.restBaseURL
 							+ soId + "/groups/lastupdate", 
 							mapper.writeValueAsString(glur), RestClient.POST,
 							null);
@@ -124,7 +127,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			String lastSU;
 			try {
 				rr = restClient.restRequest(
-						SDispatcherContext.restBaseURL
+						DispatcherContext.restBaseURL
 							+ soId + "/streams/" + docId + "/lastupdate", 
 							null, RestClient.GET,
 							null);
@@ -286,7 +289,7 @@ public class StreamProcessorBolt implements IRichBolt {
 		try{
 			// Send to the API
 			restClient.restRequest(
-					SDispatcherContext.restBaseURL
+					DispatcherContext.restBaseURL
 							+ soId + "/streams/"
 							+ streamId + "/store.data", apiJson,
 					RestClient.PUT,

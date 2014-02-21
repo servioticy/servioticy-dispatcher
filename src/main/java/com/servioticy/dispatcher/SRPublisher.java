@@ -51,7 +51,7 @@ public class SRPublisher {
 	private TopicPublisher publisher;
 
 	public SRPublisher(String topicName, String pubId) throws IllegalConfigException, UnknownHostException, SRException, InterruptedException{
-		SDispatcherContext.loadConf();
+		DispatcherContext.loadConf();
 		
 		Set<String> bootstrapSet = new LinkedHashSet<String>();
 		
@@ -61,17 +61,17 @@ public class SRPublisher {
 		// TODO This should be done once in the bolt class.
 		String computerName = InetAddress.getLocalHost().getHostName();
 		
-		String selfAddress = SDispatcherContext.pubProperties.get(computerName).getProperty(SDispatcherContext.PUBLISHER_LOCAL_ADDRESS);
-		String extAddress = SDispatcherContext.pubProperties.get(computerName).getProperty(SDispatcherContext.PUBLISHER_EXTERNAL_ADDRESS);
-		int extPort = Integer.parseInt(SDispatcherContext.pubProperties.get(computerName).getProperty(SDispatcherContext.PUBLISHER_EXTERNAL_PORT));
+		String selfAddress = DispatcherContext.pubProperties.get(computerName).getProperty(DispatcherContext.PUBLISHER_LOCAL_ADDRESS);
+		String extAddress = DispatcherContext.pubProperties.get(computerName).getProperty(DispatcherContext.PUBLISHER_EXTERNAL_ADDRESS);
+		int extPort = Integer.parseInt(DispatcherContext.pubProperties.get(computerName).getProperty(DispatcherContext.PUBLISHER_EXTERNAL_PORT));
 		
 		this.reliable = false;
 		
 		InMemoryAddresResolver addressResolver = new InMemoryAddresResolver();
-		for(Entry<String, Properties> props: SDispatcherContext.bootstrapsProperties.entrySet()){
+		for(Entry<String, Properties> props: DispatcherContext.bootstrapsProperties.entrySet()){
 			bootstrapSet.add(props.getKey());
-			addressResolver.put(props.getKey(), props.getValue().getProperty(SDispatcherContext.BOOTSTRAP_ADDRESS), 
-			Integer.parseInt(props.getValue().getProperty(SDispatcherContext.BOOTSTRAP_PORT)));
+			addressResolver.put(props.getKey(), props.getValue().getProperty(DispatcherContext.BOOTSTRAP_ADDRESS), 
+			Integer.parseInt(props.getValue().getProperty(DispatcherContext.BOOTSTRAP_PORT)));
 		}
 		
 		SRFactory factory = SRFactory.getInstance();

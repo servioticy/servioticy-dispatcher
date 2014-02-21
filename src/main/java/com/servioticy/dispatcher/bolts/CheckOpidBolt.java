@@ -17,7 +17,8 @@ package com.servioticy.dispatcher.bolts;
 
 import java.util.Map;
 
-import com.servioticy.dispatcher.SDispatcherContext;
+import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.queueclient.QueueClient;
 import com.servioticy.restclient.RestClient;
 
 import backtype.storm.task.OutputCollector;
@@ -40,17 +41,27 @@ public class CheckOpidBolt implements IRichBolt {
 	private OutputCollector collector;
 	private RestClient restClient;
 
+	public CheckOpidBolt(){
+	}
+	
+	// For testing purposes
+	public CheckOpidBolt(RestClient restClient){
+		this.restClient = restClient;
+	}
+	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
 		this.collector = collector;
-		restClient = new RestClient();
+		if(restClient == null){
+			restClient = new RestClient();
+		}
 
 	}
 
 	public void execute(Tuple input) {
 		try {
 			restClient.restRequest(
-					SDispatcherContext.restBaseURL
+					DispatcherContext.restBaseURL
 							+ input.getStringByField("opid"), null,
 					RestClient.GET,
 					null);

@@ -18,6 +18,10 @@ package com.servioticy.dispatcher;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
+import org.codehaus.jackson.map.ObjectMapper;
+
+import com.servioticy.datamodel.UpdateDescriptor;
+
 import backtype.storm.spout.Scheme;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
@@ -26,16 +30,14 @@ import backtype.storm.tuple.Values;
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
-public class ServiceDescriptorScheme implements Scheme {
+public class UpdateDescriptorScheme implements Scheme {
 
 	public List<Object> deserialize(byte[] bytes) {
 		try {
-			String input = new String(bytes, "UTF-8");
-			String[] inputFields = input.split(";", 2);
-			
-			String[] ids = inputFields[0].split("-", 4);
-			return new Values(inputFields[0].split("-", 2)[1], ids[0], ids[1], ids[2], inputFields[1]);
-		} catch (UnsupportedEncodingException e) {
+			ObjectMapper mapper = new ObjectMapper();
+			UpdateDescriptor ud = mapper.readValue(new String(bytes, "UTF-8"), UpdateDescriptor.class);
+			return new Values(ud.getOpid(), ud.getSoid(), ud.getStreamid(), mapper.writeValueAsString(ud.getSu()));
+		} catch(Exception e){
 			// TODO Log the error
 			throw new RuntimeException(e);
 		}
