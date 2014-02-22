@@ -96,7 +96,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			try {
 				rr = restClient.restRequest(
 						DispatcherContext.restBaseURL
-							+ soId + "/groups/lastupdate", 
+							+ "private/groups/lastUpdate", 
 							mapper.writeValueAsString(glur), RestClient.POST,
 							null);
 			} catch (RestClientErrorCodeException e) {
@@ -128,7 +128,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			try {
 				rr = restClient.restRequest(
 						DispatcherContext.restBaseURL
-							+ soId + "/streams/" + docId + "/lastupdate", 
+							+ "private/" + soId + "/streams/" + docId + "/lastupdate", 
 							null, RestClient.GET,
 							null);
 			} catch (RestClientErrorCodeException e) {
@@ -290,8 +290,8 @@ public class StreamProcessorBolt implements IRichBolt {
 			// Send to the API
 			restClient.restRequest(
 					DispatcherContext.restBaseURL
-							+ soId + "/streams/"
-							+ streamId + "/store.data", apiJson,
+							+ "private/" + soId + "/streams/"
+							+ streamId + "/", apiJson,
 					RestClient.PUT,
 					null);
 		} catch(Exception e){

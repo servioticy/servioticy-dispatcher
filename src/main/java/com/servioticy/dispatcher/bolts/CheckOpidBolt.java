@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/ 
+ ******************************************************************************/
 package com.servioticy.dispatcher.bolts;
 
 import java.util.Map;
@@ -20,6 +20,7 @@ import java.util.Map;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.queueclient.QueueClient;
 import com.servioticy.restclient.RestClient;
+import com.servioticy.restclient.RestResponse;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -41,30 +42,30 @@ public class CheckOpidBolt implements IRichBolt {
 	private OutputCollector collector;
 	private RestClient restClient;
 
-	public CheckOpidBolt(){
+	public CheckOpidBolt() {
 	}
-	
+
 	// For testing purposes
-	public CheckOpidBolt(RestClient restClient){
+	public CheckOpidBolt(RestClient restClient) {
 		this.restClient = restClient;
 	}
-	
+
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
 		this.collector = collector;
-		if(restClient == null){
+		if (restClient == null) {
 			restClient = new RestClient();
 		}
 
 	}
 
 	public void execute(Tuple input) {
+		RestResponse rr;
 		try {
-			restClient.restRequest(
+			rr = restClient.restRequest(
 					DispatcherContext.restBaseURL
-							+ input.getStringByField("opid"), null,
-					RestClient.GET,
-					null);
+							+ "private/" + input.getStringByField("opid"), null,
+					RestClient.GET, null);
 
 		} catch (Exception e) {
 			// TODO Log the error
@@ -75,8 +76,7 @@ public class CheckOpidBolt implements IRichBolt {
 
 		this.collector.emit(
 				input,
-				new Values(input.getStringByField("opid"), 
-						input.getStringByField("auth"), input
+				new Values(input.getStringByField("opid"), input
 						.getStringByField("soid"), input
 						.getStringByField("streamid"), input
 						.getStringByField("su")));
@@ -87,7 +87,7 @@ public class CheckOpidBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("opid", "auth", "soid", "streamid", "su"));
+		declarer.declare(new Fields("opid", "soid", "streamid", "su"));
 
 	}
 

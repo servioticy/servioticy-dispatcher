@@ -75,7 +75,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 		try {
 			subscriptionsRR = restClient.restRequest(
 					DispatcherContext.restBaseURL
-							+ input.getStringByField("soid") + "/streams/"
+							+ "private/" + input.getStringByField("soid") + "/streams/"
 							+ input.getStringByField("streamid")
 							+ "/subscriptions/", null, RestClient.GET,
 							null);
@@ -99,10 +99,12 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 		}
 		
 		try {
-			subscriptions = mapper.readValue(subscriptionsRR.getResponse(),
+			String substr = subscriptionsRR.getResponse();
+			subscriptions = mapper.readValue(substr,
 					Subscriptions.class);
 		} catch (Exception e) {
 			// TODO Log the error
+			e.printStackTrace();
 			collector.ack(input);
 			return;
 		}
@@ -135,6 +137,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 				}
 			} catch (Exception e) {
 				// TODO Log the error
+				e.printStackTrace();
 			}
 		}
 		collector.ack(input);

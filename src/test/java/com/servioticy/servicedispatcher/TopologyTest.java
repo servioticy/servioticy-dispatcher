@@ -278,7 +278,7 @@ public class TopologyTest {
 	    	
 	    	feeder.feed(new Values("sometestopid", "1234567890", "location", group1SU));
 	    	try {
-				Thread.sleep(4000);
+				Thread.sleep(60000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

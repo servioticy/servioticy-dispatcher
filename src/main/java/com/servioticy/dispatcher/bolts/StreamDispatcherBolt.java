@@ -81,7 +81,7 @@ public class StreamDispatcherBolt implements IRichBolt {
 		try{
 			rr = restClient.restRequest(
 					DispatcherContext.restBaseURL
-						+ soSub.getDestination(), null, RestClient.GET,
+						+ "private/" + soSub.getDestination(), null, RestClient.GET,
 						null);
 			sostr = rr.getResponse();
 		} catch (Exception e) {
