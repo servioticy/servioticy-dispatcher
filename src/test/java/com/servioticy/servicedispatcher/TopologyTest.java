@@ -18,10 +18,13 @@ package com.servioticy.servicedispatcher;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -45,6 +48,8 @@ import com.servioticy.queueclient.QueueClientException;
 import com.servioticy.queueclient.TestQueueClient;
 
 import com.servioticy.restclient.RestClient;
+import com.servioticy.restclient.RestClientErrorCodeException;
+import com.servioticy.restclient.RestClientException;
 import com.servioticy.restclient.RestResponse;
 
 
@@ -196,7 +201,7 @@ public class TopologyTest {
 			glur.setSoids(soids);
 			
 			// Mocking up the rest calls...
-			RestClient restClient = mock(RestClient.class);
+			RestClient restClient = mock(RestClient.class, withSettings().serializable());
 			// get opid
 			when(restClient.restRequest(
 					DispatcherContext.restBaseURL
@@ -211,6 +216,7 @@ public class TopologyTest {
 					+ "/subscriptions/", null, RestClient.GET,
 					null)).thenReturn(new RestResponse(subscriptions, 200));
 			// get subscriber so
+
 			when(restClient.restRequest(
 					DispatcherContext.restBaseURL
 					+ "private/" + destSoid, null, RestClient.GET,
@@ -271,7 +277,15 @@ public class TopologyTest {
 	    	cluster.submitTopology("dispatcher", conf, builder.createTopology());
 	    	
 	    	feeder.feed(new Values("sometestopid", "1234567890", "location", group1SU));
+	    	try {
+				Thread.sleep(4000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 	    	String newDescriptor = (String) qc.get();
+	    	Assert.assertTrue("Return value", newDescriptor != null);
+	    	
 	    	UpdateDescriptor ud = mapper.readValue(newDescriptor, UpdateDescriptor.class);
 	    	
 	    	Assert.assertTrue("Operation id", ud.getOpid() != null);
@@ -280,7 +294,17 @@ public class TopologyTest {
 	    	Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 1392981962);
 	    	SUChannel such = ud.getSu().getChannels().get("");
 	    	Assert.assertTrue("New SU current-value", ((Double)such.getCurrentValue()) == 0.000001063);
-		}catch(Exception e){
+		} catch (RestClientException e) {
+			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
+		} catch (RestClientErrorCodeException e) {
+			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
+		} catch (JsonParseException e) {
+			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
+		} catch (JsonMappingException e) {
+			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
+		} catch (IOException e) {
+			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
+		} catch (QueueClientException e) {
 			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
 		}
 	}

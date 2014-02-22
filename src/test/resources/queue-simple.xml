@@ -2,8 +2,8 @@
 <QueueClientConf>
 	<defaultQueue>
 		<queueType>simpleQueue</queueType>
-		<baseAddress></baseAddress>
-		<relativeAddress></relativeAddress>
+		<baseAddress>/</baseAddress>
+		<relativeAddress>queue.ser</relativeAddress>
 	</defaultQueue>
 	<queue>
 		<type>simpleQueue</type>
