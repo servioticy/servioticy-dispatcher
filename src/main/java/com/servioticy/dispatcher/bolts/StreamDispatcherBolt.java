@@ -105,6 +105,7 @@ public class StreamDispatcherBolt implements IRichBolt {
 		}catch(Exception e){
 			collector.ack(input);
 			//TODO Log the error
+			e.printStackTrace();
 			return;
 		}
 		collector.ack(input);

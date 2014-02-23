@@ -92,6 +92,7 @@ public class TopologyTest {
 			String subscriptions =	"{" +
 										"\"subscriptions\": [" +
 											"{" +
+												"\"id\": \"subid1\", " +
 												"\"callback\": \"internal\"," +
 											    "\"destination\": \"" + destSoid + "\"," +
 											    "\"customFields\": {" + 
@@ -131,7 +132,7 @@ public class TopologyTest {
 												"\"channels\": {" +
 													"\"\":{" +
 														"\"current-value\": \"@distance@ >= 0 ? @distance@ : @distance@*-1\"," +
-														"\"type\": \"number\"," +
+														"\"type\": \"number\"" +
 													"}" +
 												"}," +
 												"\"post-filter\": \"{$proximity.} == null || {$proximity.channels..current-value} == {$@result@.channels..current-value}\"" +
@@ -140,7 +141,7 @@ public class TopologyTest {
 												"\"channels\": {" +
 													"\"\":{" +
 														"\"current-value\": \"@distance@ >= 0 ? @distance@ : @distance@*-1 <= @nearDistance@\"," +
-														"\"type\": \"boolean\"," +
+														"\"type\": \"boolean\"" +
 													"}" +
 												"}," +
 												"\"post-filter\": \"{$near.} == null || {$near.channels..current-value} == {$@result@.channels..current-value}\"" +
@@ -152,10 +153,10 @@ public class TopologyTest {
 			String group1SU =	"{" +
 									"\"channels\": {" +
 										"\"latitude\":{" +
-											"\"current-value\": 41.3879758," +
+											"\"current-value\": 41.3879758" +
 										"}," +
 										"\"latitude\":{" +
-											"\"current-value\": 2.1150167," +
+											"\"current-value\": 2.1150167" +
 										"}" +
 									"}," +
 									"\"lastUpdate\": 1392981962" +
@@ -165,10 +166,10 @@ public class TopologyTest {
 			String group2SU =	"{" +
 									"\"channels\": {" +
 										"\"latitude\":{" +
-											"\"current-value\": 41.387975," +
+											"\"current-value\": 41.387975" +
 										"}," +
 										"\"latitude\":{" +
-											"\"current-value\": 2.115016," +
+											"\"current-value\": 2.11501" +
 										"}" +
 									"}," +
 									"\"lastUpdate\": 1392981836" +
@@ -177,7 +178,7 @@ public class TopologyTest {
 			String nearSU =		"{" +
 									"\"channels\": {" +
 										"\"\":{" +
-											"\"current-value\": true," +
+											"\"current-value\": true" +
 										"}" +
 									"}," +
 									"\"lastUpdate\": 1392981636" +
@@ -186,7 +187,7 @@ public class TopologyTest {
 			String proxSU = 	"{" +
 									"\"channels\": {" +
 										"\"\":{" +
-											"\"current-value\": 0.3234," +
+											"\"current-value\": 0.3234" +
 										"}" +
 									"}," +
 									"\"lastUpdate\": 1392981236" +

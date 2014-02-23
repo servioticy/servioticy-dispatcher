@@ -20,6 +20,9 @@ import java.util.Map;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
+import com.servioticy.datamodel.ExternalSubscription;
+import com.servioticy.datamodel.HttpSubscription;
+import com.servioticy.datamodel.SOSubscription;
 import com.servioticy.datamodel.Subscription;
 import com.servioticy.datamodel.Subscriptions;
 import com.servioticy.dispatcher.DispatcherContext;
@@ -118,18 +121,18 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 		for (Subscription subscription : subscriptions
 				.getSubscriptions()) {
 			try {
-				if(subscription.getCallback().equals(Subscription.SUBS_INTERNAL)){
+				if(subscription.getClass().equals(SOSubscription.class)){
 					this.collector.emit(	"internalSub", input, 
 							new Values(	mapper.writeValueAsString(subscription),
 										input.getStringByField("su")));
 				}
-				else if(subscription.getCallback().equals(Subscription.SUBS_HTTP)){
+				else if(subscription.getClass().equals(HttpSubscription.class)){
 					this.collector.emit(	"httpSub", input, 
 							new Values(	subscription.getId(),
 										mapper.writeValueAsString(subscription),
 										input.getStringByField("su")));
 				}
-				else if(subscription.getCallback().equals(Subscription.SUBS_PUBSUB)){
+				else if(subscription.getClass().equals(ExternalSubscription.class)){
 					this.collector.emit(	"pubsubSub", input, 
 							new Values(	subscription.getId(),
 										mapper.writeValueAsString(subscription),

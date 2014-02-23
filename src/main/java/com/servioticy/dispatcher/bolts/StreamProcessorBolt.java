@@ -90,14 +90,15 @@ public class StreamProcessorBolt implements IRichBolt {
 			SOGroup group = so.getGroups().get(docId);
 			GroupLUReq glur = new GroupLUReq();
 			glur.setStream(group.getStream());
-			glur.setSoids(new ArrayList<String>(group.getSoids()));
+			glur.setSoids(new ArrayList<String>(group.getMembers()));
 			// TODO Resolve dynsets
 			String lastSU;
+			String glurstr = mapper.writeValueAsString(glur);
 			try {
 				rr = restClient.restRequest(
 						DispatcherContext.restBaseURL
 							+ "private/groups/lastUpdate", 
-							mapper.writeValueAsString(glur), RestClient.POST,
+							glurstr, RestClient.POST,
 							null);
 			} catch (RestClientErrorCodeException e) {
 				// In case there is no update.
@@ -128,7 +129,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			try {
 				rr = restClient.restRequest(
 						DispatcherContext.restBaseURL
-							+ "private/" + soId + "/streams/" + docId + "/lastupdate", 
+							+ "private/" + soId + "/streams/" + docId + "/lastUpdate", 
 							null, RestClient.GET,
 							null);
 			} catch (RestClientErrorCodeException e) {
@@ -158,6 +159,7 @@ public class StreamProcessorBolt implements IRichBolt {
 		String streamId = input.getStringByField("streamid");
 		String suDoc = input.getStringByField("su");
 		String soDoc = input.getStringByField("so");
+		String groupId = input.getStringByField("groupid");
 		SOProcessor sop;
 		long timestamp;
 		Map<String, String> docs;
@@ -168,6 +170,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			sop = new SOProcessor(soDoc, soId);
 		} catch(Exception e){
 			// TODO Log the error
+			e.printStackTrace();
 			collector.ack(input);
 			return;
 		}
@@ -180,27 +183,32 @@ public class StreamProcessorBolt implements IRichBolt {
 		sop.compileJSONPaths();
 		
 		Set<String> docIds = sop.getDocIdsByStream(streamId);
+		// Remove the group for which we already have the SU
+		docIds.remove(groupId);
 		// The self last update from current stream
 		docIds.add(streamId);
+
 		docs = new HashMap<String, String>();
 		docs.put("", suDoc);
+		try{
+			docs.putAll(this.getStreamDocs(docIds, soId, so));
+			docs.putAll(this.getGroupDocs(docIds, soId, so));
+			docs.put(groupId, suDoc);
+		} catch(Exception e){
+			// TODO Log the error
+			e.printStackTrace();
+			collector.fail(input);
+			return;
+		}
 		previousSUDoc = docs.get(streamId);
 		try{
 			previousSU = mapper.readValue(previousSUDoc, SensorUpdate.class);
 		} catch(Exception e){
 			// TODO Log the error
+			e.printStackTrace();
 			collector.ack(input);
 			return;
 		}
-		try{
-			docs.putAll(this.getStreamDocs(docIds, soId, so));
-			docs.putAll(this.getGroupDocs(docIds, soId, so));
-		} catch(Exception e){
-			// TODO Log the error
-			collector.fail(input);
-			return;
-		}
-		
 		// Obtain the highest timestamp from the input docs
 		timestamp = su.getLastUpdate();
 		for(Map.Entry<String, String> doc: docs.entrySet()){
@@ -241,6 +249,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			}
 		} catch(Exception e){
 			// TODO Log the error
+			e.printStackTrace();
 			collector.ack(input);
 			return;
 		}
