@@ -131,7 +131,7 @@ public class SOProcessor {
 				pchannel.currentValue =	new JsonPathReplacer(
 												channel.getCurrentValue() 
 											);
-				
+				pchannel.type = channel.getType();
 				// Set the objective streams for each group of SUs
 				Set<String> docIds = pchannel.currentValue.getJsonPathIds();
 				addStreamByDocIds(streamEntry.getKey(), docIds);

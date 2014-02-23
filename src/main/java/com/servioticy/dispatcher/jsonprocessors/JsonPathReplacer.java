@@ -178,15 +178,17 @@ public class JsonPathReplacer {
 			
 			for(Map.Entry<String,JsonPath> jp : jps){
 //				if(jp.isPathDefinite()){
+				String json;
+				String key = jp.getKey();
 				try{
 					// If the path does not exist in the input json, throws InvalidPathException
-					String json =  jsons.get(jp.getKey());
+					json =  jsons.get(key);
 					partial += jp.getValue().read(json);
 				}catch(java.lang.IllegalArgumentException e){
 					// The input is not a json
 					// TODO This should be done *only* on queries. In navigations of implicit queries or selfdocument, it should be an error
 					//	and the document shouldn't be processed.
-					partial += "\"@empty@\"";
+					partial += "null";
 				}
 //				}
 			}

@@ -107,9 +107,9 @@ public class TopologyTest {
 											"{\"@nearDistance@\": \"0.0001\"}," +
 											"{\"@latitude@\": \"channels.latitude.current-value\"}," +
 											"{\"@longitude@\": \"channels.longitude.current-value\"}," +
-											"{\"@latDistance@\": \"({$group1.@latitude@} - {$group2.@latitude@} >= 0)? ({$group1.@latitude@} - {$group2.@latitude@}) : ({$group2.@latitude@} - {$group1.@latitude@})\"}," +
-											"{\"@longDistance@\": \"({$group1.@longitude@} - {$group2.@longitude@} >= 0)? ({$group1.@longitude@} - {$group2.@longitude@}) : ({$group2.@longitude@} - {$group1.@longitude@})\"}," +
-											"{\"@distance@\": \"Math.sqrt(Math.pow(@latDistance@) + Math.pow(@longDistance@))\"}" +
+											"{\"@latDistance@\": \"{$group1.@latitude@} - {$group2.@latitude@}\"}," +
+											"{\"@longDistance@\": \"{$group1.@longitude@} - {$group2.@longitude@}\"}," +
+											"{\"@distance@\": \"Math.sqrt(Math.pow(@latDistance@, 2) + Math.pow(@longDistance@, 2))\"}" +
 										"]," +
 										"\"groups\":{" +
 											"\"group1\":{" +
@@ -130,21 +130,21 @@ public class TopologyTest {
 										"\"streams\":{" +
 											"\"proximity\": {" +
 												"\"channels\": {" +
-													"\"\":{" +
-														"\"current-value\": \"@distance@ >= 0 ? @distance@ : @distance@*-1\"," +
+													"\"p\":{" +
+														"\"current-value\": \"@distance@\"," +
 														"\"type\": \"number\"" +
 													"}" +
 												"}," +
-												"\"post-filter\": \"{$proximity.} == null || {$proximity.channels..current-value} == {$@result@.channels..current-value}\"" +
+												"\"post-filter\": \"{$proximity.} != null && {$proximity.channels.p.current-value} != {$@result@.channels.p.current-value}\"" +
 											"}," +
 											"\"near\":{" +
 												"\"channels\": {" +
-													"\"\":{" +
-														"\"current-value\": \"@distance@ >= 0 ? @distance@ : @distance@*-1 <= @nearDistance@\"," +
+													"\"n\":{" +
+														"\"current-value\": \"@distance@ <= @nearDistance@\"," +
 														"\"type\": \"boolean\"" +
 													"}" +
 												"}," +
-												"\"post-filter\": \"{$near.} == null || {$near.channels..current-value} == {$@result@.channels..current-value}\"" +
+												"\"post-filter\": \"{$near.} != null && {$near.channels.n.current-value} != {$@result@.channels.n.current-value}\"" +
 											"}" +
 										"}" +
 									"}";
@@ -155,7 +155,7 @@ public class TopologyTest {
 										"\"latitude\":{" +
 											"\"current-value\": 41.3879758" +
 										"}," +
-										"\"latitude\":{" +
+										"\"longitude\":{" +
 											"\"current-value\": 2.1150167" +
 										"}" +
 									"}," +
@@ -168,7 +168,7 @@ public class TopologyTest {
 										"\"latitude\":{" +
 											"\"current-value\": 41.387975" +
 										"}," +
-										"\"latitude\":{" +
+										"\"longitude\":{" +
 											"\"current-value\": 2.11501" +
 										"}" +
 									"}," +
@@ -177,7 +177,7 @@ public class TopologyTest {
 			// near SU
 			String nearSU =		"{" +
 									"\"channels\": {" +
-										"\"\":{" +
+										"\"n\":{" +
 											"\"current-value\": true" +
 										"}" +
 									"}," +
@@ -186,7 +186,7 @@ public class TopologyTest {
 			// proximity SU
 			String proxSU = 	"{" +
 									"\"channels\": {" +
-										"\"\":{" +
+										"\"p\":{" +
 											"\"current-value\": 0.3234" +
 										"}" +
 									"}," +
@@ -278,13 +278,16 @@ public class TopologyTest {
 	    	cluster.submitTopology("dispatcher", conf, builder.createTopology());
 	    	
 	    	feeder.feed(new Values("sometestopid", "1234567890", "location", group1SU));
-	    	try {
-				Thread.sleep(60000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-	    	String newDescriptor = (String) qc.get();
+	    	
+	    	String newDescriptor;
+	    	while((newDescriptor = (String) qc.get()) == null){
+	    		try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+	    	}
 	    	Assert.assertTrue("Return value", newDescriptor != null);
 	    	
 	    	UpdateDescriptor ud = mapper.readValue(newDescriptor, UpdateDescriptor.class);
@@ -293,8 +296,10 @@ public class TopologyTest {
 	    	Assert.assertTrue("Origin SO id", ud.getSoid().equals(destSoid));
 	    	Assert.assertTrue("Origin stream id", ud.getStreamid().equals("proximity"));
 	    	Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 1392981962);
-	    	SUChannel such = ud.getSu().getChannels().get("");
-	    	Assert.assertTrue("New SU current-value", ((Double)such.getCurrentValue()) == 0.000001063);
+	    	SUChannel such = ud.getSu().getChannels().get("p");
+	    	double proximity = (Double)such.getCurrentValue();
+	    	Assert.assertTrue("New SU current-value", proximity >= 0.000006747);
+	    	Assert.assertTrue("New SU current-value", proximity <= 0.000006748);
 		} catch (RestClientException e) {
 			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
 		} catch (RestClientErrorCodeException e) {

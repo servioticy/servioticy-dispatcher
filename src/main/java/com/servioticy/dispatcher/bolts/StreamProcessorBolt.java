@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 
 import com.servioticy.datamodel.GroupLUReq;
 import com.servioticy.datamodel.SO;
@@ -237,10 +238,11 @@ public class StreamProcessorBolt implements IRichBolt {
 			}
 			
 			SensorUpdate resultSU = sop.getResultSU(streamId, docs, timestamp);
+			mapper.setSerializationInclusion(Inclusion.NON_NULL);
 			resultSUDoc = mapper.writeValueAsString(resultSU);
 			
 			if(!docs.containsKey("@result@")){
-				docs.put("@result@", mapper.writeValueAsString(resultSUDoc));
+				docs.put("@result@", resultSUDoc);
 			}
 			
 			if(!sop.checkPostFilter(streamId, docs)){

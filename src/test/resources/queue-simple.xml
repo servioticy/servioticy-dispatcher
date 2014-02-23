@@ -2,7 +2,7 @@
 <QueueClientConf>
 	<defaultQueue>
 		<queueType>simpleQueue</queueType>
-		<baseAddress>/</baseAddress>
+		<baseAddress></baseAddress>
 		<relativeAddress>queue.ser</relativeAddress>
 	</defaultQueue>
 	<queue>
