@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <context>
-	<compoAPI>http://testbed.compose-project.eu:8010/</compoAPI>
+	<compoAPI>http://api.servioticy.com/</compoAPI>
 	<kestrels>
 		<kestrel>
-			<ip>172.20.200.229</ip>
-		</kestrel>
-		<kestrel>
-			<ip>172.20.200.230</ip>
+			<ip>172.20.200.55</ip>
 		</kestrel>
 		<port>2229</port>
 	</kestrels>
