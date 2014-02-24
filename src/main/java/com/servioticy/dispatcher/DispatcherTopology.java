@@ -54,20 +54,20 @@ public class DispatcherTopology {
 
         builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelIPs), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 5);
         
-        builder.setBolt("checkopid", new CheckOpidBolt(), 1)
+        builder.setBolt("checkopid", new CheckOpidBolt(), 2)
         	.shuffleGrouping("dispatcher");
-        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(), 1)
+        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(), 2)
         	.shuffleGrouping( "checkopid", "subscription");
         
-        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 6)
+        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 4)
         	.fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
-        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(), 6)
+        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(), 4)
     		.fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
         
-        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(), 6)
+        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(), 4)
     		.shuffleGrouping("subretriever", "internalSub")
     		.shuffleGrouping("checkopid", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(), 6)
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(), 4)
 			.fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
         
         
