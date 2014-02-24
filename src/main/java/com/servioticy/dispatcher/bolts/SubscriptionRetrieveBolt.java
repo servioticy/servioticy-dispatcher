@@ -74,12 +74,16 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 		Subscriptions subscriptions;
 		RestResponse subscriptionsRR;
 		Map<String, String> headers = new HashMap<String, String>();
+		
+		String soid = input.getStringByField("soid");
+		String streamid = input.getStringByField("streamid");
+		String su = input.getStringByField("su");
 
 		try {
 			subscriptionsRR = restClient.restRequest(
 					DispatcherContext.restBaseURL
-							+ "private/" + input.getStringByField("soid") + "/streams/"
-							+ input.getStringByField("streamid")
+							+ "private/" + soid + "/streams/"
+							+ streamid
 							+ "/subscriptions/", null, RestClient.GET,
 							null);
 		} catch (RestClientErrorCodeException e) {
@@ -124,19 +128,19 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 				if(subscription.getClass().equals(SOSubscription.class)){
 					this.collector.emit(	"internalSub", input, 
 							new Values(	mapper.writeValueAsString(subscription),
-										input.getStringByField("su")));
+										su));
 				}
 				else if(subscription.getClass().equals(HttpSubscription.class)){
 					this.collector.emit(	"httpSub", input, 
 							new Values(	subscription.getId(),
 										mapper.writeValueAsString(subscription),
-										input.getStringByField("su")));
+										su));
 				}
 				else if(subscription.getClass().equals(ExternalSubscription.class)){
 					this.collector.emit(	"pubsubSub", input, 
 							new Values(	subscription.getId(),
 										mapper.writeValueAsString(subscription),
-										input.getStringByField("su")));
+										su));
 				}
 			} catch (Exception e) {
 				// TODO Log the error

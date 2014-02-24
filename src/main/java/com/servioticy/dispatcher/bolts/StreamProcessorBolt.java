@@ -238,6 +238,10 @@ public class StreamProcessorBolt implements IRichBolt {
 			}
 			
 			SensorUpdate resultSU = sop.getResultSU(streamId, docs, timestamp);
+			if(resultSU == null){
+				collector.ack(input);
+				return;
+			}
 			mapper.setSerializationInclusion(Inclusion.NON_NULL);
 			resultSUDoc = mapper.writeValueAsString(resultSU);
 			

@@ -178,6 +178,9 @@ public class SOProcessor {
 		ScriptEngineManager factory = new ScriptEngineManager();
 		ScriptEngine engine = factory.getEngineByName("JavaScript");
 		PSOStream pstream = this.streams.get(streamId);
+		if(pstream.preFilter == null){
+			return true;
+		}
 		String preFilterCode = pstream.preFilter.replace(inputJsons);
 		
 		engine.eval("var result = Boolean(" + preFilterCode + ")");
@@ -195,31 +198,43 @@ public class SOProcessor {
 		su.setChannels(new LinkedHashMap<String, SUChannel>());
 		
 		PSOStream pstream = this.streams.get(streamId);
+		int nulls = 0; 
 		for(Entry<String, PSOChannel> channelEntry: pstream.channels.entrySet()){
 			PSOChannel pchannel = channelEntry.getValue();
 			SUChannel suChannel = new SUChannel();
-			String currentValueCode = pchannel.currentValue.replace(inputJsons);
-			String type;
-			
-			if(pchannel.type.toLowerCase().equals("number")){
-				type = "Number";
+			if(pchannel.currentValue == null){
+				suChannel.setCurrentValue(null);
+				nulls++;
 			}
-			else if(pchannel.type.toLowerCase().equals("boolean")){
-				type = "Boolean";
-			}
-			else if(pchannel.type.toLowerCase().equals("string")){
-				type = "String";
-			}
-			// TODO Array type
 			else{
-				return null;
+				String currentValueCode = pchannel.currentValue.replace(inputJsons);
+				String type;
+				
+				if(pchannel.type.toLowerCase().equals("number")){
+					type = "Number";
+				}
+				else if(pchannel.type.toLowerCase().equals("boolean")){
+					type = "Boolean";
+				}
+				else if(pchannel.type.toLowerCase().equals("string")){
+					type = "String";
+				}
+				// TODO Array type
+				else{
+					return null;
+				}
+				engine.eval("var result = " + type + "(" + currentValueCode + ")");
+				
+				suChannel.setCurrentValue(engine.get("result"));
 			}
-			engine.eval("var result = " + type + "(" + currentValueCode + ")");
-			
-			suChannel.setCurrentValue(engine.get("result"));
 			suChannel.setUnit(pchannel.unit);
 			
 			su.getChannels().put(channelEntry.getKey(), suChannel);
+		}
+		
+		if(nulls >= su.getChannels().size()){
+			// This stream is mapping a Web Object.
+			return null;
 		}
 		
 		return su;
@@ -229,6 +244,9 @@ public class SOProcessor {
 		ScriptEngineManager factory = new ScriptEngineManager();
 		ScriptEngine engine = factory.getEngineByName("JavaScript");
 		PSOStream pstream = this.streams.get(streamId);
+		if(pstream.postFilter == null){
+			return true;
+		}
 		String postFilterCode = pstream.postFilter.replace(inputJsons);
 		
 		engine.eval("var result = Boolean(" + postFilterCode + ")");
