@@ -73,7 +73,6 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 		ObjectMapper mapper = new ObjectMapper();
 		Subscriptions subscriptions;
 		RestResponse subscriptionsRR;
-		Map<String, String> headers = new HashMap<String, String>();
 		
 		String soid = input.getStringByField("soid");
 		String streamid = input.getStringByField("streamid");

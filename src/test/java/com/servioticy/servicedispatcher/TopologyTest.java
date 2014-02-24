@@ -86,6 +86,8 @@ public class TopologyTest {
 			String subId = "0";
 			String destSoid = "2345678901";
 			
+			DispatcherContext.loadConf();
+			
 			ObjectMapper mapper = new ObjectMapper();
 			
 			// Origin SO
@@ -265,8 +267,6 @@ public class TopologyTest {
 					any(String.class), eq(RestClient.PUT),
 					any(Map.class))).thenReturn(new RestResponse("", 200));
 			
-			
-			DispatcherContext.loadConf();
 	
 			TopologyBuilder builder = new TopologyBuilder();
 			QueueClient qc = QueueClient.factory("/queue-simple.xml");
