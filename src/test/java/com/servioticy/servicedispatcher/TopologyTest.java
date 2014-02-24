@@ -88,6 +88,22 @@ public class TopologyTest {
 			
 			ObjectMapper mapper = new ObjectMapper();
 			
+			// Origin SO
+			String originSo =		"{" +
+										"\"streams\":{" +
+											"\"location\": {" +
+												"\"channels\": {" +
+													"\"latitude\":{" +
+														"\"type\": \"number\"" +
+													"}," +
+													"\"longitude\":{" +
+														"\"type\": \"number\"" +
+													"}" +
+												"}" +
+											"}" +
+										"}" +
+									"}";
+			
 			// Subscriptions document
 			String subscriptions =	"{" +
 										"\"subscriptions\": [" +
@@ -216,6 +232,12 @@ public class TopologyTest {
 					+ origStreamid
 					+ "/subscriptions/", null, RestClient.GET,
 					null)).thenReturn(new RestResponse(subscriptions, 200));
+			// get origin so
+
+			when(restClient.restRequest(
+					DispatcherContext.restBaseURL
+					+ "private/" + originSoid, null, RestClient.GET,
+					null)).thenReturn(new RestResponse(originSo, 200));
 			// get subscriber so
 
 			when(restClient.restRequest(
@@ -258,7 +280,7 @@ public class TopologyTest {
 	        builder.setBolt("checkopid", new CheckOpidBolt(restClient), 1)
 	        	.shuffleGrouping("dispatcher");
 	        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(restClient), 1)
-	        	.shuffleGrouping("checkopid");
+        		.shuffleGrouping( "checkopid", "subscription");
 	        
 	        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
 	        	.fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
@@ -266,7 +288,8 @@ public class TopologyTest {
 	    		.fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
 	        
 	        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(restClient), 1)
-	    		.shuffleGrouping("subretriever", "internalSub");
+	    		.shuffleGrouping("subretriever", "internalSub")
+	    		.shuffleGrouping("checkopid", "stream");
 	        builder.setBolt("streamprocessor", new StreamProcessorBolt(qc, restClient), 1)
 				.fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
 	        

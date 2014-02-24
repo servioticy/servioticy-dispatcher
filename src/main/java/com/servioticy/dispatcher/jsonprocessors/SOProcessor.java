@@ -128,31 +128,33 @@ public class SOProcessor {
 			for(Map.Entry<String, SOChannel> channelEntry: stream.getChannels().entrySet()){
 				PSOChannel pchannel = new PSOChannel();
 				SOChannel channel = channelEntry.getValue();
-				pchannel.currentValue =	new JsonPathReplacer(
-												channel.getCurrentValue() 
-											);
+				pchannel.currentValue = null;
+				if(channel.getCurrentValue() != null){
+					pchannel.currentValue =	new JsonPathReplacer(channel.getCurrentValue());
+					// Set the objective streams for each group of SUs
+					Set<String> docIds = pchannel.currentValue.getJsonPathIds();
+					addStreamByDocIds(streamEntry.getKey(), docIds);
+					this.docIdsByStream.get(streamId).addAll(docIds);
+				}
+				
 				pchannel.type = channel.getType();
-				// Set the objective streams for each group of SUs
-				Set<String> docIds = pchannel.currentValue.getJsonPathIds();
-				addStreamByDocIds(streamEntry.getKey(), docIds);
-				this.docIdsByStream.get(streamId).addAll(docIds);
 				
 				pstream.channels.put(channelEntry.getKey(), pchannel);
 			}
+			pstream.preFilter = null;
+			if(stream.getPreFilter() != null){
+				pstream.preFilter =	new JsonPathReplacer(stream.getPreFilter());
+				this.docIdsByStream.get(streamId).addAll(pstream.preFilter.getJsonPathIds());
+				addStreamByDocIds(streamId, pstream.preFilter.getJsonPathIds());
+			}
 			
-			pstream.preFilter =	new JsonPathReplacer(
-										stream.getPreFilter()
-									);
-			this.docIdsByStream.get(streamId).addAll(pstream.preFilter.getJsonPathIds());
-			addStreamByDocIds(streamId, pstream.preFilter.getJsonPathIds());
 			
-			Set<String> excludeDocIds = new HashSet<String>();
-			pstream.postFilter = new JsonPathReplacer(
-										stream.getPostFilter(),
-										excludeDocIds
-									);
-			this.docIdsByStream.get(streamId).addAll(pstream.postFilter.getJsonPathIds());
-			addStreamByDocIds(streamId, pstream.postFilter.getJsonPathIds());
+			pstream.postFilter = null;
+			if(stream.getPreFilter() != null){
+				pstream.postFilter =	new JsonPathReplacer(stream.getPostFilter());
+				this.docIdsByStream.get(streamId).addAll(pstream.postFilter.getJsonPathIds());
+				addStreamByDocIds(streamId, pstream.postFilter.getJsonPathIds());
+			}
 			
 			this.streams.put(streamEntry.getKey(), pstream);
 		}

@@ -57,7 +57,7 @@ public class DispatcherTopology {
         builder.setBolt("checkopid", new CheckOpidBolt(), 1)
         	.shuffleGrouping("dispatcher");
         builder.setBolt("subretriever", new SubscriptionRetrieveBolt(), 1)
-        	.shuffleGrouping("checkopid");
+        	.shuffleGrouping( "checkopid", "subscription");
         
         builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 6)
         	.fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
@@ -65,7 +65,8 @@ public class DispatcherTopology {
     		.fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
         
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(), 6)
-    		.shuffleGrouping("subretriever", "internalSub");
+    		.shuffleGrouping("subretriever", "internalSub")
+    		.shuffleGrouping("checkopid", "stream");
         builder.setBolt("streamprocessor", new StreamProcessorBolt(), 6)
 			.fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
         

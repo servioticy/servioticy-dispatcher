@@ -73,10 +73,19 @@ public class CheckOpidBolt implements IRichBolt {
 			this.collector.fail(input);
 			return;
 		}
-
+		
 		this.collector.emit(
+				"stream",
 				input,
-				new Values(input.getStringByField("opid"), input
+				new Values(null, input
+						.getStringByField("soid"), input
+						.getStringByField("streamid"), input
+						.getStringByField("su")));
+		
+		this.collector.emit(
+				"subscription",
+				input,
+				new Values(input
 						.getStringByField("soid"), input
 						.getStringByField("streamid"), input
 						.getStringByField("su")));
@@ -87,7 +96,8 @@ public class CheckOpidBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("opid", "soid", "streamid", "su"));
+		declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
+		declarer.declareStream("stream", new Fields("subsdoc","soid", "streamid", "su"));
 
 	}
 

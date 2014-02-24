@@ -38,7 +38,7 @@ public class DispatcherContext {
 	static final public String BOOTSTRAP_ADDRESS = "bstrapaddress";
 	static final public String BOOTSTRAP_PORT = "bstrapport";
 
-	public static String restBaseURL = "http://testbed.compose-project.eu:8010/thngs/";
+	public static String restBaseURL = "http://testbed.compose-project.eu:8010/";
 	public static String[] kestrelIPs = {"172.20.200.229", "172.20.200.230"};
 	public static int kestrelPort = 2229;
 	public static Map<String, Properties> pubProperties;

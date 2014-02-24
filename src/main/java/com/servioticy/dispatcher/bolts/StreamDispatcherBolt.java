@@ -16,9 +16,12 @@
 package com.servioticy.dispatcher.bolts;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
+import com.servioticy.datamodel.SO;
+import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SOSubscription;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
@@ -66,41 +69,86 @@ public class StreamDispatcherBolt implements IRichBolt {
 
 	public void execute(Tuple input) {
 		ObjectMapper mapper = new ObjectMapper();
-		SOSubscription soSub;
-		String sostr;
+		SOSubscription soSub = null;
+		SO so;
 		RestResponse rr;
 		
-		try {
-			soSub = mapper.readValue(input.getStringByField("subsdoc"),
-					SOSubscription.class);
-		} catch (Exception e) {
-			// TODO Log the error
-			collector.ack(input);
-			return;
+		String subsDoc = input.getStringByField("subsdoc");
+		String suDoc = input.getStringByField("su");
+		String soId = input.getStringByField("soid");
+		String streamId = input.getStringByField("streamid");
+		String soDoc;
+		
+		String destination;
+		if(subsDoc != null){
+			// This SU comes from a subscription.
+			try {
+				soSub = mapper.readValue(subsDoc,
+						SOSubscription.class);
+			} catch (Exception e) {
+				// TODO Log the error
+				e.printStackTrace();
+				collector.ack(input);
+				return;
+			}
+			destination = soSub.getDestination();
 		}
+		else{
+			destination = soId;
+		}
+
 		try{
 			rr = restClient.restRequest(
 					DispatcherContext.restBaseURL
-						+ "private/" + soSub.getDestination(), null, RestClient.GET,
+						+ "private/" + destination, null, RestClient.GET,
 						null);
-			sostr = rr.getResponse();
+			soDoc = rr.getResponse();
 		} catch (Exception e) {
 			// TODO Log the error
+			e.printStackTrace();
 			collector.fail(input);
 			return;
 		}
+		try{
+			so = mapper.readValue(soDoc,
+					SO.class);
+		} catch (Exception e) {
+			// TODO Log the error
+			e.printStackTrace();
+			collector.ack(input);
+			return;
+		}
+		
+		String docId;
+		if(soSub == null){ 
+			if(so.getGroups() != null){
+				for(Entry<String, SOGroup> group: so.getGroups().entrySet()){
+					// If there is a group called like the stream, then the docname refers to the group.
+					if(group.getKey() == streamId){
+						collector.ack(input);
+						return;
+					}
+				}
+			}
+			
+			docId = streamId;
+		}
+		else{
+			docId = soSub.getGroupId();
+		}
+		
 		// TODO Could be useful to delete the unused groups from the SO. Open discussion.
 		try{
-			SOProcessor sop = new SOProcessor(sostr, soSub.getDestination());
-			sostr = sop.replaceAliases();
+			SOProcessor sop = new SOProcessor(soDoc, destination);
+			soDoc = sop.replaceAliases();
 			sop.compileJSONPaths();
-			for( String streamId: sop.getStreamsByDocId( soSub.getGroupId() ) ){
+			for( String streamIdByDoc: sop.getStreamsByDocId( docId ) ){
 				this.collector.emit(	input, 
 										new Values(	soSub.getDestination(),
-													streamId,
-													sostr,
+													streamIdByDoc,
+													soDoc,
 													soSub.getGroupId(),
-													input.getStringByField("su")));
+													suDoc));
 			}
 		}catch(Exception e){
 			collector.ack(input);

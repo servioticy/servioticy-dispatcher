@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <context>
-	<compoAPI>http://testbed.compose-project.eu:8010/thngs/</compoAPI>
+	<compoAPI>http://testbed.compose-project.eu:8010/</compoAPI>
 	<kestrels>
 		<kestrel>
 			<ip>172.20.200.229</ip>
