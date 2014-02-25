@@ -28,7 +28,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.servioticy.datamodel.GroupLUReq;
+import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SUChannel;
 import com.servioticy.datamodel.UpdateDescriptor;
 import com.servioticy.dispatcher.DispatcherContext;
@@ -210,12 +210,12 @@ public class TopologyTest {
 								"}";
 			
 			//  Group last update request
-			GroupLUReq glur = new GroupLUReq();
-			glur.setStream("location");
+			SOGroup group = new SOGroup();
+			group.setStream("location");
 			ArrayList<String> soids = new ArrayList<String>();
 			soids.add("origin4");
 			soids.add("origin5");
-			glur.setSoids(soids);
+			group.setSoids(soids);
 			
 			// Mocking up the rest calls...
 			RestClient restClient = mock(RestClient.class, withSettings().serializable());
@@ -247,7 +247,7 @@ public class TopologyTest {
 			// get 'group2' location group last update
 			when(restClient.restRequest(
 					DispatcherContext.restBaseURL
-					+ "private/groups/lastUpdate", mapper.writeValueAsString(glur), RestClient.POST,
+					+ "private/groups/lastUpdate", mapper.writeValueAsString(group), RestClient.POST,
 					null)).thenReturn(new RestResponse(group2SU, 200));
 			// get 'proximity' stream last update
 					when(restClient.restRequest(

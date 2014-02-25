@@ -24,7 +24,6 @@ import java.util.Set;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 
-import com.servioticy.datamodel.GroupLUReq;
 import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SensorUpdate;
@@ -89,12 +88,9 @@ public class StreamProcessorBolt implements IRichBolt {
 				continue;
 			}
 			SOGroup group = so.getGroups().get(docId);
-			GroupLUReq glur = new GroupLUReq();
-			glur.setStream(group.getStream());
-			glur.setSoids(new ArrayList<String>(group.getMembers()));
 			// TODO Resolve dynsets
 			String lastSU;
-			String glurstr = mapper.writeValueAsString(glur);
+			String glurstr = mapper.writeValueAsString(group);
 			
 			rr = restClient.restRequest(
 					DispatcherContext.restBaseURL
