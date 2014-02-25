@@ -93,6 +93,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 		} catch (Exception e) {
 			// TODO Log the error
 			// Retry until timeout
+			e.printStackTrace();
 			this.collector.fail(input);
 			return;
 		}
