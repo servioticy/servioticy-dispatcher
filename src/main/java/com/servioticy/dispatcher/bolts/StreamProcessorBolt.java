@@ -95,19 +95,16 @@ public class StreamProcessorBolt implements IRichBolt {
 			// TODO Resolve dynsets
 			String lastSU;
 			String glurstr = mapper.writeValueAsString(glur);
-			try {
-				rr = restClient.restRequest(
-						DispatcherContext.restBaseURL
-							+ "private/groups/lastUpdate", 
-							glurstr, RestClient.POST,
-							null);
-			} catch (RestClientErrorCodeException e) {
-				// In case there is no update.
-				if(e.getRestResponse().getHttpCode() == 204){
-					groupDocs.put(docId, "null");
-					continue;
-				}
-				throw e;
+			
+			rr = restClient.restRequest(
+					DispatcherContext.restBaseURL
+						+ "private/groups/lastUpdate", 
+						glurstr, RestClient.POST,
+						null);
+			// In case there is no update.
+			if(rr.getHttpCode() == 204){
+				groupDocs.put(docId, "null");
+				continue;
 			}
 			lastSU = rr.getResponse();
 
@@ -127,19 +124,16 @@ public class StreamProcessorBolt implements IRichBolt {
 				continue;
 			}
 			String lastSU;
-			try {
-				rr = restClient.restRequest(
-						DispatcherContext.restBaseURL
-							+ "private/" + soId + "/streams/" + docId + "/lastUpdate", 
-							null, RestClient.GET,
-							null);
-			} catch (RestClientErrorCodeException e) {
-				// In case there is no update.
-				if(e.getRestResponse().getHttpCode() == 204){
-					streamDocs.put(docId, "null");
-					continue;
-				}
-				throw e;
+			rr = restClient.restRequest(
+					DispatcherContext.restBaseURL
+						+ "private/" + soId + "/streams/" + docId + "/lastUpdate", 
+						null, RestClient.GET,
+						null);
+
+			// In case there is no update.
+			if(rr.getHttpCode() == 204){
+				streamDocs.put(docId, "null");
+				continue;
 			}
 			lastSU = rr.getResponse();
 			// TODO If there is not a lastSU, don't put it.
@@ -271,12 +265,6 @@ public class StreamProcessorBolt implements IRichBolt {
 									"\"su\":" + resultSUDoc +
 								"}";
 		
-		// The output API json
-		String apiJson =	"{"+
-								"\"opid\":\"" + opid + "\"," +
-								"\"su\":" + resultSUDoc +
-							"}";
-		
 		// Put to the queue
 		if(this.qc == null){
 			try{
@@ -306,7 +294,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			restClient.restRequest(
 					DispatcherContext.restBaseURL
 							+ "private/" + soId + "/streams/"
-							+ streamId + "/", apiJson,
+							+ streamId + "/" + opid, resultSUDoc,
 					RestClient.PUT,
 					null);
 		} catch(Exception e){

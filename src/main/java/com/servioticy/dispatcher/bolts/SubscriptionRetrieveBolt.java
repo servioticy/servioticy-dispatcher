@@ -86,24 +86,22 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 							+ "/subscriptions/", null, RestClient.GET,
 							null);
 		} catch (RestClientErrorCodeException e) {
-			// In case there are no subscriptions.
-			if(e.getRestResponse().getHttpCode() == 204){
-				this.collector.ack(input);
-				return;
-			} 
-			else{
-				// TODO Log the error
-				// Retry until timeout
-				this.collector.fail(input);
-				return;
-			}
+			// TODO Log the error
+			// Retry until timeout
+			this.collector.fail(input);
+			return;
 		} catch (Exception e) {
 			// TODO Log the error
 			// Retry until timeout
 			this.collector.fail(input);
 			return;
 		}
-		
+		// In case there are no subscriptions.
+		int hCode = subscriptionsRR.getHttpCode();
+		if(hCode == 204){
+			this.collector.ack(input);
+			return;
+		} 
 		try {
 			String substr = subscriptionsRR.getResponse();
 			subscriptions = mapper.readValue(substr,
