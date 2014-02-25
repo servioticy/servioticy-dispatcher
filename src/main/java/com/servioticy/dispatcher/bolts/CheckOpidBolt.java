@@ -61,10 +61,11 @@ public class CheckOpidBolt implements IRichBolt {
 
 	public void execute(Tuple input) {
 		RestResponse rr;
+		String opid = input.getStringByField("opid");
 		try {
 			rr = restClient.restRequest(
 					DispatcherContext.restBaseURL
-							+ "private/" + input.getStringByField("opid"), null,
+							+ "private/opid/" + opid, null,
 					RestClient.GET, null);
 
 		} catch (Exception e) {

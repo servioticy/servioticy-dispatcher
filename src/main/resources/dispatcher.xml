@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <context>
-	<compoAPI>http://api.servioticy.com/</compoAPI>
+	<compoAPI>http://api.servioticy.com:8010/</compoAPI>
 	<kestrels>
 		<kestrel>
 			<ip>172.20.200.55</ip>

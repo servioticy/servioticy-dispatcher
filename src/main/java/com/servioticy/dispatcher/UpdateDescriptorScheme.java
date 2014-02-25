@@ -35,7 +35,8 @@ public class UpdateDescriptorScheme implements Scheme {
 	public List<Object> deserialize(byte[] bytes) {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
-			UpdateDescriptor ud = mapper.readValue(new String(bytes, "UTF-8"), UpdateDescriptor.class);
+			String inputDoc = new String(bytes, "UTF-8");
+			UpdateDescriptor ud = mapper.readValue(inputDoc, UpdateDescriptor.class);
 			return new Values(ud.getOpid(), ud.getSoid(), ud.getStreamid(), mapper.writeValueAsString(ud.getSu()));
 		} catch(Exception e){
 			// TODO Log the error

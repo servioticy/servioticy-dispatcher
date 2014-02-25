@@ -106,7 +106,7 @@
 				</descriptorRefs>
 				<archive>
 					<manifest>
-						<mainClass>es.bsc.compose.servicedispatcher.SDispatcherTopology</mainClass>
+						<mainClass>com.servioticy.dispatcher.DispatcherTopology</mainClass>
 					</manifest>
 				</archive>
 			</configuration>
