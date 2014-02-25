@@ -20,7 +20,6 @@ import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Map;
 
 import org.codehaus.jackson.JsonParseException;
@@ -68,7 +67,6 @@ public class TopologyTest {
 			String opid = "sometestopid";
 			String originSoid = "1234567890";
 			String origStreamid = "location";
-			String subId = "0";
 			String destSoid = "2345678901";
 			
 			DispatcherContext.loadConf();
