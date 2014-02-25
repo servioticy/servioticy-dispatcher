@@ -30,11 +30,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.servioticy.datamodel.GroupLUReq;
-import com.servioticy.datamodel.SO;
-import com.servioticy.datamodel.SOSubscription;
 import com.servioticy.datamodel.SUChannel;
-import com.servioticy.datamodel.Subscription;
-import com.servioticy.datamodel.Subscriptions;
 import com.servioticy.datamodel.UpdateDescriptor;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.bolts.CheckOpidBolt;
@@ -45,7 +41,6 @@ import com.servioticy.dispatcher.bolts.StreamProcessorBolt;
 import com.servioticy.dispatcher.bolts.SubscriptionRetrieveBolt;
 import com.servioticy.queueclient.QueueClient;
 import com.servioticy.queueclient.QueueClientException;
-import com.servioticy.queueclient.TestQueueClient;
 
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
@@ -55,12 +50,7 @@ import com.servioticy.restclient.RestResponse;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
-import backtype.storm.StormSubmitter;
-import backtype.storm.generated.AlreadyAliveException;
-import backtype.storm.generated.InvalidTopologyException;
-import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.testing.FeederSpout;
-import backtype.storm.testing.FixedTupleSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
