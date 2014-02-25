@@ -15,6 +15,7 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher.bolts;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -89,10 +90,14 @@ public class HttpSubsDispatcherBolt implements IRichBolt {
 		hsp.replaceAliases();
 		hsp.compileJSONPaths();
 		String suStr = input.getStringByField("su");
+		String url = hsp.getUrl(suStr);
+		String body = hsp.getBody(suStr);
+		int method = hsp.getMethod();
+		HashMap<String, String> headers = hsp.getHeaders(suStr);
 		try {
-			restClient.restRequest(hsp.getUrl(suStr)
-					, hsp.getBody(suStr), hsp.getMethod(),
-					hsp.getHeaders(suStr));
+			restClient.restRequest(url
+					, body, method,
+					headers);
 		} catch (Exception e) {
 			// The problem is probably out of our boundaries.
 			// TODO Log the error

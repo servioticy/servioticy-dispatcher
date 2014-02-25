@@ -116,7 +116,22 @@ public class TopologyTest {
 											    "\"customFields\": {" + 
 											        "\"groupId\": \"group1\"" + 
 											    "}" + 
-										    "}" +
+										    "}," +
+										    "{" +
+											    "\"callback\":\"http\"," +
+											    "\"destination\":\"http://172.20.200.229:5000/update/@latitude@/@longitude@\"," +
+											    "\"customFields\": {" +
+											      "\"aliases\": [" +
+											        "{" +
+											          "\"##\": \"{$.channels.\"," +
+											          "\"!!\": \".current-value}\"" +
+											        "}," +
+											        "{\"@latitude@\": \"##latitude!!\"}," +
+											        "{\"@longitude@\": \"##longitude!!\"}" +
+											      "]," +
+											      "\"method\":\"GET\"" +
+											    "}" +
+											"}" +
 										 "]" +
 									"}";
 			// Subscriber SO

@@ -71,7 +71,11 @@ public class HttpSubProcessor {
 	
 	public void compileJSONPaths(){
 		this.url = new JsonPathReplacer(httpSubs.getDestination());
-		this.body = new JsonPathReplacer(httpSubs.getBody());
+		this.body = null;
+		if(httpSubs.getBody() != null){
+			this.body = new JsonPathReplacer(httpSubs.getBody());
+		}
+		
 		
 		this.headers = new HashMap<JsonPathReplacer, JsonPathReplacer>();
 		if(httpSubs.getHeaders() != null){
@@ -94,6 +98,9 @@ public class HttpSubProcessor {
 	}
 	
 	public String getBody(String inputJson){
+		if(this.body == null){
+			return null;
+		}
 		Map<String, String> inputJsons = new HashMap<String, String>();
 		inputJsons.put("", inputJson);
 		return this.body.replace(inputJsons);
