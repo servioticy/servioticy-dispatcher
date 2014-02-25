@@ -63,12 +63,7 @@ public class TopologyTest {
 	
 	@Test
 	public void testExampleTopology() {
-//		try {
-//			
-//		} catch (QueueClientException e) {
-//			// TODO Auto-generated catch block
-//			fail("Factory failed: " + e.getMessage() + "\n" + e.getStackTrace());
-//		}
+
 		try{
 			String opid = "sometestopid";
 			String originSoid = "1234567890";
