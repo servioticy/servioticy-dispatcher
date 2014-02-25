@@ -129,14 +129,14 @@ public class TopologyTest {
 										"]," +
 										"\"groups\":{" +
 											"\"group1\":{" +
-												"\"members\":[" +
+												"\"soIds\":[" +
 													"\"origin2\"," +
 													"\"origin3\"" +
 												"]," +
 												"\"stream\": \"location\"" +
 											"}," +
 											"\"group2\":{" +
-												"\"members\":[" +
+												"\"soIds\":[" +
 													"\"origin4\"," +
 													"\"origin5\"" +
 												"]," +
@@ -215,7 +215,7 @@ public class TopologyTest {
 			ArrayList<String> soids = new ArrayList<String>();
 			soids.add("origin4");
 			soids.add("origin5");
-			group.setSoids(soids);
+			group.setSoIds(soids);
 			
 			// Mocking up the rest calls...
 			RestClient restClient = mock(RestClient.class, withSettings().serializable());
