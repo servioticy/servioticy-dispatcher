@@ -144,10 +144,10 @@ public class StreamDispatcherBolt implements IRichBolt {
 			sop.compileJSONPaths();
 			for( String streamIdByDoc: sop.getStreamsByDocId( docId ) ){
 				this.collector.emit(	input, 
-										new Values(	soSub.getDestination(),
+										new Values(	destination,
 													streamIdByDoc,
 													soDoc,
-													soSub.getGroupId(),
+													docId,
 													suDoc));
 			}
 		}catch(Exception e){

@@ -191,33 +191,40 @@ public class StreamProcessorBolt implements IRichBolt {
 			collector.fail(input);
 			return;
 		}
-		previousSUDoc = docs.get(streamId);
-		try{
-			previousSU = mapper.readValue(previousSUDoc, SensorUpdate.class);
-		} catch(Exception e){
-			// TODO Log the error
-			e.printStackTrace();
-			collector.ack(input);
-			return;
-		}
 		// Obtain the highest timestamp from the input docs
 		timestamp = su.getLastUpdate();
 		for(Map.Entry<String, String> doc: docs.entrySet()){
 			SensorUpdate inputSU;
 			try{
-				inputSU = mapper.readValue(doc.getValue(), SensorUpdate.class);
+				String docContent = doc.getValue();
+				if(docContent.equals("null")){
+					continue;
+				}
+				inputSU = mapper.readValue(docContent, SensorUpdate.class);
 			} catch(Exception e){
 				// TODO Log the error
+				e.printStackTrace();
 				collector.ack(input);
 				return;
 			}
 			timestamp = inputSU.getLastUpdate() > timestamp ? inputSU.getLastUpdate() : timestamp;
 		}
 		
-		// There is already a newer update stored
-		if(timestamp <= previousSU.getLastUpdate()){
-			collector.ack(input);
-			return;
+		previousSUDoc = docs.get(streamId);
+		if(!previousSUDoc.equals("null")){
+			try{
+				previousSU = mapper.readValue(previousSUDoc, SensorUpdate.class);
+			} catch(Exception e){
+				// TODO Log the error
+				e.printStackTrace();
+				collector.ack(input);
+				return;
+			}
+			// There is already a newer update stored
+			if(timestamp <= previousSU.getLastUpdate()){
+				collector.ack(input);
+				return;
+			}
 		}
 		
 		String resultSUDoc;
