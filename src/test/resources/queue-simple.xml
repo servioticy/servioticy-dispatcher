@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QueueClientConf>
+	<defaultQueue>
+		<queueType>simpleQueue</queueType>
+		<baseAddress></baseAddress>
+		<relativeAddress>queue.ser</relativeAddress>
+	</defaultQueue>
+	<queue>
+		<type>simpleQueue</type>
+		<className>com.servioticy.queueclient.SimpleQueueClient</className>
+		<concreteConf>
+		</concreteConf>
+	</queue>
+</QueueClientConf>
