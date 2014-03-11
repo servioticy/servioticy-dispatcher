@@ -69,10 +69,10 @@ public class TopologyTest {
 			String origStreamid = "location";
 			String destSoid = "2345678901";
 			
-			DispatcherContext.loadConf();
+			DispatcherContext.loadConf(null);
 			
 			ObjectMapper mapper = new ObjectMapper();
-			
+
 			// Origin SO
 			String originSo =		"{" +
 										"\"streams\":{" +
@@ -151,7 +151,7 @@ public class TopologyTest {
 														"\"type\": \"number\"" +
 													"}" +
 												"}," +
-												"\"post-filter\": \"{$proximity.} != null && {$proximity.channels.p.current-value} != {$@result@.channels.p.current-value}\"" +
+												"\"post-filter\": \"{$proximity.} != null && {$proximity.channels.p.current-value} != {$result.channels.p.current-value}\"" +
 											"}," +
 											"\"near\":{" +
 												"\"channels\": {" +
@@ -160,7 +160,7 @@ public class TopologyTest {
 														"\"type\": \"boolean\"" +
 													"}" +
 												"}," +
-												"\"post-filter\": \"{$near.} != null && {$near.channels.n.current-value} != {$@result@.channels.n.current-value}\"" +
+												"\"post-filter\": \"{$near.} != null && {$near.channels.n.current-value} != {$result.channels.n.current-value}\"" +
 											"}" +
 										"}" +
 									"}";

@@ -48,7 +48,7 @@ public class DispatcherTopology {
 	 */
 	public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException {
 		// TODO Auto-generated method stub
-		DispatcherContext.loadConf();
+		DispatcherContext.loadConf((args != null) ? args[0] : null);
 
 		TopologyBuilder builder = new TopologyBuilder();
 
@@ -73,9 +73,9 @@ public class DispatcherTopology {
         
         Config conf = new Config();
         conf.setDebug(false);
-        if(args!=null && args.length > 0){
+        if(DispatcherContext.topologyName != ""){
         	conf.setNumWorkers(6);
-        	StormSubmitter.submitTopology(args[0], conf, builder.createTopology());
+        	StormSubmitter.submitTopology(DispatcherContext.topologyName, conf, builder.createTopology());
         }else{
         	conf.setMaxTaskParallelism(3);
         	LocalCluster cluster = new LocalCluster();

@@ -51,8 +51,7 @@ public class SRPublisher {
 	private TopicPublisher publisher;
 
 	public SRPublisher(String topicName, String pubId) throws IllegalConfigException, UnknownHostException, SRException, InterruptedException{
-		DispatcherContext.loadConf();
-		
+
 		Set<String> bootstrapSet = new LinkedHashSet<String>();
 		
 		
