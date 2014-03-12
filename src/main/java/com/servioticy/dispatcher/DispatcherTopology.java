@@ -15,16 +15,6 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher;
 
-import java.util.Arrays;
-
-import com.servioticy.dispatcher.bolts.CheckOpidBolt;
-import com.servioticy.dispatcher.bolts.HttpSubsDispatcherBolt;
-import com.servioticy.dispatcher.bolts.PubSubDispatcherBolt;
-import com.servioticy.dispatcher.bolts.StreamDispatcherBolt;
-import com.servioticy.dispatcher.bolts.StreamProcessorBolt;
-import com.servioticy.dispatcher.bolts.SubscriptionRetrieveBolt;
-
-
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
@@ -33,6 +23,10 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
+import com.servioticy.dispatcher.bolts.*;
+import org.apache.commons.cli.*;
+
+import java.util.Arrays;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -46,11 +40,30 @@ public class DispatcherTopology {
 	 * @throws AlreadyAliveException 
 	 * @throws InterruptedException 
 	 */
-	public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException {
-		// TODO Auto-generated method stub
-		DispatcherContext.loadConf((args != null) ? args[0] : null);
+    public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException, ParseException {
 
-		TopologyBuilder builder = new TopologyBuilder();
+        Options options = new Options();
+
+        options.addOption(OptionBuilder.withArgName("file")
+                .hasArg()
+                .withDescription("Config file path.")
+                .create("f"));
+        options.addOption(OptionBuilder.withArgName("topology")
+                .hasArg()
+                .withDescription("Name of the topology in storm. If no name is given it will run in local mode.")
+                .create("t"));
+
+        CommandLineParser parser = new GnuParser();
+        CommandLine cmd = parser.parse(options, args);
+
+        String path = null;
+        if (cmd.hasOption("f")) {
+            path = cmd.getOptionValue("f");
+        }
+
+        DispatcherContext.loadConf(path);
+
+        TopologyBuilder builder = new TopologyBuilder();
 
         builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelIPs), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 5);
         
@@ -73,9 +86,9 @@ public class DispatcherTopology {
         
         Config conf = new Config();
         conf.setDebug(false);
-        if(DispatcherContext.topologyName != ""){
-        	conf.setNumWorkers(6);
-        	StormSubmitter.submitTopology(DispatcherContext.topologyName, conf, builder.createTopology());
+        if (cmd.hasOption("t")) {
+            conf.setNumWorkers(6);
+            StormSubmitter.submitTopology(cmd.getOptionValue("t"), conf, builder.createTopology());
         }else{
         	conf.setMaxTaskParallelism(3);
         	LocalCluster cluster = new LocalCluster();

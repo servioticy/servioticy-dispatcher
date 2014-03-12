@@ -19,7 +19,6 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +37,6 @@ public class DispatcherContext {
     static final public String BOOTSTRAP_ADDRESS = "bstrapaddress";
     static final public String BOOTSTRAP_PORT = "bstrapport";
 
-    public static String topologyName = "";
     public static String restBaseURL = "localhost";
     public static String[] kestrelIPs = new String[]{"localhost"};
     public static int kestrelPort = 2229;
@@ -51,17 +49,15 @@ public class DispatcherContext {
         HierarchicalConfiguration config;
 
         try {
-            if(path == null){
-                config = new XMLConfiguration( DispatcherContext.class.getResource(DispatcherContext.DEFAULT_CONFIG_PATH));
-            }
-            else{
+            if (path == null) {
+                config = new XMLConfiguration(DispatcherContext.class.getResource(DispatcherContext.DEFAULT_CONFIG_PATH));
+            } else {
                 config = new XMLConfiguration(path);
             }
             config.setExpressionEngine(new XPathExpressionEngine());
 
             DispatcherContext.restBaseURL = config.getString("servioticyAPI", DispatcherContext.restBaseURL);
 
-            DispatcherContext.topologyName= config.getString("topologyName", DispatcherContext.topologyName);
 
             ArrayList<String> kestrel = new ArrayList<String>();
             if (config.containsKey("kestrels/kestrel[1]/addr")) {
