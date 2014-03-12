@@ -28,7 +28,7 @@ import java.util.Properties;
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
 public class DispatcherContext {
-    static final public String DEFAULT_CONFIG_PATH = "/dispatcher.xml";
+    static final public String DEFAULT_CONFIG_PATH = "dispatcher.xml";
 
     static final public String PUBLISHER_LOCAL_ADDRESS = "publocaddress";
     static final public String PUBLISHER_EXTERNAL_ADDRESS = "pubextaddress";
