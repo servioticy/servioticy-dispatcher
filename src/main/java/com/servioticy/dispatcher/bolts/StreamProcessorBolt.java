@@ -82,7 +82,11 @@ public class StreamProcessorBolt implements IRichBolt {
 		RestResponse rr;
 		Map<String, String> groupDocs = new HashMap<String, String>();
 		ObjectMapper mapper = new ObjectMapper();
-		
+
+        if(so.getGroups() == null){
+            return groupDocs;
+        }
+
 		for(String docId: docIds){
 			if(!so.getGroups().containsKey(docId)){
 				continue;
@@ -241,10 +245,15 @@ public class StreamProcessorBolt implements IRichBolt {
 			}
 			mapper.setSerializationInclusion(Inclusion.NON_NULL);
 			resultSUDoc = mapper.writeValueAsString(resultSU);
-			
-			if(!docs.containsKey("@result@")){
-				docs.put("@result@", resultSUDoc);
-			}
+
+            if(!docs.containsKey("result")){
+                docs.put("result", resultSUDoc);
+            }
+
+            // Deprecated. Only for retrocompatibility
+            if(!docs.containsKey("@result@")){
+                docs.put("@result@", resultSUDoc);
+            }
 			
 			if(!sop.checkPostFilter(streamId, docs)){
 				collector.ack(input);
