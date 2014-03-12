@@ -15,16 +15,6 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher;
 
-import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.UnknownHostException;
-import java.util.LinkedHashSet;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
-
 import com.ibm.sr.OutgoingObjectMessage;
 import com.ibm.sr.SR;
 import com.ibm.sr.SRFactory;
@@ -40,6 +30,16 @@ import com.ibm.sr.samples.PrintOnlySREventListener;
 import com.ibm.sr.samples.basic.InMemoryAddresResolver;
 import com.ibm.sr.samples.basic.PrintOnlyTopicPublisherEventListner;
 
+import java.io.IOException;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.UnknownHostException;
+import java.util.LinkedHashSet;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.Set;
+
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
@@ -51,12 +51,11 @@ public class SRPublisher {
 	private TopicPublisher publisher;
 
 	public SRPublisher(String topicName, String pubId) throws IllegalConfigException, UnknownHostException, SRException, InterruptedException{
-		DispatcherContext.loadConf();
-		
-		Set<String> bootstrapSet = new LinkedHashSet<String>();
-		
-		
-		int basePort = 43210;
+
+        Set<String> bootstrapSet = new LinkedHashSet<String>();
+
+
+        int basePort = 43210;
 		// Get computer name:
 		// TODO This should be done once in the bolt class.
 		String computerName = InetAddress.getLocalHost().getHostName();

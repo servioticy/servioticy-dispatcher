@@ -15,44 +15,35 @@
  ******************************************************************************/ 
 package com.servioticy.servicedispatcher;
 
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
-
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.servioticy.datamodel.SOGroup;
-import com.servioticy.datamodel.SUChannel;
-import com.servioticy.datamodel.UpdateDescriptor;
-import com.servioticy.dispatcher.DispatcherContext;
-import com.servioticy.dispatcher.bolts.CheckOpidBolt;
-import com.servioticy.dispatcher.bolts.HttpSubsDispatcherBolt;
-import com.servioticy.dispatcher.bolts.PubSubDispatcherBolt;
-import com.servioticy.dispatcher.bolts.StreamDispatcherBolt;
-import com.servioticy.dispatcher.bolts.StreamProcessorBolt;
-import com.servioticy.dispatcher.bolts.SubscriptionRetrieveBolt;
-import com.servioticy.queueclient.QueueClient;
-import com.servioticy.queueclient.QueueClientException;
-
-import com.servioticy.restclient.RestClient;
-import com.servioticy.restclient.RestClientErrorCodeException;
-import com.servioticy.restclient.RestClientException;
-import com.servioticy.restclient.RestResponse;
-
-
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.testing.FeederSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import com.servioticy.datamodel.SOGroup;
+import com.servioticy.datamodel.SUChannel;
+import com.servioticy.datamodel.UpdateDescriptor;
+import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.dispatcher.bolts.*;
+import com.servioticy.queueclient.QueueClient;
+import com.servioticy.queueclient.QueueClientException;
+import com.servioticy.restclient.RestClient;
+import com.servioticy.restclient.RestClientErrorCodeException;
+import com.servioticy.restclient.RestClientException;
+import com.servioticy.restclient.RestResponse;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -68,13 +59,13 @@ public class TopologyTest {
 			String originSoid = "1234567890";
 			String origStreamid = "location";
 			String destSoid = "2345678901";
-			
-			DispatcherContext.loadConf();
-			
-			ObjectMapper mapper = new ObjectMapper();
-			
-			// Origin SO
-			String originSo =		"{" +
+
+            DispatcherContext.loadConf(null);
+
+            ObjectMapper mapper = new ObjectMapper();
+
+            // Origin SO
+            String originSo =		"{" +
 										"\"streams\":{" +
 											"\"location\": {" +
 												"\"channels\": {" +
@@ -151,18 +142,18 @@ public class TopologyTest {
 														"\"type\": \"number\"" +
 													"}" +
 												"}," +
-												"\"post-filter\": \"{$proximity.} != null && {$proximity.channels.p.current-value} != {$@result@.channels.p.current-value}\"" +
-											"}," +
-											"\"near\":{" +
+                    "\"post-filter\": \"{$proximity.} != null && {$proximity.channels.p.current-value} != {$result.channels.p.current-value}\"" +
+                    "}," +
+                    "\"near\":{" +
 												"\"channels\": {" +
 													"\"n\":{" +
 														"\"current-value\": \"@distance@ <= @nearDistance@\"," +
 														"\"type\": \"boolean\"" +
 													"}" +
 												"}," +
-												"\"post-filter\": \"{$near.} != null && {$near.channels.n.current-value} != {$@result@.channels.n.current-value}\"" +
-											"}" +
-										"}" +
+                    "\"post-filter\": \"{$near.} != null && {$near.channels.n.current-value} != {$result.channels.n.current-value}\"" +
+                    "}" +
+                    "}" +
 									"}";
 			
 			// group1 SU
