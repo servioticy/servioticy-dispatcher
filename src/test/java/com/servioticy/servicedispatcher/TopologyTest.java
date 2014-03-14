@@ -15,44 +15,35 @@
  ******************************************************************************/ 
 package com.servioticy.servicedispatcher;
 
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
-
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.servioticy.datamodel.SOGroup;
-import com.servioticy.datamodel.SUChannel;
-import com.servioticy.datamodel.UpdateDescriptor;
-import com.servioticy.dispatcher.DispatcherContext;
-import com.servioticy.dispatcher.bolts.CheckOpidBolt;
-import com.servioticy.dispatcher.bolts.HttpSubsDispatcherBolt;
-import com.servioticy.dispatcher.bolts.PubSubDispatcherBolt;
-import com.servioticy.dispatcher.bolts.StreamDispatcherBolt;
-import com.servioticy.dispatcher.bolts.StreamProcessorBolt;
-import com.servioticy.dispatcher.bolts.SubscriptionRetrieveBolt;
-import com.servioticy.queueclient.QueueClient;
-import com.servioticy.queueclient.QueueClientException;
-
-import com.servioticy.restclient.RestClient;
-import com.servioticy.restclient.RestClientErrorCodeException;
-import com.servioticy.restclient.RestClientException;
-import com.servioticy.restclient.RestResponse;
-
-
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.testing.FeederSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import com.servioticy.datamodel.SOGroup;
+import com.servioticy.datamodel.SUChannel;
+import com.servioticy.datamodel.UpdateDescriptor;
+import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.dispatcher.bolts.*;
+import com.servioticy.queueclient.QueueClient;
+import com.servioticy.queueclient.QueueClientException;
+import com.servioticy.restclient.RestClient;
+import com.servioticy.restclient.RestClientErrorCodeException;
+import com.servioticy.restclient.RestClientException;
+import com.servioticy.restclient.RestResponse;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -282,8 +273,6 @@ public class TopologyTest {
 	        
 	        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
 	        	.fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
-	        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(), 1)
-	    		.fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
 	        
 	        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(restClient), 1)
 	    		.shuffleGrouping("subretriever", "internalSub")
