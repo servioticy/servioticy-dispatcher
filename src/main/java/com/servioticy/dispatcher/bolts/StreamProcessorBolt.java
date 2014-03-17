@@ -67,6 +67,12 @@ public class StreamProcessorBolt implements IRichBolt {
 		this.qc = qc;
 		this.restClient = restClient;
 	}
+    public StreamProcessorBolt(RestClient restClient){
+        this.restClient = restClient;
+    }
+    public StreamProcessorBolt(QueueClient qc){
+        this.qc = qc;
+    }
 	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
@@ -309,11 +315,21 @@ public class StreamProcessorBolt implements IRichBolt {
 							+ streamId + "/" + opid, resultSUDoc,
 					RestClient.PUT,
 					null);
-		} catch(Exception e){
-			// TODO Log the error
-			collector.fail(input);
-			return;
-		}
+        } catch(RestClientErrorCodeException e){
+            // TODO Log the error
+            e.printStackTrace();
+            if(e.getRestResponse().getHttpCode()>= 500){
+                collector.fail(input);
+                return;
+            }
+            collector.ack(input);
+            return;
+        }catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
+            collector.ack(input);
+            return;
+        }
 		
 		suCache.put(soId+";"+streamId, su.getLastUpdate());
 		collector.ack(input);

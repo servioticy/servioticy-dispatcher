@@ -267,7 +267,7 @@ public class TopologyTest {
 			
 	
 			TopologyBuilder builder = new TopologyBuilder();
-			QueueClient qc = QueueClient.factory("/queue-simple.xml");
+			QueueClient qc = QueueClient.factory("queue-simple.xml");
 			qc.connect();
 	
 	        
