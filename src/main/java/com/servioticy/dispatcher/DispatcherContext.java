@@ -29,13 +29,6 @@ import java.util.Properties;
 public class DispatcherContext {
     static final public String DEFAULT_CONFIG_PATH = "dispatcher.xml";
 
-    static final public String PUBLISHER_LOCAL_ADDRESS = "publocaddress";
-    static final public String PUBLISHER_EXTERNAL_ADDRESS = "pubextaddress";
-    static final public String PUBLISHER_EXTERNAL_PORT = "pubextport";
-
-    static final public String BOOTSTRAP_ADDRESS = "bstrapaddress";
-    static final public String BOOTSTRAP_PORT = "bstrapport";
-
     public static String restBaseURL = "localhost";
     public static String[] kestrelIPs = new String[]{"localhost"};
     public static int kestrelPort = 2229;
