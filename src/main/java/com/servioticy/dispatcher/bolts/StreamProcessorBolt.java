@@ -256,7 +256,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 docs.put("@result@", resultSUDoc);
             }
 
-			if(!sop.checkPostFilter(streamId, docs)){
+            if(!sop.checkPostFilter(streamId, docs)){
 				collector.ack(input);
 				return;
 			}

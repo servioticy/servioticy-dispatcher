@@ -65,8 +65,8 @@ public class TopologyTest {
             ObjectMapper mapper = new ObjectMapper();
 
             // Origin SO
-            String originSo =		"{" +
-										"\"streams\":{" +
+            String originSo = "{" +
+                    "\"streams\":{" +
 											"\"location\": {" +
 												"\"channels\": {" +
 													"\"latitude\":{" +
@@ -145,7 +145,7 @@ public class TopologyTest {
                     "\"post-filter\": \"{$proximity.} != null && {$proximity.channels.p.current-value} != {$result.channels.p.current-value}\"" +
                     "}," +
                     "\"near\":{" +
-												"\"channels\": {" +
+                    "\"channels\": {" +
 													"\"n\":{" +
 														"\"current-value\": \"@distance@ <= @nearDistance@\"," +
 														"\"type\": \"boolean\"" +
@@ -154,7 +154,7 @@ public class TopologyTest {
                     "\"post-filter\": \"{$near.} != null && {$near.channels.n.current-value} != {$result.channels.n.current-value}\"" +
                     "}" +
                     "}" +
-									"}";
+                    "}";
 			
 			// group1 SU
 			String group1SU =	"{" +

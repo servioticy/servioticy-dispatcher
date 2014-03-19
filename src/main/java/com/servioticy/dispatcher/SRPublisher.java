@@ -56,7 +56,7 @@ public class SRPublisher {
 
 
         int basePort = 43210;
-		// Get computer name:
+        // Get computer name:
 		// TODO This should be done once in the bolt class.
 		String computerName = InetAddress.getLocalHost().getHostName();
 		
