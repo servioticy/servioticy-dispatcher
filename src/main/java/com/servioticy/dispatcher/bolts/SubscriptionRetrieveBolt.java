@@ -85,18 +85,21 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 							+ streamid
 							+ "/subscriptions/", null, RestClient.GET,
 							null);
-		} catch (RestClientErrorCodeException e) {
-			// TODO Log the error
-			// Retry until timeout
-			this.collector.fail(input);
-			return;
-		} catch (Exception e) {
-			// TODO Log the error
-			// Retry until timeout
-			e.printStackTrace();
-			this.collector.fail(input);
-			return;
-		}
+        } catch(RestClientErrorCodeException e){
+            // TODO Log the error
+            e.printStackTrace();
+            if(e.getRestResponse().getHttpCode()>= 500){
+                collector.fail(input);
+                return;
+            }
+            collector.ack(input);
+            return;
+        }catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
+            collector.ack(input);
+            return;
+        }
 		// In case there are no subscriptions.
 		int hCode = subscriptionsRR.getHttpCode();
 		if(hCode == 204){

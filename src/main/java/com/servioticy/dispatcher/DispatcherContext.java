@@ -50,14 +50,13 @@ public class DispatcherContext {
 
         try {
             if (path == null) {
-                config = new XMLConfiguration(DispatcherContext.class.getResource(DispatcherContext.DEFAULT_CONFIG_PATH));
+             	config = new XMLConfiguration(DispatcherContext.DEFAULT_CONFIG_PATH);
             } else {
-                config = new XMLConfiguration(path);
+            	config = new XMLConfiguration(path);
             }
             config.setExpressionEngine(new XPathExpressionEngine());
 
             DispatcherContext.restBaseURL = config.getString("servioticyAPI", DispatcherContext.restBaseURL);
-
 
             ArrayList<String> kestrel = new ArrayList<String>();
             if (config.containsKey("kestrels/kestrel[1]/addr")) {

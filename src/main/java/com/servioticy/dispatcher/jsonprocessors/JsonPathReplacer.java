@@ -17,6 +17,7 @@ package com.servioticy.dispatcher.jsonprocessors;
 
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -178,11 +179,22 @@ public class JsonPathReplacer {
                 try {
                     // If the path does not exist in the input json, throws InvalidPathException
                     json = jsons.get(key);
-                    partial += jp.getValue().read(json);
+                    Object content = jp.getValue().read(json);
+                    if (content instanceof String) {
+                        partial += "\"" + content + "\"";
+                    } else {
+                        ObjectMapper mapper = new ObjectMapper();
+                        partial += mapper.writeValueAsString(content);
+                    }
                 } catch (java.lang.IllegalArgumentException e) {
                     // The input is not a json
                     // TODO This should be done *only* on queries. In navigations of implicit queries or selfdocument, it should be an error
                     //	and the document shouldn't be processed.
+                    partial += "null";
+                } catch (Exception e) {
+                    // Not a correct input json
+                    // TODO log this
+                    e.printStackTrace();
                     partial += "null";
                 }
 //				}

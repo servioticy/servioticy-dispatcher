@@ -24,6 +24,8 @@ import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import com.servioticy.dispatcher.bolts.*;
+import com.servioticy.queueclient.QueueClient;
+import com.servioticy.queueclient.QueueClientException;
 import org.apache.commons.cli.*;
 
 import java.util.Arrays;
@@ -40,25 +42,33 @@ public class DispatcherTopology {
 	 * @throws AlreadyAliveException 
 	 * @throws InterruptedException 
 	 */
-    public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException, ParseException {
+    public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException, ParseException, QueueClientException {
 
         Options options = new Options();
 
         options.addOption(OptionBuilder.withArgName("file")
                 .hasArg()
-                .withDescription("Config file path.")
+                .withDescription("Config file path")
                 .create("f"));
         options.addOption(OptionBuilder.withArgName("topology")
                 .hasArg()
                 .withDescription("Name of the topology in storm. If no name is given it will run in local mode.")
                 .create("t"));
+        options.addOption(OptionBuilder.withArgName("file")
+                .hasArg()
+                .withDescription("Queue client config file")
+                .create("q"));
 
         CommandLineParser parser = new GnuParser();
         CommandLine cmd = parser.parse(options, args);
 
         String path = null;
+        String qpath = null;
         if (cmd.hasOption("f")) {
             path = cmd.getOptionValue("f");
+        }
+        if(cmd.hasOption("q")){
+            qpath = cmd.getOptionValue("q");
         }
 
         DispatcherContext.loadConf(path);
@@ -80,7 +90,7 @@ public class DispatcherTopology {
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(), 4)
     		.shuffleGrouping("subretriever", "internalSub")
     		.shuffleGrouping("checkopid", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(), 4)
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(QueueClient.factory(qpath)), 4)
 			.fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
         
         
