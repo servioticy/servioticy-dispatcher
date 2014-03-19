@@ -15,22 +15,6 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher.bolts;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.codehaus.jackson.map.ObjectMapper;
-
-import com.servioticy.datamodel.ExternalSubscription;
-import com.servioticy.datamodel.HttpSubscription;
-import com.servioticy.datamodel.SOSubscription;
-import com.servioticy.datamodel.Subscription;
-import com.servioticy.datamodel.Subscriptions;
-import com.servioticy.dispatcher.DispatcherContext;
-
-import com.servioticy.restclient.RestClient;
-import com.servioticy.restclient.RestClientErrorCodeException;
-import com.servioticy.restclient.RestResponse;
-
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
@@ -38,6 +22,17 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import com.servioticy.datamodel.HttpSubscription;
+import com.servioticy.datamodel.SOSubscription;
+import com.servioticy.datamodel.Subscription;
+import com.servioticy.datamodel.Subscriptions;
+import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.restclient.RestClient;
+import com.servioticy.restclient.RestClientErrorCodeException;
+import com.servioticy.restclient.RestResponse;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import java.util.Map;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -135,12 +130,6 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 				}
 				else if(subscription.getClass().equals(HttpSubscription.class)){
 					this.collector.emit(	"httpSub", input, 
-							new Values(	subscription.getId(),
-										mapper.writeValueAsString(subscription),
-										su));
-				}
-				else if(subscription.getClass().equals(ExternalSubscription.class)){
-					this.collector.emit(	"pubsubSub", input, 
 							new Values(	subscription.getId(),
 										mapper.writeValueAsString(subscription),
 										su));

@@ -76,17 +76,15 @@ public class DispatcherTopology {
         TopologyBuilder builder = new TopologyBuilder();
 
         builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelIPs), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 5);
-        
+
         builder.setBolt("checkopid", new CheckOpidBolt(), 2)
-        	.shuffleGrouping("dispatcher");
+                .shuffleGrouping("dispatcher");
         builder.setBolt("subretriever", new SubscriptionRetrieveBolt(), 2)
-        	.shuffleGrouping( "checkopid", "subscription");
-        
+                .shuffleGrouping("checkopid", "subscription");
+
         builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 4)
-        	.fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
-        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(), 4)
-    		.fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
-        
+                .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
+
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(), 4)
     		.shuffleGrouping("subretriever", "internalSub")
     		.shuffleGrouping("checkopid", "stream");
