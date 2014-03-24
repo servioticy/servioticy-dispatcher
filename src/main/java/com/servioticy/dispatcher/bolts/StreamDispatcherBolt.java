@@ -18,6 +18,7 @@ package com.servioticy.dispatcher.bolts;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.servioticy.restclient.RestClientErrorCodeException;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.servioticy.datamodel.SO;
@@ -103,10 +104,19 @@ public class StreamDispatcherBolt implements IRichBolt {
 						+ "private/" + destination, null, RestClient.GET,
 						null);
 			soDoc = rr.getResponse();
-		} catch (Exception e) {
+		} catch(RestClientErrorCodeException e){
+            // TODO Log the error
+            e.printStackTrace();
+            if(e.getRestResponse().getHttpCode()>= 500){
+                collector.fail(input);
+                return;
+            }
+            collector.ack(input);
+			return;
+        }catch (Exception e) {
 			// TODO Log the error
 			e.printStackTrace();
-			collector.fail(input);
+			collector.ack(input);
 			return;
 		}
 		try{

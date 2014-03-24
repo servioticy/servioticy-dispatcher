@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/ 
+ ******************************************************************************/
 package com.servioticy.dispatcher;
 
 import backtype.storm.Config;
@@ -24,22 +24,22 @@ import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import com.servioticy.dispatcher.bolts.*;
+import com.servioticy.queueclient.KestrelThriftClient;
 import org.apache.commons.cli.*;
 
 import java.util.Arrays;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
- * 
  */
 public class DispatcherTopology {
-	
-	/**
-	 * @param args
-	 * @throws InvalidTopologyException 
-	 * @throws AlreadyAliveException 
-	 * @throws InterruptedException 
-	 */
+
+    /**
+     * @param args
+     * @throws InvalidTopologyException
+     * @throws AlreadyAliveException
+     * @throws InterruptedException
+     */
     public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException, ParseException {
 
         Options options = new Options();
@@ -60,42 +60,49 @@ public class DispatcherTopology {
         if (cmd.hasOption("f")) {
             path = cmd.getOptionValue("f");
         }
+        KestrelThriftClient ktc = new KestrelThriftClient();
 
         DispatcherContext.loadConf(path);
 
+        String kestrelAddresses = "";
+        for (String addr : DispatcherContext.kestrelAddresses) {
+            kestrelAddresses += addr + ":" + DispatcherContext.kestrelPort;
+        }
+        ktc.setBaseAddress(kestrelAddresses);
+        ktc.setRelativeAddress(DispatcherContext.kestrelQueue);
+        ktc.setExpire(0);
+
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelIPs), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 5);
-        
+        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelAddresses), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 4);
+
         builder.setBolt("checkopid", new CheckOpidBolt(), 2)
-        	.shuffleGrouping("dispatcher");
+                .shuffleGrouping("dispatcher");
         builder.setBolt("subretriever", new SubscriptionRetrieveBolt(), 2)
-        	.shuffleGrouping( "checkopid", "subscription");
-        
+                .shuffleGrouping("checkopid", "subscription");
+
         builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 4)
-        	.fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
-        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(), 4)
-    		.fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
-        
+                .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
+
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(), 4)
-    		.shuffleGrouping("subretriever", "internalSub")
-    		.shuffleGrouping("checkopid", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(), 4)
-			.fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
-        
-        
+                .shuffleGrouping("subretriever", "internalSub")
+                .shuffleGrouping("checkopid", "stream");
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(ktc), 4)
+                .fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
+
+
         Config conf = new Config();
         conf.setDebug(false);
         if (cmd.hasOption("t")) {
             conf.setNumWorkers(6);
             StormSubmitter.submitTopology(cmd.getOptionValue("t"), conf, builder.createTopology());
-        }else{
-        	conf.setMaxTaskParallelism(3);
-        	LocalCluster cluster = new LocalCluster();
-        	cluster.submitTopology("dispatcher", conf, builder.createTopology());
+        } else {
+            conf.setMaxTaskParallelism(3);
+            LocalCluster cluster = new LocalCluster();
+            cluster.submitTopology("dispatcher", conf, builder.createTopology());
 
         }
 
-	}
+    }
 
 }

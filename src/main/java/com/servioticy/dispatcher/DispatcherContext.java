@@ -20,7 +20,6 @@ import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -38,8 +37,9 @@ public class DispatcherContext {
     static final public String BOOTSTRAP_PORT = "bstrapport";
 
     public static String restBaseURL = "localhost";
-    public static String[] kestrelIPs = new String[]{"localhost"};
+    public static String[] kestrelAddresses = new String[]{"localhost"};
     public static int kestrelPort = 2229;
+    public static String kestrelQueue = "services";
     public static Map<String, Properties> pubProperties;
     public static Map<String, Properties> bootstrapsProperties;
 
@@ -50,7 +50,7 @@ public class DispatcherContext {
 
         try {
             if (path == null) {
-                config = new XMLConfiguration(DispatcherContext.class.getResource(DispatcherContext.DEFAULT_CONFIG_PATH));
+                config = new XMLConfiguration(DispatcherContext.DEFAULT_CONFIG_PATH);
             } else {
                 config = new XMLConfiguration(path);
             }
@@ -58,50 +58,18 @@ public class DispatcherContext {
 
             DispatcherContext.restBaseURL = config.getString("servioticyAPI", DispatcherContext.restBaseURL);
 
-
             ArrayList<String> kestrel = new ArrayList<String>();
             if (config.containsKey("kestrels/kestrel[1]/addr")) {
                 for (int i = 1; config.containsKey("kestrels/kestrel[" + i + "]/addr"); i++) {
                     kestrel.add(config.getString("kestrels/kestrel[" + i + "]/addr"));
                 }
             } else {
-                kestrel.add(DispatcherContext.kestrelIPs[0]);
+                kestrel.add(DispatcherContext.kestrelAddresses[0]);
             }
-            DispatcherContext.kestrelIPs = (String[]) kestrel.toArray(new String[]{});
+            DispatcherContext.kestrelAddresses = (String[]) kestrel.toArray(new String[]{});
 
             DispatcherContext.kestrelPort = config.getInt("kestrels/port", DispatcherContext.kestrelPort);
-
-            if (config.containsKey("pubsub/selfAddresses/selfAddress[1]/computerName")) {
-                Map<String, Properties> pubProperties = new HashMap<String, Properties>();
-                for (int i = 1; config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/computerName"); i++) {
-                    Properties props = new Properties();
-                    if (config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/localAddress")) {
-                        props.setProperty(DispatcherContext.PUBLISHER_LOCAL_ADDRESS, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/localAddress"));
-                    }
-                    if (config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/externalAddress")) {
-                        props.setProperty(DispatcherContext.PUBLISHER_EXTERNAL_ADDRESS, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/externalAddress"));
-                    }
-                    if (config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/externalPort")) {
-                        props.setProperty(DispatcherContext.PUBLISHER_EXTERNAL_PORT, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/externalPort"));
-                    }
-                    pubProperties.put(config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/computerName"), props);
-                }
-                DispatcherContext.pubProperties = pubProperties;
-            }
-            if (config.containsKey("pubsub/bootstraps/bootstrap[1]/name")) {
-                Map<String, Properties> bootstrapsProperties = new HashMap<String, Properties>();
-                for (int i = 1; config.containsKey("pubsub/bootstraps/bootstrap[" + i + "]/name"); i++) {
-                    Properties props = new Properties();
-                    if (config.containsKey("pubsub/bootstraps/bootstrap[" + i + "]/address")) {
-                        props.setProperty(DispatcherContext.BOOTSTRAP_ADDRESS, config.getString("pubsub/bootstraps/bootstrap[" + i + "]/address"));
-                    }
-                    if (config.containsKey("pubsub/bootstraps/bootstrap[" + i + "]/port")) {
-                        props.setProperty(DispatcherContext.BOOTSTRAP_PORT, config.getString("pubsub/bootstraps/bootstrap[" + i + "]/port"));
-                    }
-                    bootstrapsProperties.put(config.getString("pubsub/bootstraps/bootstrap[" + i + "]/name"), props);
-                }
-                DispatcherContext.bootstrapsProperties = bootstrapsProperties;
-            }
+            DispatcherContext.kestrelQueue = config.getString("kestrels/queue", DispatcherContext.kestrelQueue);
 
         } catch (Exception e) {
             e.printStackTrace();

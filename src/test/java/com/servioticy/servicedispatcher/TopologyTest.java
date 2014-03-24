@@ -59,13 +59,13 @@ public class TopologyTest {
 			String originSoid = "1234567890";
 			String origStreamid = "location";
 			String destSoid = "2345678901";
+			
+			DispatcherContext.loadConf(null);
+			
+			ObjectMapper mapper = new ObjectMapper();
 
-            DispatcherContext.loadConf(null);
-
-            ObjectMapper mapper = new ObjectMapper();
-
-            // Origin SO
-            String originSo =		"{" +
+			// Origin SO
+			String originSo =		"{" +
 										"\"streams\":{" +
 											"\"location\": {" +
 												"\"channels\": {" +
@@ -142,18 +142,18 @@ public class TopologyTest {
 														"\"type\": \"number\"" +
 													"}" +
 												"}," +
-                    "\"post-filter\": \"{$proximity.} != null && {$proximity.channels.p.current-value} != {$result.channels.p.current-value}\"" +
-                    "}," +
-                    "\"near\":{" +
+												"\"post-filter\": \"{$proximity.} != null && {$proximity.channels.p.current-value} != {$result.channels.p.current-value}\"" +
+											"}," +
+											"\"near\":{" +
 												"\"channels\": {" +
 													"\"n\":{" +
 														"\"current-value\": \"@distance@ <= @nearDistance@\"," +
 														"\"type\": \"boolean\"" +
 													"}" +
 												"}," +
-                    "\"post-filter\": \"{$near.} != null && {$near.channels.n.current-value} != {$result.channels.n.current-value}\"" +
-                    "}" +
-                    "}" +
+												"\"post-filter\": \"{$near.} != null && {$near.channels.n.current-value} != {$result.channels.n.current-value}\"" +
+											"}" +
+										"}" +
 									"}";
 			
 			// group1 SU
@@ -258,7 +258,7 @@ public class TopologyTest {
 			
 	
 			TopologyBuilder builder = new TopologyBuilder();
-			QueueClient qc = QueueClient.factory("/queue-simple.xml");
+			QueueClient qc = QueueClient.factory("queue-simple.xml");
 			qc.connect();
 	
 	        
@@ -273,8 +273,6 @@ public class TopologyTest {
 	        
 	        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
 	        	.fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
-	        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(), 1)
-	    		.fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
 	        
 	        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(restClient), 1)
 	    		.shuffleGrouping("subretriever", "internalSub")
