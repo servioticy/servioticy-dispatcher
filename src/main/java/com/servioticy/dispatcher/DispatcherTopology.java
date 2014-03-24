@@ -75,7 +75,7 @@ public class DispatcherTopology {
 
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelIPs), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 5);
+        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelIPs), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 4);
 
         builder.setBolt("checkopid", new CheckOpidBolt(), 2)
                 .shuffleGrouping("dispatcher");
