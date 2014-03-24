@@ -41,12 +41,15 @@ public class CheckOpidBolt implements IRichBolt {
 	private static final long serialVersionUID = 1L;
 	private OutputCollector collector;
 	private RestClient restClient;
+    private DispatcherContext dc;
 
-	public CheckOpidBolt() {
+	public CheckOpidBolt(DispatcherContext dc) {
+        this.dc = dc;
 	}
 
 	// For testing purposes
-	public CheckOpidBolt(RestClient restClient) {
+	public CheckOpidBolt(DispatcherContext dc, RestClient restClient) {
+        this.dc = dc;
 		this.restClient = restClient;
 	}
 
@@ -64,7 +67,7 @@ public class CheckOpidBolt implements IRichBolt {
 		String opid = input.getStringByField("opid");
 		try {
 			rr = restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 							+ "private/opid/" + opid, null,
 					RestClient.GET, null);
 

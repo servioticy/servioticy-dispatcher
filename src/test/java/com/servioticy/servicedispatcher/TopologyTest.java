@@ -60,7 +60,8 @@ public class TopologyTest {
 			String origStreamid = "location";
 			String destSoid = "2345678901";
 			
-			DispatcherContext.loadConf(null);
+			DispatcherContext dc = new DispatcherContext();
+            dc.loadConf(null);
 			
 			ObjectMapper mapper = new ObjectMapper();
 
@@ -212,13 +213,13 @@ public class TopologyTest {
 			RestClient restClient = mock(RestClient.class, withSettings().serializable());
 			// get opid
 			when(restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 					+ "private/" + opid, null,
 					RestClient.GET,
 					null)).thenReturn(new RestResponse("", 200));
 			// get subscriptions
 			when(restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 					+ "private/" + originSoid + "/streams/"
 					+ origStreamid
 					+ "/subscriptions/", null, RestClient.GET,
@@ -226,28 +227,28 @@ public class TopologyTest {
 			// get origin so
 
 			when(restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 					+ "private/" + originSoid, null, RestClient.GET,
 					null)).thenReturn(new RestResponse(originSo, 200));
 			// get subscriber so
 
 			when(restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 					+ "private/" + destSoid, null, RestClient.GET,
 					null)).thenReturn(new RestResponse(so, 200));
 			// get 'group2' location group last update
 			when(restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 					+ "private/groups/lastUpdate", mapper.writeValueAsString(group), RestClient.POST,
 					null)).thenReturn(new RestResponse(group2SU, 200));
 			// get 'proximity' stream last update
 					when(restClient.restRequest(
-							DispatcherContext.restBaseURL
+							dc.restBaseURL
 							+ "private/" + destSoid + "/streams/proximity/lastUpdate", null, RestClient.GET,
 							null)).thenReturn(new RestResponse(proxSU, 200));
 			// get 'near' stream last update
 			when(restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 					+ "private/" + destSoid + "/streams/near/lastUpdate", null, RestClient.GET,
 					null)).thenReturn(new RestResponse(nearSU, 200));
 			// store new SUs
@@ -266,18 +267,18 @@ public class TopologyTest {
 			
 			builder.setSpout("dispatcher", feeder);
 			
-	        builder.setBolt("checkopid", new CheckOpidBolt(restClient), 1)
+	        builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 1)
 	        	.shuffleGrouping("dispatcher");
-	        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(restClient), 1)
+	        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 1)
         		.shuffleGrouping( "checkopid", "subscription");
 	        
 	        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
 	        	.fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
 	        
-	        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(restClient), 1)
+	        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc, restClient), 1)
 	    		.shuffleGrouping("subretriever", "internalSub")
 	    		.shuffleGrouping("checkopid", "stream");
-	        builder.setBolt("streamprocessor", new StreamProcessorBolt(qc, restClient), 1)
+	        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc, qc, restClient), 1)
 				.fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
 	        
 	        

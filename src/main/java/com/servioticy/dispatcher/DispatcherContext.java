@@ -19,6 +19,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Properties;
@@ -26,25 +27,19 @@ import java.util.Properties;
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
-public class DispatcherContext {
+public class DispatcherContext implements Serializable{
+    private static final long serialVersionUID = 1L;
     static final public String DEFAULT_CONFIG_PATH = "dispatcher.xml";
 
-    static final public String PUBLISHER_LOCAL_ADDRESS = "publocaddress";
-    static final public String PUBLISHER_EXTERNAL_ADDRESS = "pubextaddress";
-    static final public String PUBLISHER_EXTERNAL_PORT = "pubextport";
-
-    static final public String BOOTSTRAP_ADDRESS = "bstrapaddress";
-    static final public String BOOTSTRAP_PORT = "bstrapport";
-
-    public static String restBaseURL = "localhost";
-    public static String[] kestrelAddresses = new String[]{"localhost"};
-    public static int kestrelPort = 2229;
-    public static String kestrelQueue = "services";
-    public static Map<String, Properties> pubProperties;
-    public static Map<String, Properties> bootstrapsProperties;
+    public String restBaseURL = "localhost";
+    public String[] kestrelAddresses = new String[]{"localhost"};
+    public int kestrelPort = 2229;
+    public String kestrelQueue = "services";
+    public Map<String, Properties> pubProperties;
+    public Map<String, Properties> bootstrapsProperties;
 
 
-    public static void loadConf(String path) {
+    public void loadConf(String path) {
 
         HierarchicalConfiguration config;
 
@@ -56,7 +51,7 @@ public class DispatcherContext {
             }
             config.setExpressionEngine(new XPathExpressionEngine());
 
-            DispatcherContext.restBaseURL = config.getString("servioticyAPI", DispatcherContext.restBaseURL);
+            this.restBaseURL = config.getString("servioticyAPI", this.restBaseURL);
 
             ArrayList<String> kestrel = new ArrayList<String>();
             if (config.containsKey("kestrels/kestrel[1]/addr")) {
@@ -64,12 +59,12 @@ public class DispatcherContext {
                     kestrel.add(config.getString("kestrels/kestrel[" + i + "]/addr"));
                 }
             } else {
-                kestrel.add(DispatcherContext.kestrelAddresses[0]);
+                kestrel.add(this.kestrelAddresses[0]);
             }
-            DispatcherContext.kestrelAddresses = (String[]) kestrel.toArray(new String[]{});
+            this.kestrelAddresses = (String[]) kestrel.toArray(new String[]{});
 
-            DispatcherContext.kestrelPort = config.getInt("kestrels/port", DispatcherContext.kestrelPort);
-            DispatcherContext.kestrelQueue = config.getString("kestrels/queue", DispatcherContext.kestrelQueue);
+            this.kestrelPort = config.getInt("kestrels/port", this.kestrelPort);
+            this.kestrelQueue = config.getString("kestrels/queue", this.kestrelQueue);
 
         } catch (Exception e) {
             e.printStackTrace();
