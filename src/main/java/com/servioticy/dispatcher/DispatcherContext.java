@@ -50,7 +50,7 @@ public class DispatcherContext {
 
         try {
             if (path == null) {
-                config = new XMLConfiguration(DispatcherContext.class.getResource(DispatcherContext.DEFAULT_CONFIG_PATH));
+                config = new XMLConfiguration(DispatcherContext.DEFAULT_CONFIG_PATH);
             } else {
                 config = new XMLConfiguration(path);
             }
