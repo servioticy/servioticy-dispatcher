@@ -62,6 +62,8 @@ public class DispatcherTopology {
         }
         KestrelThriftClient ktc = new KestrelThriftClient();
 
+        DispatcherContext.loadConf(path);
+
         String kestrelAddresses = "";
         for (String addr : DispatcherContext.kestrelAddresses) {
             kestrelAddresses += addr + ":" + DispatcherContext.kestrelPort;
@@ -69,8 +71,6 @@ public class DispatcherTopology {
         ktc.setBaseAddress(kestrelAddresses);
         ktc.setRelativeAddress(DispatcherContext.kestrelQueue);
         ktc.setExpire(0);
-
-        DispatcherContext.loadConf(path);
 
         TopologyBuilder builder = new TopologyBuilder();
 

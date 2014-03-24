@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <context>
-    <servioticyAPI>http://localhost/</servioticyAPI>
-    <kestrels>
-        <kestrel>
-            <addr>localhost</addr>
-        </kestrel>
-        <port>2229</port>
+	<servioticyAPI>http://minerva.bsc.es:8011/</servioticyAPI>
+	<kestrels>
+		<kestrel>
+			<addr>172.20.200.55</addr>
+		</kestrel>
+		<port>2229</port>
         <queue>services</queue>
-    </kestrels>
+	</kestrels>
 </context>

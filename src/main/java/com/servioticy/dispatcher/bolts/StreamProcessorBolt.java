@@ -303,6 +303,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			qc.disconnect();
 		} catch (Exception e) {
 			// TODO Log the error
+            e.printStackTrace();
 			collector.fail(input);
 			return;
 		}
