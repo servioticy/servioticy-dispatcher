@@ -24,7 +24,7 @@ import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import com.servioticy.dispatcher.bolts.*;
-import com.servioticy.queueclient.QueueClient;
+import com.servioticy.queueclient.KestrelMemcachedClient;
 import com.servioticy.queueclient.QueueClientException;
 import org.apache.commons.cli.*;
 
@@ -54,28 +54,29 @@ public class DispatcherTopology {
                 .hasArg()
                 .withDescription("Name of the topology in storm. If no name is given it will run in local mode.")
                 .create("t"));
-        options.addOption(OptionBuilder.withArgName("file")
-                .hasArg()
-                .withDescription("Queue client config file")
-                .create("q"));
 
         CommandLineParser parser = new GnuParser();
         CommandLine cmd = parser.parse(options, args);
 
         String path = null;
-        String qpath = null;
         if (cmd.hasOption("f")) {
             path = cmd.getOptionValue("f");
-        }
-        if(cmd.hasOption("q")){
-            qpath = cmd.getOptionValue("q");
         }
 
         DispatcherContext.loadConf(path);
 
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelIPs), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 5);
+        KestrelMemcachedClient kmc = new KestrelMemcachedClient();
+        String strKestrelAddr = "";
+        for (String s : DispatcherContext.kestrelIPs) {
+            strKestrelAddr += s + ":" + DispatcherContext.kestrelPort + " ";
+        }
+        kmc.setBaseAddress(strKestrelAddr);
+        kmc.setRelativeAddress("services");
+        kmc.setExpire(0);
+
+        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelIPs), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 4);
 
         builder.setBolt("checkopid", new CheckOpidBolt(), 2)
                 .shuffleGrouping("dispatcher");
@@ -88,8 +89,8 @@ public class DispatcherTopology {
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(), 4)
     		.shuffleGrouping("subretriever", "internalSub")
     		.shuffleGrouping("checkopid", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(QueueClient.factory(qpath)), 4)
-			.fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(kmc), 4)
+                .fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
         
         
         Config conf = new Config();
