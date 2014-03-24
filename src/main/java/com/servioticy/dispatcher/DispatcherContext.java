@@ -20,6 +20,7 @@ import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -70,6 +71,37 @@ public class DispatcherContext {
 
             DispatcherContext.kestrelPort = config.getInt("kestrels/port", DispatcherContext.kestrelPort);
             DispatcherContext.kestrelQueue = config.getString("kestrels/queue", DispatcherContext.kestrelQueue);
+            if(config.containsKey("pubsub/selfAddresses/selfAddress[1]/computerName")){
+                Map<String, Properties> pubProperties = new HashMap<String, Properties>();
+                for(int i=1; config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/computerName"); i++){
+                    Properties props = new Properties();
+                    if(config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/localAddress")){
+                        props.setProperty(DispatcherContext.PUBLISHER_LOCAL_ADDRESS, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/localAddress"));
+                    }
+                    if(config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/externalAddress")){
+                        props.setProperty(DispatcherContext.PUBLISHER_EXTERNAL_ADDRESS, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/externalAddress"));
+                    }
+                    if(config.containsKey("pubsub/selfAddresses/selfAddress[" + i + "]/externalPort")){
+                        props.setProperty(DispatcherContext.PUBLISHER_EXTERNAL_PORT, config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/externalPort"));
+                    }
+                    pubProperties.put(config.getString("pubsub/selfAddresses/selfAddress[" + i + "]/computerName"), props);
+                }
+                DispatcherContext.pubProperties = pubProperties;
+            }
+            if(config.containsKey("pubsub/bootstraps/bootstrap[1]/name")){
+                Map<String, Properties> bootstrapsProperties = new HashMap<String, Properties>();
+                for(int i=1; config.containsKey("pubsub/bootstraps/bootstrap[" + i + "]/name"); i++){
+                    Properties props = new Properties();
+                    if(config.containsKey("pubsub/bootstraps/bootstrap[" + i + "]/address")){
+                        props.setProperty(DispatcherContext.BOOTSTRAP_ADDRESS, config.getString("pubsub/bootstraps/bootstrap[" + i + "]/address"));
+                    }
+                    if(config.containsKey("pubsub/bootstraps/bootstrap[" + i + "]/port")){
+                        props.setProperty(DispatcherContext.BOOTSTRAP_PORT, config.getString("pubsub/bootstraps/bootstrap[" + i + "]/port"));
+                    }
+                    bootstrapsProperties.put(config.getString("pubsub/bootstraps/bootstrap[" + i + "]/name"), props);
+                }
+                DispatcherContext.bootstrapsProperties = bootstrapsProperties;
+            }
 
         } catch (Exception e) {
             e.printStackTrace();

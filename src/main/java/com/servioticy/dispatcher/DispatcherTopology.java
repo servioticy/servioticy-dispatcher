@@ -83,6 +83,8 @@ public class DispatcherTopology {
 
         builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 4)
                 .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
+        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(), 4)
+                .fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
 
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(), 4)
                 .shuffleGrouping("subretriever", "internalSub")
