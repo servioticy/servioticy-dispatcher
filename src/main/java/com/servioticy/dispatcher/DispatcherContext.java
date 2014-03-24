@@ -37,8 +37,9 @@ public class DispatcherContext {
     static final public String BOOTSTRAP_PORT = "bstrapport";
 
     public static String restBaseURL = "localhost";
-    public static String[] kestrelIPs = new String[]{"localhost"};
+    public static String[] kestrelAddresses = new String[]{"localhost"};
     public static int kestrelPort = 2229;
+    public static String kestrelQueue = "services";
     public static Map<String, Properties> pubProperties;
     public static Map<String, Properties> bootstrapsProperties;
 
@@ -49,7 +50,7 @@ public class DispatcherContext {
 
         try {
             if (path == null) {
-                config = new XMLConfiguration(DispatcherContext.DEFAULT_CONFIG_PATH);
+                config = new XMLConfiguration(DispatcherContext.class.getResource(DispatcherContext.DEFAULT_CONFIG_PATH));
             } else {
                 config = new XMLConfiguration(path);
             }
@@ -63,11 +64,12 @@ public class DispatcherContext {
                     kestrel.add(config.getString("kestrels/kestrel[" + i + "]/addr"));
                 }
             } else {
-                kestrel.add(DispatcherContext.kestrelIPs[0]);
+                kestrel.add(DispatcherContext.kestrelAddresses[0]);
             }
-            DispatcherContext.kestrelIPs = (String[]) kestrel.toArray(new String[]{});
+            DispatcherContext.kestrelAddresses = (String[]) kestrel.toArray(new String[]{});
 
             DispatcherContext.kestrelPort = config.getInt("kestrels/port", DispatcherContext.kestrelPort);
+            DispatcherContext.kestrelQueue = config.getString("kestrels/queue", DispatcherContext.kestrelQueue);
 
         } catch (Exception e) {
             e.printStackTrace();
