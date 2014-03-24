@@ -75,7 +75,7 @@ public class StreamProcessorBolt implements IRichBolt {
         this.dc = dc;
         String kestrelAddresses = "";
         for (String addr : dc.kestrelAddresses) {
-            kestrelAddresses += addr + ":" + dc.kestrelPort;
+            kestrelAddresses += addr + ":" + dc.kestrelPort + " ";
         }
         KestrelThriftClient ktc = new KestrelThriftClient();
 
