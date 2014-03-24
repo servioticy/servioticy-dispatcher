@@ -1,5 +1,4 @@
 *.class
-/dispatcher.xml
 
 # Package Files #
 *.jar
