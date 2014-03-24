@@ -60,34 +60,25 @@ public class DispatcherTopology {
         if (cmd.hasOption("f")) {
             path = cmd.getOptionValue("f");
         }
-        KestrelThriftClient ktc = new KestrelThriftClient();
-
-        DispatcherContext.loadConf(path);
-
-        String kestrelAddresses = "";
-        for (String addr : DispatcherContext.kestrelAddresses) {
-            kestrelAddresses += addr + ":" + DispatcherContext.kestrelPort;
-        }
-        ktc.setBaseAddress(kestrelAddresses);
-        ktc.setRelativeAddress(DispatcherContext.kestrelQueue);
-        ktc.setExpire(0);
+        DispatcherContext dc = new DispatcherContext();
+        dc.loadConf(path);
 
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelAddresses), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 4);
+        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, "services", new UpdateDescriptorScheme()), 4);
 
-        builder.setBolt("checkopid", new CheckOpidBolt(), 2)
+        builder.setBolt("checkopid", new CheckOpidBolt(dc), 2)
                 .shuffleGrouping("dispatcher");
-        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(), 2)
+        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 2)
                 .shuffleGrouping("checkopid", "subscription");
 
         builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 4)
                 .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
 
-        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(), 4)
+        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 4)
                 .shuffleGrouping("subretriever", "internalSub")
                 .shuffleGrouping("checkopid", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(ktc), 4)
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 4)
                 .fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
 
 

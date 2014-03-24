@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.servioticy.queueclient.KestrelThriftClient;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 
@@ -57,21 +58,38 @@ public class StreamProcessorBolt implements IRichBolt {
 	private SUCache suCache;
 	private QueueClient qc;
 	private RestClient restClient;
+    private DispatcherContext dc;
 	
 	public StreamProcessorBolt(){
 		
 	}
 	
 	// For testing purposes
-	public StreamProcessorBolt(QueueClient qc, RestClient restClient){
+	public StreamProcessorBolt(DispatcherContext dc, QueueClient qc, RestClient restClient){
+        this.dc = dc;
 		this.qc = qc;
 		this.restClient = restClient;
 	}
-    public StreamProcessorBolt(RestClient restClient){
+    public StreamProcessorBolt(DispatcherContext dc, RestClient restClient){
         this.restClient = restClient;
+        this.dc = dc;
+        String kestrelAddresses = "";
+        for (String addr : dc.kestrelAddresses) {
+            kestrelAddresses += addr + ":" + dc.kestrelPort + " ";
+        }
+        KestrelThriftClient ktc = new KestrelThriftClient();
+
+        ktc.setBaseAddress(kestrelAddresses);
+        ktc.setRelativeAddress(dc.kestrelQueue);
+        ktc.setExpire(0);
+        this.qc = ktc;
     }
-    public StreamProcessorBolt(QueueClient qc){
+    public StreamProcessorBolt(DispatcherContext dc, QueueClient qc){
+        this.dc = dc;
         this.qc = qc;
+    }
+    public StreamProcessorBolt(DispatcherContext dc){
+        this(dc, (RestClient) null);
     }
 	
 	public void prepare(Map stormConf, TopologyContext context,
@@ -103,7 +121,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			String glurstr = mapper.writeValueAsString(group);
 			
 			rr = restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 						+ "private/groups/lastUpdate", 
 						glurstr, RestClient.POST,
 						null);
@@ -131,7 +149,7 @@ public class StreamProcessorBolt implements IRichBolt {
 			}
 			String lastSU;
 			rr = restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 						+ "private/" + soId + "/streams/" + docId + "/lastUpdate", 
 						null, RestClient.GET,
 						null);
@@ -311,7 +329,7 @@ public class StreamProcessorBolt implements IRichBolt {
 		try{
 			// Send to the API
 			restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 							+ "private/" + soId + "/streams/"
 							+ streamId + "/" + opid, resultSUDoc,
 					RestClient.PUT,

@@ -46,13 +46,16 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 	private OutputCollector collector;
 	private TopologyContext context;
 	private RestClient restClient;
+    private DispatcherContext dc;
 	
-	public SubscriptionRetrieveBolt(){
+	public SubscriptionRetrieveBolt(DispatcherContext dc){
+        this.dc = dc;
 	}
 	
 	// For testing purposes
-	public SubscriptionRetrieveBolt(RestClient restClient){
+	public SubscriptionRetrieveBolt(DispatcherContext dc, RestClient restClient){
 		this.restClient = restClient;
+        this.dc = dc;
 	}
 	
 	public void prepare(Map stormConf, TopologyContext context,
@@ -75,7 +78,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 
 		try {
 			subscriptionsRR = restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 							+ "private/" + soid + "/streams/"
 							+ streamid
 							+ "/subscriptions/", null, RestClient.GET,

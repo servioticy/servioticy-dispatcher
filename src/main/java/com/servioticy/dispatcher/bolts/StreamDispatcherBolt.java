@@ -50,12 +50,15 @@ public class StreamDispatcherBolt implements IRichBolt {
 	private OutputCollector collector;
 	private TopologyContext context;
 	private RestClient restClient;
+    private DispatcherContext dc;
 	
-	public StreamDispatcherBolt(){
+	public StreamDispatcherBolt(DispatcherContext dc){
+        this.dc = dc;
 	}
 	
 	// For testing purposes
-	public StreamDispatcherBolt(RestClient restClient){
+	public StreamDispatcherBolt(DispatcherContext dc, RestClient restClient){
+        this.dc = dc;
 		this.restClient = restClient;
 	}
 	
@@ -100,7 +103,7 @@ public class StreamDispatcherBolt implements IRichBolt {
 
 		try{
 			rr = restClient.restRequest(
-					DispatcherContext.restBaseURL
+					dc.restBaseURL
 						+ "private/" + destination, null, RestClient.GET,
 						null);
 			soDoc = rr.getResponse();
