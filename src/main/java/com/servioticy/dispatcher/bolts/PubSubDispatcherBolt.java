@@ -99,12 +99,14 @@ public class PubSubDispatcherBolt implements IRichBolt {
 		PubSubSubscription externalSub;
 		SensorUpdate su;
 		String sourceSOId;
+		String streamId;
 		try{
 			su = mapper.readValue(input.getStringByField("su"),
 					SensorUpdate.class);
 			externalSub = mapper.readValue(input.getStringByField("subsdoc"),
 					PubSubSubscription.class);
 			sourceSOId = input.getStringByField("soid");
+			streamId = input.getStringByField("streamid");
 			if(suCache.check(externalSub.getId(), su.getLastUpdate())){
 				// This SU or a posterior one has already been sent, do not send this one.
 				collector.ack(input);
@@ -119,10 +121,9 @@ public class PubSubDispatcherBolt implements IRichBolt {
 		//pubsubp.replaceAliases();
 		//pubsubp.compileJSONPaths();
 		String suStr = input.getStringByField("su");
-
 		try {
-			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/updates", suStr);
-			LOG.info("PubSub message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/updates");
+			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
+			LOG.info("PubSub message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates");
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
