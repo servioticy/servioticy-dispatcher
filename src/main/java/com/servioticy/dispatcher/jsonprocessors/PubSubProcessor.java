@@ -18,7 +18,7 @@ package com.servioticy.dispatcher.jsonprocessors;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.servioticy.datamodel.ExternalSubscription;
+import com.servioticy.datamodel.PubSubSubscription;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -30,9 +30,9 @@ public class PubSubProcessor {
 	
 	private AliasReplacer aliases;
 	
-	private ExternalSubscription subscription;
+	private PubSubSubscription subscription;
 	
-	public PubSubProcessor(ExternalSubscription subscription){
+	public PubSubProcessor(PubSubSubscription subscription){
 		this.subscription = subscription;
 		this.aliases = new AliasReplacer(subscription.getAliases());
 		
@@ -40,7 +40,7 @@ public class PubSubProcessor {
 		this.body = new JsonPathReplacer(aliases.replace(subscription.getBody()));
 	}
 	
-	public ExternalSubscription replaceAliases(){	
+	public PubSubSubscription replaceAliases(){	
 		
 		this.subscription.setDestination( aliases.replace(subscription.getDestination()) );
 		this.subscription.setBody( aliases.replace(subscription.getBody()) );

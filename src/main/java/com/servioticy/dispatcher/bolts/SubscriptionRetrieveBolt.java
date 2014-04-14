@@ -23,6 +23,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.servioticy.datamodel.HttpSubscription;
+import com.servioticy.datamodel.PubSubSubscription;
 import com.servioticy.datamodel.SOSubscription;
 import com.servioticy.datamodel.Subscription;
 import com.servioticy.datamodel.Subscriptions;
@@ -134,6 +135,14 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 										mapper.writeValueAsString(subscription),
 										su));
 				}
+				else if(subscription.getClass().equals(PubSubSubscription.class)){
+					this.collector.emit(	"pubsubSub", input, 
+							new Values(	subscription.getId(),
+										soid,
+										mapper.writeValueAsString(subscription),
+										su));
+				}
+
 			} catch (Exception e) {
 				// TODO Log the error
 				e.printStackTrace();

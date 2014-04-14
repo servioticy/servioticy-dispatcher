@@ -19,18 +19,18 @@ import java.util.Map;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
-import com.ibm.sr.exceptions.SRException;
-import com.servioticy.datamodel.ExternalSubscription;
-import com.servioticy.datamodel.SensorUpdate;
-import com.servioticy.dispatcher.SRPublisher;
-import com.servioticy.dispatcher.SUCache;
-import com.servioticy.dispatcher.jsonprocessors.PubSubProcessor;
-
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
+
+import com.servioticy.datamodel.PubSubSubscription;
+import com.servioticy.datamodel.SensorUpdate;
+import com.servioticy.dispatcher.SUCache;
+import com.servioticy.dispatcher.jsonprocessors.PubSubProcessor;
+import com.servioticy.dispatcher.pubsub.PubSubPublisherFactory;
+import com.servioticy.dispatcher.pubsub.PublisherInterface;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -43,25 +43,27 @@ public class PubSubDispatcherBolt implements IRichBolt {
 	private static final long serialVersionUID = 1L;
 	private OutputCollector collector;
 	private TopologyContext context;
-	private SRPublisher srpub;
+	private PublisherInterface publisher;
 	private SUCache suCache;
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
 		this.collector = collector;
 		this.context = context;
-		this.srpub = null;
+		this.publisher = null;
 		this.suCache = new SUCache(25);
 	}
 
 	public void execute(Tuple input) {
 		ObjectMapper mapper = new ObjectMapper();
-		ExternalSubscription externalSub;
+		PubSubSubscription externalSub;
 		SensorUpdate su;
+		String sourceSOId;
 		try{
 			su = mapper.readValue(input.getStringByField("su"),
 					SensorUpdate.class);
 			externalSub = mapper.readValue(input.getStringByField("subsdoc"),
-					ExternalSubscription.class);
+					PubSubSubscription.class);
+			sourceSOId = input.getStringByField("soid");
 			if(suCache.check(externalSub.getId(), su.getLastUpdate())){
 				// This SU or a posterior one has already been sent, do not send this one.
 				collector.ack(input);
@@ -76,19 +78,20 @@ public class PubSubDispatcherBolt implements IRichBolt {
 		pubsubp.replaceAliases();
 		pubsubp.compileJSONPaths();
 		String suStr = input.getStringByField("su");
-		if(srpub == null || pubsubp.getUrl(suStr) != srpub.getTopicName()){
-			if(pubsubp.getUrl(suStr) != srpub.getTopicName()){
-				try {
-					// wait for everything to propagate
-					Thread.sleep(1000);
-					srpub.close();
-				} catch (Exception e) {
-					// TODO Log this.
+		//if(publisher == null || pubsubp.getUrl(suStr) != publisher.getTopicName()){
+		if(publisher == null){
+				/*if(pubsubp.getUrl(suStr) != publisher.getTopicName()){
+					try {
+						// wait for everything to propagate
+						Thread.sleep(1000);
+						publisher.close();
+					} catch (Exception e) {
+						// TODO Log this.
+					}
 				}
-			}
-			
+			}*/
 			try {
-				srpub = new SRPublisher(pubsubp.getUrl(suStr), String.valueOf(context.getThisTaskId()));
+				publisher = PubSubPublisherFactory.getPublisher(String.valueOf(context.getThisTaskId()));
 			} catch (Exception e) {
 				// TODO Log the error
 				collector.fail(input);
@@ -102,8 +105,8 @@ public class PubSubDispatcherBolt implements IRichBolt {
 			}
 		}
 		try {
-			srpub.publishMessage(pubsubp.getBody(suStr));
-		} catch (SRException e) {
+			publisher.publishMessage(pubsubp.getUrl(suStr)+"/"+sourceSOId+"/updates", pubsubp.getBody(suStr));
+		} catch (Exception e) {
 			// TODO Log the error
 			collector.fail(input);
 			return;

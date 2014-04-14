@@ -37,12 +37,16 @@ public class DispatcherContext {
     static final public String BOOTSTRAP_ADDRESS = "bstrapaddress";
     static final public String BOOTSTRAP_PORT = "bstrapport";
 
+    static final public String MQTT_ADDRESS = "mqttaddr";
+    static final public String MQTT_PORT = "mqttport";
+
     public static String restBaseURL = "localhost";
     public static String[] kestrelAddresses = new String[]{"localhost"};
     public static int kestrelPort = 2229;
     public static String kestrelQueue = "services";
     public static Map<String, Properties> pubProperties;
     public static Map<String, Properties> bootstrapsProperties;
+    public static Map<String, Properties> mqttProperties;
 
 
     public static void loadConf(String path) {
@@ -103,6 +107,21 @@ public class DispatcherContext {
                 DispatcherContext.bootstrapsProperties = bootstrapsProperties;
             }
 
+            if(config.containsKey("pubsub/mqtt/server[1]/name")){
+                Map<String, Properties> mqttProperties = new HashMap<String, Properties>();
+                for(int i=1; config.containsKey("pubsub/mqtt/server[" + i + "]/name"); i++){
+                    Properties props = new Properties();
+                    if(config.containsKey("pubsub/mqtt/server[" + i + "]/address")){
+                        props.setProperty(DispatcherContext.MQTT_ADDRESS, config.getString("pubsub/mqtt/server[" + i + "]/address"));
+                    }
+                    if(config.containsKey("pubsub/mqtt/server[" + i + "]/port")){
+                        props.setProperty(DispatcherContext.MQTT_PORT, config.getString("pubsub/mqtt/server[" + i + "]/port"));
+                    }
+                    mqttProperties.put(config.getString("pubsub/mqtt/server[" + i + "]/name"), props);
+                }
+                DispatcherContext.mqttProperties = mqttProperties;
+            }
+            
         } catch (Exception e) {
             e.printStackTrace();
             return;
