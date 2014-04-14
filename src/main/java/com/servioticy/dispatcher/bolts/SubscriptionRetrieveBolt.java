@@ -158,7 +158,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		declarer.declareStream("internalSub", new Fields("subsdoc", "su", "soid", "streamid"));
 		declarer.declareStream("httpSub", new Fields("subid", "subsdoc", "su"));
-		declarer.declareStream("pubsubSub", new Fields("subid", "subsdoc", "su"));
+		declarer.declareStream("pubsubSub", new Fields("subid", "soid", "subsdoc", "su"));
 	}
 
 	public Map<String, Object> getComponentConfiguration() {

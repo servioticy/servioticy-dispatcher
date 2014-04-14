@@ -15,6 +15,15 @@
  ******************************************************************************/
 package com.servioticy.dispatcher;
 
+import java.util.Arrays;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
@@ -23,11 +32,14 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import com.servioticy.dispatcher.bolts.*;
-import com.servioticy.queueclient.KestrelThriftClient;
-import org.apache.commons.cli.*;
 
-import java.util.Arrays;
+import com.servioticy.dispatcher.bolts.CheckOpidBolt;
+import com.servioticy.dispatcher.bolts.HttpSubsDispatcherBolt;
+import com.servioticy.dispatcher.bolts.PubSubDispatcherBolt;
+import com.servioticy.dispatcher.bolts.StreamDispatcherBolt;
+import com.servioticy.dispatcher.bolts.StreamProcessorBolt;
+import com.servioticy.dispatcher.bolts.SubscriptionRetrieveBolt;
+import com.servioticy.queueclient.KestrelThriftClient;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -43,7 +55,7 @@ public class DispatcherTopology {
     public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException, ParseException {
 
         Options options = new Options();
-
+        
         options.addOption(OptionBuilder.withArgName("file")
                 .hasArg()
                 .withDescription("Config file path.")
@@ -52,7 +64,11 @@ public class DispatcherTopology {
                 .hasArg()
                 .withDescription("Name of the topology in storm. If no name is given it will run in local mode.")
                 .create("t"));
+        options.addOption(OptionBuilder
+                .withDescription("Enable debugging")
+                .create("d"));
 
+        
         CommandLineParser parser = new GnuParser();
         CommandLine cmd = parser.parse(options, args);
 
@@ -60,10 +76,11 @@ public class DispatcherTopology {
         if (cmd.hasOption("f")) {
             path = cmd.getOptionValue("f");
         }
+        
         KestrelThriftClient ktc = new KestrelThriftClient();
 
         DispatcherContext.loadConf(path);
-
+        
         String kestrelAddresses = "";
         for (String addr : DispatcherContext.kestrelAddresses) {
             kestrelAddresses += addr + ":" + DispatcherContext.kestrelPort;
@@ -94,9 +111,10 @@ public class DispatcherTopology {
 
 
         Config conf = new Config();
-        conf.setDebug(false);
+        conf.setDebug(cmd.hasOption("d"));
+        conf.put("mqttconfig", DispatcherContext.mqttProperties);
         if (cmd.hasOption("t")) {
-            conf.setNumWorkers(6);
+            conf.setNumWorkers(6);            
             StormSubmitter.submitTopology(cmd.getOptionValue("t"), conf, builder.createTopology());
         } else {
             conf.setMaxTaskParallelism(3);

@@ -8,4 +8,15 @@
 		<port>2229</port>
         <queue>services</queue>
 	</kestrels>
+	<pubsub>
+		<mqtt>
+			<server>
+				<name>servioticy</name>
+				<uri>tcp://api.servioticy.com:1833</uri>
+				<username>compose</username>
+				<password>shines</password>
+			</server>
+		</mqtt>
+	</pubsub>
+	
 </context>

@@ -37,8 +37,9 @@ public class DispatcherContext {
     static final public String BOOTSTRAP_ADDRESS = "bstrapaddress";
     static final public String BOOTSTRAP_PORT = "bstrapport";
 
-    static final public String MQTT_ADDRESS = "mqttaddr";
-    static final public String MQTT_PORT = "mqttport";
+    static final public String MQTT_URI = "mqtturi";
+    static final public String MQTT_USER = "mqttuser";
+    static final public String MQTT_PASS = "mqttpass";
 
     public static String restBaseURL = "localhost";
     public static String[] kestrelAddresses = new String[]{"localhost"};
@@ -109,13 +110,16 @@ public class DispatcherContext {
 
             if(config.containsKey("pubsub/mqtt/server[1]/name")){
                 Map<String, Properties> mqttProperties = new HashMap<String, Properties>();
-                for(int i=1; config.containsKey("pubsub/mqtt/server[" + i + "]/name"); i++){
+                for(int i=1; config.containsKey("pubsub/mqtt/server[" + i + "]/name") && i<=1; i++){
                     Properties props = new Properties();
-                    if(config.containsKey("pubsub/mqtt/server[" + i + "]/address")){
-                        props.setProperty(DispatcherContext.MQTT_ADDRESS, config.getString("pubsub/mqtt/server[" + i + "]/address"));
+                    if(config.containsKey("pubsub/mqtt/server[" + i + "]/uri")){
+                        props.setProperty(DispatcherContext.MQTT_URI, config.getString("pubsub/mqtt/server[" + i + "]/uri"));
                     }
-                    if(config.containsKey("pubsub/mqtt/server[" + i + "]/port")){
-                        props.setProperty(DispatcherContext.MQTT_PORT, config.getString("pubsub/mqtt/server[" + i + "]/port"));
+                    if(config.containsKey("pubsub/mqtt/server[" + i + "]/username")){
+                        props.setProperty(DispatcherContext.MQTT_USER, config.getString("pubsub/mqtt/server[" + i + "]/username"));
+                    }
+                    if(config.containsKey("pubsub/mqtt/server[" + i + "]/password")){
+                        props.setProperty(DispatcherContext.MQTT_PASS, config.getString("pubsub/mqtt/server[" + i + "]/password"));
                     }
                     mqttProperties.put(config.getString("pubsub/mqtt/server[" + i + "]/name"), props);
                 }

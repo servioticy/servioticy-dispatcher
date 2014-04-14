@@ -15,12 +15,16 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher.pubsub;
 
+import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
+import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttSecurityException;
+
+import com.servioticy.dispatcher.bolts.PubSubDispatcherBolt;
 
 
 /**
@@ -29,41 +33,45 @@ import org.eclipse.paho.client.mqttv3.MqttSecurityException;
  */
 public class MQTTPublisher implements PublisherInterface {
 
+	private static Logger LOG = org.apache.log4j.Logger.getLogger(MQTTPublisher.class);
 	
 	//private IMqttToken token;
 	private IMqttAsyncClient asyncClient = null; 
 
 	
-	public MQTTPublisher(String pubId){  
+	public MQTTPublisher(String uri, String pubId){  
 		
 		
 		try {
 			
-			asyncClient = new MqttAsyncClient("tcp://api.servioticy.com:1883",pubId); 
+			//asyncClient = new MqttAsyncClient("tcp://api.servioticy.com:1883",pubId);
+			asyncClient = new MqttAsyncClient(uri, pubId);
+			//asyncClient = new MqttAsyncClient("tcp://192.168.56.101:1883",pubId);
 						
 			
 		} catch (MqttSecurityException e) {
-			e.printStackTrace();
+			LOG.error("FAIL in constructor: ", e);
 		} catch (MqttException e) {
-			e.printStackTrace();
+			LOG.error("FAIL in constructor: ", e);
 		}
 	     
 	}
 	
-	private void connect() {
+	public void connect(String uris[], String username, String password) {
 	
-		String uris[] = {"tcp://api.servioticy.com:1883"};
 		MqttConnectOptions options = new MqttConnectOptions();
 		options.setServerURIs(uris);
-		options.setUserName("compose");
-		options.setPassword("shines".toCharArray());
+		options.setUserName(username);
+		options.setPassword(password.toCharArray());
+		
+		LOG.debug("MQTT connect options: "+options.toString());
 		
 		try {
 			asyncClient.connect(options).waitForCompletion();
 		} catch (MqttSecurityException e) {
-			e.printStackTrace();
+			LOG.error("FAIL in connect: ", e);
 		} catch (MqttException e) {
-			e.printStackTrace();
+			LOG.error("FAIL in connect:", e);
 		}	
 	}
 	
@@ -71,23 +79,25 @@ public class MQTTPublisher implements PublisherInterface {
 		try {
 			asyncClient.disconnect().waitForCompletion();
 		} catch (MqttException e) {
-			e.printStackTrace();
+			LOG.error("FAIL", e);
 		}
 	}
 	
 	public void publishMessage(String topic, String msg) {
 		int attempts = 0;
 		if(asyncClient != null) {
-			while(!asyncClient.isConnected() && attempts < 10) { 
-				this.connect();
-			}
+			
 			if(!asyncClient.isConnected())
 				return;
 			
 			try {
-				asyncClient.publish(topic, new MqttMessage(msg.getBytes())).waitForCompletion();
-			} catch (MqttException e) {
-				e.printStackTrace();
+				if(msg == null){
+					LOG.error("FAIL in publishMessage: msg is null");
+					return;
+				}
+				asyncClient.publish(topic, new MqttMessage(msg.getBytes()));//.waitForCompletion();
+			} catch (Exception e) {
+				LOG.error("FAIL in publishMessage: ", e);
 			}
 			
 		}
