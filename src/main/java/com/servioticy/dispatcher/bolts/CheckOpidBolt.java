@@ -60,36 +60,49 @@ public class CheckOpidBolt implements IRichBolt {
 	}
 
 	public void execute(Tuple input) {
-		RestResponse rr;
-		String opid = input.getStringByField("opid");
-		try {
-			rr = restClient.restRequest(
-					DispatcherContext.restBaseURL
-							+ "private/opid/" + opid, null,
-					RestClient.GET, null);
-
-		} catch (Exception e) {
-			// TODO Log the error
-			// Retry until timeout
-			this.collector.fail(input);
-			return;
+		
+		if(input.contains("opid")) {
+			RestResponse rr;
+			String opid = input.getStringByField("opid");
+			try {
+				rr = restClient.restRequest(
+						DispatcherContext.restBaseURL
+								+ "private/opid/" + opid, null,
+						RestClient.GET, null);
+	
+			} catch (Exception e) {
+				// TODO Log the error
+				// Retry until timeout
+				this.collector.fail(input);
+				return;
+			}
+			
+			this.collector.emit(
+					"stream",
+					input,
+					new Values(null, input
+							.getStringByField("soid"), input
+							.getStringByField("streamid"), input
+							.getStringByField("su")));
+			
+			this.collector.emit(
+					"subscription",
+					input,
+					new Values(input
+							.getStringByField("soid"), input
+							.getStringByField("streamid"), input
+							.getStringByField("su")));
+		} else {
+			
+			this.collector.emit(
+					"actuation",
+					input,
+					new Values(input
+							.getStringByField("soid"), input
+							.getStringByField("action"), input
+							.getStringByField("parameters")));
+			
 		}
-		
-		this.collector.emit(
-				"stream",
-				input,
-				new Values(null, input
-						.getStringByField("soid"), input
-						.getStringByField("streamid"), input
-						.getStringByField("su")));
-		
-		this.collector.emit(
-				"subscription",
-				input,
-				new Values(input
-						.getStringByField("soid"), input
-						.getStringByField("streamid"), input
-						.getStringByField("su")));
 		this.collector.ack(input);
 	}
 
@@ -99,6 +112,7 @@ public class CheckOpidBolt implements IRichBolt {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
 		declarer.declareStream("stream", new Fields("subsdoc","soid", "streamid", "su"));
+		declarer.declareStream("actuation", new Fields("soid", "action", "parameters"));
 
 	}
 

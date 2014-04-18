@@ -33,6 +33,7 @@ import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
+import com.servioticy.dispatcher.bolts.ActuationDispatcherBolt;
 import com.servioticy.dispatcher.bolts.CheckOpidBolt;
 import com.servioticy.dispatcher.bolts.HttpSubsDispatcherBolt;
 import com.servioticy.dispatcher.bolts.PubSubDispatcherBolt;
@@ -97,7 +98,10 @@ public class DispatcherTopology {
                 .shuffleGrouping("dispatcher");
         builder.setBolt("subretriever", new SubscriptionRetrieveBolt(), 2)
                 .shuffleGrouping("checkopid", "subscription");
+        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(), 1)
+        		.shuffleGrouping("checkopid", "actuation");
 
+        
         builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 4)
                 .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
         builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(), 4)
@@ -108,6 +112,7 @@ public class DispatcherTopology {
                 .shuffleGrouping("checkopid", "stream");
         builder.setBolt("streamprocessor", new StreamProcessorBolt(ktc), 4)
                 .fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
+
 
 
         Config conf = new Config();
