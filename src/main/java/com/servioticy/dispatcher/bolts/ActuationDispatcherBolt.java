@@ -15,14 +15,15 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher.bolts;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -31,10 +32,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 import clojure.lang.PersistentArrayMap;
 
-import com.servioticy.datamodel.PubSubSubscription;
-import com.servioticy.datamodel.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
-import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.pubsub.PubSubPublisherFactory;
 import com.servioticy.dispatcher.pubsub.PublisherInterface;
 
@@ -50,7 +48,6 @@ public class ActuationDispatcherBolt implements IRichBolt {
 	private OutputCollector collector;
 	private TopologyContext context;
 	private PublisherInterface publisher;
-	private SUCache suCache;
 	private static Logger LOG = org.apache.log4j.Logger.getLogger(ActuationDispatcherBolt.class);
 	
 	public void prepare(Map stormConf, TopologyContext context,
@@ -58,7 +55,6 @@ public class ActuationDispatcherBolt implements IRichBolt {
 		this.collector = collector;
 		this.context = context;
 		this.publisher = null;
-		this.suCache = new SUCache(25);
 		
 		PersistentArrayMap mqttOptions = (PersistentArrayMap) stormConf.get("mqttconfig");
 		
@@ -95,41 +91,35 @@ public class ActuationDispatcherBolt implements IRichBolt {
 	}
 
 	public void execute(Tuple input) {
-		ObjectMapper mapper = new ObjectMapper();
-		PubSubSubscription externalSub;
-		SensorUpdate su;
-		String sourceSOId;
-		String streamId;
-		try{
-			su = mapper.readValue(input.getStringByField("su"),
-					SensorUpdate.class);
-			externalSub = mapper.readValue(input.getStringByField("subsdoc"),
-					PubSubSubscription.class);
-			sourceSOId = input.getStringByField("soid");
-			streamId = input.getStringByField("streamid");
-			if(suCache.check(externalSub.getId(), su.getLastUpdate())){
-				// This SU or a posterior one has already been sent, do not send this one.
-				collector.ack(input);
-				return;
-			}
-		}catch (Exception e) {
-			LOG.error("FAIL", e);
-			collector.fail(input);
-			return;
-		}
-		//PubSubProcessor pubsubp = new PubSubProcessor(externalSub);
-		//pubsubp.replaceAliases();
-		//pubsubp.compileJSONPaths();
-		String suStr = input.getStringByField("su");
+		
 		try {
-			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
-			LOG.info("PubSub message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates");
+			ObjectMapper mapper = new ObjectMapper();
+			String actionName;
+			String sourceSOId;
+			String actionId;
+			
+			JsonNode parameters = mapper.readTree(input.getStringByField("parameters"));
+			actionName = input.getStringByField("action");
+			sourceSOId = input.getStringByField("soid");
+			actionId = input.getStringByField("id");
+	
+			ObjectNode actuation = mapper.createObjectNode();
+			
+			actuation.put("action", actionName);
+			actuation.put("id", actionId);
+			actuation.put("soid", sourceSOId);
+			
+			ObjectNode newParamteres = actuation.putObject("parameters");
+			newParamteres.putAll((ObjectNode)parameters);
+			
+			publisher.publishMessage(sourceSOId+"/actions", actuation.toString());
+			LOG.info("PubSub message pubished on topic "+sourceSOId+"/actions");
+			
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
 			return;
 		}
-		suCache.put(externalSub.getId(), su.getLastUpdate());
 		collector.ack(input);
 	}
 

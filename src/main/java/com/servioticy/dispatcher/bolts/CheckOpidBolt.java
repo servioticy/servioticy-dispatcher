@@ -100,7 +100,8 @@ public class CheckOpidBolt implements IRichBolt {
 					new Values(input
 							.getStringByField("soid"), input
 							.getStringByField("action"), input
-							.getStringByField("parameters")));
+							.getStringByField("parameters"), input
+							.getStringByField("id")));
 			
 		}
 		this.collector.ack(input);
