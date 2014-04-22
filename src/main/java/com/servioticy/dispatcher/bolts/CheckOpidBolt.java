@@ -17,11 +17,6 @@ package com.servioticy.dispatcher.bolts;
 
 import java.util.Map;
 
-import com.servioticy.dispatcher.DispatcherContext;
-import com.servioticy.queueclient.QueueClient;
-import com.servioticy.restclient.RestClient;
-import com.servioticy.restclient.RestResponse;
-
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
@@ -29,6 +24,10 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+
+import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.restclient.RestClient;
+import com.servioticy.restclient.RestResponse;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -63,8 +62,11 @@ public class CheckOpidBolt implements IRichBolt {
 	}
 
 	public void execute(Tuple input) {
+		
+
 		RestResponse rr;
 		String opid = input.getStringByField("opid");
+
 		try {
 			rr = restClient.restRequest(
 					dc.restBaseURL
@@ -77,7 +79,7 @@ public class CheckOpidBolt implements IRichBolt {
 			this.collector.fail(input);
 			return;
 		}
-		
+	
 		this.collector.emit(
 				"stream",
 				input,
@@ -85,7 +87,7 @@ public class CheckOpidBolt implements IRichBolt {
 						.getStringByField("soid"), input
 						.getStringByField("streamid"), input
 						.getStringByField("su")));
-		
+
 		this.collector.emit(
 				"subscription",
 				input,
@@ -93,6 +95,9 @@ public class CheckOpidBolt implements IRichBolt {
 						.getStringByField("soid"), input
 						.getStringByField("streamid"), input
 						.getStringByField("su")));
+
+
+
 		this.collector.ack(input);
 	}
 
@@ -102,6 +107,7 @@ public class CheckOpidBolt implements IRichBolt {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
 		declarer.declareStream("stream", new Fields("subsdoc","soid", "streamid", "su"));
+		declarer.declareStream("actuation", new Fields("soid", "id", "action"));
 
 	}
 

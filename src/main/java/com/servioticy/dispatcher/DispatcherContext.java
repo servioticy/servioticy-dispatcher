@@ -15,14 +15,12 @@
  ******************************************************************************/
 package com.servioticy.dispatcher;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Properties;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -35,40 +33,53 @@ public class DispatcherContext implements Serializable{
     public String[] kestrelAddresses = new String[]{"localhost"};
     public int kestrelPort = 2229;
     public String kestrelQueue = "services";
-    public Map<String, Properties> pubProperties;
-    public Map<String, Properties> bootstrapsProperties;
-
+    public String kestrelQueueActions = "actions";
+    
+    public String mqttUri;
+    public String mqttUser;
+    public String mqttPassword;
 
     public void loadConf(String path) {
+    	HierarchicalConfiguration config;
 
-        HierarchicalConfiguration config;
+    	try {
+    		if (path == null) {
+    			config = new XMLConfiguration(DispatcherContext.DEFAULT_CONFIG_PATH);
+    		} else {
+    			config = new XMLConfiguration(path);
+    		}
+    		config.setExpressionEngine(new XPathExpressionEngine());
 
-        try {
-            if (path == null) {
-                config = new XMLConfiguration(DispatcherContext.DEFAULT_CONFIG_PATH);
-            } else {
-                config = new XMLConfiguration(path);
-            }
-            config.setExpressionEngine(new XPathExpressionEngine());
+    		this.restBaseURL = config.getString("servioticyAPI", this.restBaseURL);
 
-            this.restBaseURL = config.getString("servioticyAPI", this.restBaseURL);
+    		ArrayList<String> kestrel = new ArrayList<String>();
+    		if (config.containsKey("kestrels/kestrel[1]/addr")) {
+    			for (int i = 1; config.containsKey("kestrels/kestrel[" + i + "]/addr"); i++) {
+    				kestrel.add(config.getString("kestrels/kestrel[" + i + "]/addr"));
+    			}
+    		} else {
+    			kestrel.add(this.kestrelAddresses[0]);
+    		}
+    		this.kestrelAddresses = (String[]) kestrel.toArray(new String[]{});
+    		this.kestrelPort = config.getInt("kestrels/port", this.kestrelPort);
+    		this.kestrelQueue = config.getString("kestrels/queue", this.kestrelQueue);
 
-            ArrayList<String> kestrel = new ArrayList<String>();
-            if (config.containsKey("kestrels/kestrel[1]/addr")) {
-                for (int i = 1; config.containsKey("kestrels/kestrel[" + i + "]/addr"); i++) {
-                    kestrel.add(config.getString("kestrels/kestrel[" + i + "]/addr"));
-                }
-            } else {
-                kestrel.add(this.kestrelAddresses[0]);
-            }
-            this.kestrelAddresses = (String[]) kestrel.toArray(new String[]{});
+    		if(config.containsKey("pubsub/mqtt/name")){
+    			if(config.containsKey("pubsub/mqtt/uri")){
+    				mqttUri = config.getString("pubsub/mqtt/uri");
+    			}
+    			if(config.containsKey("pubsub/mqtt/username")){
+    				mqttUser = config.getString("pubsub/mqtt/username");
+    			}
+    			if(config.containsKey("pubsub/mqtt/password")){
+    				mqttPassword = config.getString("pubsub/mqtt/password");
+    			}
 
-            this.kestrelPort = config.getInt("kestrels/port", this.kestrelPort);
-            this.kestrelQueue = config.getString("kestrels/queue", this.kestrelQueue);
+    		}                            
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
-        }
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		return;
+    	}
     }
 }

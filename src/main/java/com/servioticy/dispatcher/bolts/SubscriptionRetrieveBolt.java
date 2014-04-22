@@ -23,6 +23,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.servioticy.datamodel.HttpSubscription;
+import com.servioticy.datamodel.PubSubSubscription;
 import com.servioticy.datamodel.SOSubscription;
 import com.servioticy.datamodel.Subscription;
 import com.servioticy.datamodel.Subscriptions;
@@ -137,6 +138,15 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 										mapper.writeValueAsString(subscription),
 										su));
 				}
+				else if(subscription.getClass().equals(PubSubSubscription.class)){
+					this.collector.emit(	"pubsubSub", input, 
+							new Values(	subscription.getId(),
+										soid,
+										mapper.writeValueAsString(subscription),
+										su,
+										streamid));
+				}
+
 			} catch (Exception e) {
 				// TODO Log the error
 				e.printStackTrace();
@@ -152,7 +162,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		declarer.declareStream("internalSub", new Fields("subsdoc", "su", "soid", "streamid"));
 		declarer.declareStream("httpSub", new Fields("subid", "subsdoc", "su"));
-		declarer.declareStream("pubsubSub", new Fields("subid", "subsdoc", "su"));
+		declarer.declareStream("pubsubSub", new Fields("subid", "soid", "subsdoc", "su", "streamid"));
 	}
 
 	public Map<String, Object> getComponentConfiguration() {

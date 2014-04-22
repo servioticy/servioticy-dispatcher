@@ -8,4 +8,13 @@
 		<port>2229</port>
         <queue>services</queue>
 	</kestrels>
+	<pubsub>
+		<mqtt>
+			<name>servioticy</name>
+			<uri>tcp://localhost:1833</uri>
+			<username>compose</username>
+			<password>shines</password>
+		</mqtt>
+	</pubsub>
+	
 </context>
