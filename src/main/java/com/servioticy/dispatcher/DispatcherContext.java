@@ -45,6 +45,7 @@ public class DispatcherContext {
     public static String[] kestrelAddresses = new String[]{"localhost"};
     public static int kestrelPort = 2229;
     public static String kestrelQueue = "services";
+    public static String kestrelQueueActions = "actions";
     public static Map<String, Properties> pubProperties;
     public static Map<String, Properties> bootstrapsProperties;
     public static Map<String, Properties> mqttProperties;

@@ -90,16 +90,21 @@ public class DispatcherTopology {
         ktc.setRelativeAddress(DispatcherContext.kestrelQueue);
         ktc.setExpire(0);
 
+                
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelAddresses), DispatcherContext.kestrelPort, "services", new UpdateDescriptorScheme()), 4);
+        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelAddresses), DispatcherContext.kestrelPort, DispatcherContext.kestrelQueue, new UpdateDescriptorScheme()), 4);
+        builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(DispatcherContext.kestrelAddresses), DispatcherContext.kestrelPort, DispatcherContext.kestrelQueueActions, new ActuationScheme()), 4);
 
         builder.setBolt("checkopid", new CheckOpidBolt(), 2)
                 .shuffleGrouping("dispatcher");
+        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(), 1)
+        		.shuffleGrouping("actions");
+
+        
         builder.setBolt("subretriever", new SubscriptionRetrieveBolt(), 2)
                 .shuffleGrouping("checkopid", "subscription");
-        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(), 1)
-        		.shuffleGrouping("checkopid", "actuation");
+        
 
         
         builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 4)

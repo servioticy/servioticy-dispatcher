@@ -32,6 +32,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 import clojure.lang.PersistentArrayMap;
 
+import com.esotericsoftware.minlog.Log;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.pubsub.PubSubPublisherFactory;
 import com.servioticy.dispatcher.pubsub.PublisherInterface;
@@ -94,26 +95,26 @@ public class ActuationDispatcherBolt implements IRichBolt {
 		
 		try {
 			ObjectMapper mapper = new ObjectMapper();
-			String actionName;
 			String sourceSOId;
 			String actionId;
+			String actionName;
 			
-			JsonNode parameters = mapper.readTree(input.getStringByField("parameters"));
-			actionName = input.getStringByField("action");
+			JsonNode actuation = mapper.readTree(input.getStringByField("action"));
 			sourceSOId = input.getStringByField("soid");
 			actionId = input.getStringByField("id");
+			actionName = input.getStringByField("name");
+			Log.info("received actuation\n\t\t" +
+					 "action: "+actuation.toString()+"\n\t\t"+
+					 "soid: "+sourceSOId+"\n\t\t"+
+					 "name: "+actionName+"\n\t\t"+
+					 "id: "+actionId);
+			
 	
-			ObjectNode actuation = mapper.createObjectNode();
-			
-			actuation.put("action", actionName);
-			actuation.put("id", actionId);
-			actuation.put("soid", sourceSOId);
-			
-			ObjectNode newParamteres = actuation.putObject("parameters");
-			newParamteres.putAll((ObjectNode)parameters);
-			
+		
+						
 			publisher.publishMessage(sourceSOId+"/actions", actuation.toString());
-			LOG.info("PubSub message pubished on topic "+sourceSOId+"/actions");
+			LOG.info("Actuation request pubished on topic "+sourceSOId+"/actions");
+			LOG.info("Actuation message contents: "+actuation.toString());
 			
 		} catch (Exception e) {
 			LOG.error("FAIL", e);

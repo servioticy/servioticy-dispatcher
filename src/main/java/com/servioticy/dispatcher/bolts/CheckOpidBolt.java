@@ -61,13 +61,15 @@ public class CheckOpidBolt implements IRichBolt {
 
 	public void execute(Tuple input) {
 		
-		if(input.contains("opid")) {
-			RestResponse rr;
-			String opid = input.getStringByField("opid");
+
+		RestResponse rr;
+		String opid = input.getStringByField("opid");
+		if(!opid.equalsIgnoreCase("action")) { // This is a SU
+			
 			try {
 				rr = restClient.restRequest(
 						DispatcherContext.restBaseURL
-								+ "private/opid/" + opid, null,
+						+ "private/opid/" + opid, null,
 						RestClient.GET, null);
 	
 			} catch (Exception e) {
@@ -76,7 +78,7 @@ public class CheckOpidBolt implements IRichBolt {
 				this.collector.fail(input);
 				return;
 			}
-			
+	
 			this.collector.emit(
 					"stream",
 					input,
@@ -84,7 +86,7 @@ public class CheckOpidBolt implements IRichBolt {
 							.getStringByField("soid"), input
 							.getStringByField("streamid"), input
 							.getStringByField("su")));
-			
+
 			this.collector.emit(
 					"subscription",
 					input,
@@ -92,18 +94,19 @@ public class CheckOpidBolt implements IRichBolt {
 							.getStringByField("soid"), input
 							.getStringByField("streamid"), input
 							.getStringByField("su")));
-		} else {
 			
+		} else {	
+			//Fields correspond to: soid, actuation id, descriptor including parameters
 			this.collector.emit(
 					"actuation",
 					input,
 					new Values(input
 							.getStringByField("soid"), input
-							.getStringByField("action"), input
-							.getStringByField("parameters"), input
-							.getStringByField("id")));
+							.getStringByField("streamid"), input
+							.getStringByField("su")));
 			
 		}
+		
 		this.collector.ack(input);
 	}
 
@@ -113,7 +116,7 @@ public class CheckOpidBolt implements IRichBolt {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
 		declarer.declareStream("stream", new Fields("subsdoc","soid", "streamid", "su"));
-		declarer.declareStream("actuation", new Fields("soid", "action", "parameters"));
+		declarer.declareStream("actuation", new Fields("soid", "id", "action"));
 
 	}
 
