@@ -34,39 +34,14 @@ import java.util.Map.Entry;
  */
 public class SOProcessor {
 
-    private class PSOStream {
-        public LinkedHashMap<String, PSOChannel> channels;
-        public JsonPathReplacer preFilter;
-        public JsonPathReplacer postFilter;
-    }
-
-    private class PSOChannel {
-        public JsonPathReplacer currentValue;
-        public String unit;
-        public String type;
-    }
-
     String id;
-
     AliasReplacer aliases;
-
     LinkedHashMap<String, PSOStream> streams;
     LinkedHashMap<String, Object> queries;
-
     SO so;
     String jso;
-
     Map<String, HashSet<String>> streamsByDocId;
     Map<String, HashSet<String>> docIdsByStream;
-
-    private void addStreamByDocIds(String stream, Set<String> docIds) {
-        for (String docId : docIds) {
-            if (!this.streamsByDocId.containsKey(docId)) {
-                this.streamsByDocId.put(docId, new HashSet<String>());
-            }
-            this.streamsByDocId.get(docId).add(stream);
-        }
-    }
 
     public SOProcessor(String json, String soid) throws JsonParseException, JsonMappingException, IOException {
         this.id = soid;
@@ -84,6 +59,15 @@ public class SOProcessor {
         // Streams
         this.streams = new LinkedHashMap<String, PSOStream>();
 
+    }
+
+    private void addStreamByDocIds(String stream, Set<String> docIds) {
+        for (String docId : docIds) {
+            if (!this.streamsByDocId.containsKey(docId)) {
+                this.streamsByDocId.put(docId, new HashSet<String>());
+            }
+            this.streamsByDocId.get(docId).add(stream);
+        }
     }
 
     public String replaceAliases() throws JsonGenerationException, JsonMappingException, IOException {
@@ -225,6 +209,10 @@ public class SOProcessor {
             return null;
         }
 
+        su.setStreamsChain(new ArrayList<ArrayList<String>>());
+
+        su.setTimestampChain(new ArrayList<Long>());
+
         return su;
     }
 
@@ -239,5 +227,17 @@ public class SOProcessor {
 
         engine.eval("var result = Boolean(" + postFilterCode + ")");
         return (Boolean) engine.get("result");
+    }
+
+    private class PSOStream {
+        public LinkedHashMap<String, PSOChannel> channels;
+        public JsonPathReplacer preFilter;
+        public JsonPathReplacer postFilter;
+    }
+
+    private class PSOChannel {
+        public JsonPathReplacer currentValue;
+        public String unit;
+        public String type;
     }
 }

@@ -15,20 +15,19 @@
  ******************************************************************************/
 package com.servioticy.dispatcher;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
+
+import java.io.Serializable;
+import java.util.ArrayList;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
 public class DispatcherContext implements Serializable{
-    private static final long serialVersionUID = 1L;
     static final public String DEFAULT_CONFIG_PATH = "dispatcher.xml";
-
+    private static final long serialVersionUID = 1L;
     public String restBaseURL = "localhost";
     public String[] kestrelAddresses = new String[]{"localhost"};
     public int kestrelPort = 2229;
@@ -38,6 +37,9 @@ public class DispatcherContext implements Serializable{
     public String mqttUri;
     public String mqttUser;
     public String mqttPassword;
+
+    public boolean benchmark = false;
+    public String benchResultsDir = ".";
 
     public void loadConf(String path) {
     	HierarchicalConfiguration config;
@@ -64,22 +66,17 @@ public class DispatcherContext implements Serializable{
     		this.kestrelPort = config.getInt("kestrels/port", this.kestrelPort);
     		this.kestrelQueue = config.getString("kestrels/queue", this.kestrelQueue);
 
-    		if(config.containsKey("pubsub/mqtt/name")){
-    			if(config.containsKey("pubsub/mqtt/uri")){
-    				mqttUri = config.getString("pubsub/mqtt/uri");
-    			}
-    			if(config.containsKey("pubsub/mqtt/username")){
-    				mqttUser = config.getString("pubsub/mqtt/username");
-    			}
-    			if(config.containsKey("pubsub/mqtt/password")){
-    				mqttPassword = config.getString("pubsub/mqtt/password");
-    			}
+            this.benchmark = config.getBoolean("benchmark", this.benchmark);
 
-    		}                            
+            mqttUri = config.getString("pubsub/mqtt/uri", this.mqttUri);
+            mqttUser = config.getString("pubsub/mqtt/username", this.mqttUser);
+            mqttPassword = config.getString("pubsub/mqtt/password", this.mqttPassword);
 
-    	} catch (Exception e) {
-    		e.printStackTrace();
-    		return;
-    	}
+            this.benchResultsDir = config.getString("benchResultsDir", this.benchResultsDir);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
     }
 }

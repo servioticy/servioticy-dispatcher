@@ -15,34 +15,30 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher.bolts;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-import com.servioticy.queueclient.KestrelThriftClient;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
-
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.IRichBolt;
+import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
+import com.servioticy.queueclient.KestrelThriftClient;
 import com.servioticy.queueclient.QueueClient;
-
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestClientException;
 import com.servioticy.restclient.RestResponse;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 
-import backtype.storm.task.OutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichBolt;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Tuple;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -119,14 +115,25 @@ public class StreamProcessorBolt implements IRichBolt {
 			// TODO Resolve dynsets
 			String lastSU;
 			String glurstr = mapper.writeValueAsString(group);
-			
-			rr = restClient.restRequest(
-					dc.restBaseURL
-						+ "private/groups/lastUpdate", 
-						glurstr, RestClient.POST,
-						null);
-			// In case there is no update.
-			if(rr.getHttpCode() == 204){
+
+            try {
+                rr = restClient.restRequest(
+                        dc.restBaseURL
+                                + "private/groups/lastUpdate",
+                        glurstr, RestClient.POST,
+                        null
+                );
+            } catch (RestClientErrorCodeException e) {
+                // TODO Log the error
+                e.printStackTrace();
+                if (e.getRestResponse().getHttpCode() >= 500) {
+                    throw e;
+                }
+                groupDocs.put(docId, "null");
+                continue;
+            }
+            // In case there is no update.
+            if(rr.getHttpCode() == 204){
 				groupDocs.put(docId, "null");
 				continue;
 			}
@@ -148,18 +155,28 @@ public class StreamProcessorBolt implements IRichBolt {
 				continue;
 			}
 			String lastSU;
-			rr = restClient.restRequest(
-					dc.restBaseURL
-						+ "private/" + soId + "/streams/" + docId + "/lastUpdate", 
-						null, RestClient.GET,
-						null);
-
-			// In case there is no update.
-			if(rr.getHttpCode() == 204){
-				streamDocs.put(docId, "null");
-				continue;
-			}
-			lastSU = rr.getResponse();
+            try {
+                rr = restClient.restRequest(
+                        dc.restBaseURL
+                                + "private/" + soId + "/streams/" + docId + "/lastUpdate",
+                        null, RestClient.GET,
+                        null
+                );
+            } catch (RestClientErrorCodeException e) {
+                // TODO Log the error
+                e.printStackTrace();
+                if (e.getRestResponse().getHttpCode() >= 500) {
+                    throw e;
+                }
+                streamDocs.put(docId, "null");
+                continue;
+            }
+            // In case there is no update.
+            if(rr.getHttpCode() == 204){
+                streamDocs.put(docId, "null");
+                continue;
+            }
+            lastSU = rr.getResponse();
 			// TODO If there is not a lastSU, don't put it.
 			streamDocs.put(docId, lastSU);
 		}
@@ -190,15 +207,25 @@ public class StreamProcessorBolt implements IRichBolt {
 		} catch(Exception e){
 			// TODO Log the error
 			e.printStackTrace();
-			collector.ack(input);
-			return;
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            collector.ack(input);
+            return;
 		}
-		if(suCache.check(soId + ";" + streamId, su.getLastUpdate())){
-			// This SU or a posterior one has already been sent, do not send this one.
-			collector.ack(input);
+        /*if(suCache.check(soId + ";" + streamId, su.getLastUpdate())){
+            // This SU or a posterior one has already been sent, do not send this one.
+            this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "sucache")
+            );
+            collector.ack(input);
 			return;
-		}
-		// It is not needed to replace the alias, it has been already done in the previous bolt.
+		}*/
+        // It is not needed to replace the alias, it has been already done in the previous bolt.
 		sop.compileJSONPaths();
 		
 		Set<String> docIds = sop.getDocIdsByStream(streamId);
@@ -232,8 +259,13 @@ public class StreamProcessorBolt implements IRichBolt {
 			} catch(Exception e){
 				// TODO Log the error
 				e.printStackTrace();
-				collector.ack(input);
-				return;
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "error")
+                );
+                collector.ack(input);
+                return;
 			}
 			timestamp = inputSU.getLastUpdate() > timestamp ? inputSU.getLastUpdate() : timestamp;
 		}
@@ -245,27 +277,47 @@ public class StreamProcessorBolt implements IRichBolt {
 			} catch(Exception e){
 				// TODO Log the error
 				e.printStackTrace();
-				collector.ack(input);
-				return;
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "error")
+                );
+                collector.ack(input);
+                return;
 			}
 			// There is already a newer update stored
 			if(timestamp <= previousSU.getLastUpdate()){
-				collector.ack(input);
-				return;
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "old")
+                );
+                collector.ack(input);
+                return;
 			}
 		}
-		
-		String resultSUDoc;
-		try{
+        SensorUpdate resultSU;
+        String resultSUDoc;
+        try{
 			if(!sop.checkPreFilter(streamId, docs)){
-				collector.ack(input);
-				return;
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "pre-filter")
+                );
+                collector.ack(input);
+                return;
 			}
-			
-			SensorUpdate resultSU = sop.getResultSU(streamId, docs, timestamp);
-			if(resultSU == null){
-				collector.ack(input);
-				return;
+
+            resultSU = sop.getResultSU(streamId, docs, timestamp);
+            if (resultSU == null) {
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "null-result")
+                );
+                collector.ack(input);
+                return;
 			}
 			mapper.setSerializationInclusion(Inclusion.NON_NULL);
 			resultSUDoc = mapper.writeValueAsString(resultSU);
@@ -280,18 +332,50 @@ public class StreamProcessorBolt implements IRichBolt {
             }
 			
 			if(!sop.checkPostFilter(streamId, docs)){
-				collector.ack(input);
-				return;
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "post-filter")
+                );
+                collector.ack(input);
+                return;
 			}
 		} catch(Exception e){
 			// TODO Log the error
 			e.printStackTrace();
-			collector.ack(input);
-			return;
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            collector.ack(input);
+            return;
 		}
-		
-		// generate opid
-		String opid = Integer.toHexString(resultSUDoc.hashCode());
+
+        String[] fromStr = {so.getId(), streamId};
+        resultSU.setStreamsChain(su.getStreamsChain());
+        resultSU.setTimestampChain(su.getTimestampChain());
+        resultSU.setOriginId(su.getOriginId());
+
+        resultSU.getStreamsChain().add(new ArrayList<String>(Arrays.asList(fromStr)));
+        resultSU.getTimestampChain().add(System.currentTimeMillis());
+
+        try {
+            resultSUDoc = mapper.writeValueAsString(resultSU);
+        } catch (Exception e) {
+            // TODO Log the error
+
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            collector.ack(input);
+            return;
+        }
+
+        // generate opid
+        String opid = Integer.toHexString(resultSUDoc.hashCode());
 		
 		// The output dispatcher json
 		String dispatcherJson =	"{"+
@@ -307,16 +391,22 @@ public class StreamProcessorBolt implements IRichBolt {
 				qc = QueueClient.factory();
 			} catch(Exception e){
 				// TODO Log the error
-				collector.ack(input);
-				return;
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "error")
+                );
+                collector.ack(input);
+                return;
 			}
 		}
 		try{
 			qc.connect();
 			if(!qc.put(dispatcherJson)){
 				// TODO Log the error
-				collector.fail(input);
-				return;
+                System.err.println("Error trying to queue a SU");
+                collector.fail(input);
+                return;
 			}
 			qc.disconnect();
 		} catch (Exception e) {
@@ -325,10 +415,29 @@ public class StreamProcessorBolt implements IRichBolt {
 			collector.fail(input);
 			return;
 		}
-		
-		try{
-			// Send to the API
-			restClient.restRequest(
+
+        // Remove the data that doesn't need to be stored.
+        resultSU.setStreamsChain(null);
+        resultSU.setTimestampChain(null);
+        resultSU.setOriginId(null);
+
+        try {
+            resultSUDoc = mapper.writeValueAsString(resultSU);
+        } catch (Exception e) {
+            // TODO Log the error
+
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            collector.ack(input);
+            return;
+        }
+
+        try {
+            // Send to the API
+            restClient.restRequest(
 					dc.restBaseURL
 							+ "private/" + soId + "/streams/"
 							+ streamId + "/" + opid, resultSUDoc,
@@ -341,18 +450,28 @@ public class StreamProcessorBolt implements IRichBolt {
                 collector.fail(input);
                 return;
             }
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
             collector.ack(input);
             return;
         }catch (Exception e) {
             // TODO Log the error
-            e.printStackTrace();
+
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
             collector.ack(input);
             return;
         }
-		
-		suCache.put(soId+";"+streamId, su.getLastUpdate());
-		collector.ack(input);
-		return;
+
+        //suCache.put(soId+";"+streamId, su.getLastUpdate());
+        collector.ack(input);
+        return;
 	}
 
 	public void cleanup() {
@@ -360,6 +479,7 @@ public class StreamProcessorBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
 
 	}
 
