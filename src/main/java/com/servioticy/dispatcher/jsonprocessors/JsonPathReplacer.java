@@ -156,7 +156,7 @@ public class JsonPathReplacer {
         return jpids;
     }
 
-    public String replace(Map<String, String> jsons) throws InvalidPathException {
+    public String replace(Map<String, String> jsons, HashMap<String, String> inputVars, Map<String, String> mapVarSU) throws InvalidPathException {
         if (this.str == null) {
             this.str = "";
         }
@@ -176,29 +176,36 @@ public class JsonPathReplacer {
 //				if(jp.isPathDefinite()){
                 String json;
                 String key = jp.getKey();
+                String varName = Long.toHexString(UUID.randomUUID().getMostSignificantBits());
+                mapVarSU.put(varName, jsons.get(key));
+                json = jsons.get(key);
                 try {
                     // If the path does not exist in the input json, throws InvalidPathException
-                    json = jsons.get(key);
                     Object content = jp.getValue().read(json);
                     if (content instanceof String) {
-                        partial += "\"" + content + "\"";
+                        inputVars.put(varName,"\"" + content + "\"");
                     } else {
                         ObjectMapper mapper = new ObjectMapper();
-                        partial += mapper.writeValueAsString(content);
+                        inputVars.put(varName,mapper.writeValueAsString(content));
+
                     }
+                    partial += varName;
                 } catch (java.lang.IllegalArgumentException e) {
                     // The input is not a json
                     // TODO This should be done *only* on queries. In navigations of implicit queries or selfdocument, it should be an error
                     //	and the document shouldn't be processed.
-                    partial += "null";
+                    inputVars.put(varName, "null");
+                    partial += varName;
                 } catch (Exception e) {
                     // Not a correct input json
                     // TODO log this
                     e.printStackTrace();
-                    partial += "null";
+                    inputVars.put(varName, "null");
+                    partial += varName;
                 }
 //				}
             }
+
             if (index > sb.toString().length()) {
                 sb.append(partial);
             } else {
