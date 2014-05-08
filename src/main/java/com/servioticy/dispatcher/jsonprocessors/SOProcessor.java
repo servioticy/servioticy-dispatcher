@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 
+import org.mozilla.javascript.Provelement;
+import org.mozilla.javascript.ProvenanceAPI;
+
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
