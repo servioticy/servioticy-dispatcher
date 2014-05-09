@@ -272,9 +272,6 @@ public class TopologyTest {
 	        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 1)
         		.shuffleGrouping( "checkopid", "subscription");
 	        
-	        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
-	        	.fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
-	        
 	        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc, restClient), 1)
 	    		.shuffleGrouping("subretriever", "internalSub")
 	    		.shuffleGrouping("checkopid", "stream");
