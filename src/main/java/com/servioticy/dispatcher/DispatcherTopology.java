@@ -24,7 +24,6 @@ import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import com.servioticy.dispatcher.bolts.*;
-import com.servioticy.queueclient.KestrelThriftClient;
 import org.apache.commons.cli.*;
 
 import java.util.Arrays;
@@ -43,7 +42,7 @@ public class DispatcherTopology {
     public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException, ParseException {
 
         Options options = new Options();
-
+        
         options.addOption(OptionBuilder.withArgName("file")
                 .hasArg()
                 .withDescription("Config file path.")
@@ -52,7 +51,11 @@ public class DispatcherTopology {
                 .hasArg()
                 .withDescription("Name of the topology in storm. If no name is given it will run in local mode.")
                 .create("t"));
+        options.addOption(OptionBuilder
+                .withDescription("Enable debugging")
+                .create("d"));
 
+        
         CommandLineParser parser = new GnuParser();
         CommandLine cmd = parser.parse(options, args);
 
@@ -60,35 +63,52 @@ public class DispatcherTopology {
         if (cmd.hasOption("f")) {
             path = cmd.getOptionValue("f");
         }
+
         DispatcherContext dc = new DispatcherContext();
         dc.loadConf(path);
-
+                
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, "services", new UpdateDescriptorScheme()), 4);
+        // TODO Auto-assign workers to the spout in function of the number of Kestrel IPs
+        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
+        builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()), 4);
 
-        builder.setBolt("checkopid", new CheckOpidBolt(dc), 2)
+        builder.setBolt("checkopid", new CheckOpidBolt(dc), 10)
                 .shuffleGrouping("dispatcher");
-        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 2)
+
+        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 2)
+        		.shuffleGrouping("actions");
+
+        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 4)
                 .shuffleGrouping("checkopid", "subscription");
 
-        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 4)
-                .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
 
-        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 4)
+        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
+                .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
+        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(dc), 1)
+                .fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
+
+        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 13)
                 .shuffleGrouping("subretriever", "internalSub")
                 .shuffleGrouping("checkopid", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 4)
-                .fieldsGrouping("streamdispatcher", new Fields("soid", "streamid"));
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 17)
+                .shuffleGrouping("streamdispatcher", "default");
 
+        if (dc.benchmark) {
+            builder.setBolt("benchmark", new BenchmarkBolt(dc), 4)
+                    .shuffleGrouping("streamdispatcher", "benchmark")
+                    .shuffleGrouping("subretriever", "benchmark")
+                    .shuffleGrouping("streamprocessor", "benchmark")
+                    .shuffleGrouping("checkopid", "benchmark");
+        }
 
         Config conf = new Config();
-        conf.setDebug(false);
+        conf.setDebug(cmd.hasOption("d"));
         if (cmd.hasOption("t")) {
-            conf.setNumWorkers(6);
+            conf.setNumWorkers(8);
             StormSubmitter.submitTopology(cmd.getOptionValue("t"), conf, builder.createTopology());
         } else {
-            conf.setMaxTaskParallelism(3);
+            conf.setMaxTaskParallelism(4);
             LocalCluster cluster = new LocalCluster();
             cluster.submitTopology("dispatcher", conf, builder.createTopology());
 

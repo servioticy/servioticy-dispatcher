@@ -15,13 +15,6 @@
  ******************************************************************************/
 package com.servioticy.dispatcher.bolts;
 
-import java.util.Map;
-
-import com.servioticy.dispatcher.DispatcherContext;
-import com.servioticy.queueclient.QueueClient;
-import com.servioticy.restclient.RestClient;
-import com.servioticy.restclient.RestResponse;
-
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
@@ -29,6 +22,16 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import com.servioticy.datamodel.SensorUpdate;
+import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.restclient.RestClient;
+import com.servioticy.restclient.RestResponse;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -63,38 +66,88 @@ public class CheckOpidBolt implements IRichBolt {
 	}
 
 	public void execute(Tuple input) {
+		
+
 		RestResponse rr;
 		String opid = input.getStringByField("opid");
-		try {
-			rr = restClient.restRequest(
-					dc.restBaseURL
-							+ "private/opid/" + opid, null,
-					RestClient.GET, null);
+        String suDoc = input.getStringByField("su");
+        SensorUpdate su;
 
-		} catch (Exception e) {
-			// TODO Log the error
-			// Retry until timeout
-			this.collector.fail(input);
-			return;
-		}
-		
+        try {
+            rr = restClient.restRequest(
+                    dc.restBaseURL
+                            + "private/opid/" + opid, null,
+                    RestClient.GET, null
+            );
+
+        } catch (Exception e) {
+            // TODO Log the error
+            // Retry until timeout
+            this.collector.fail(input);
+            return;
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            su = mapper.readValue(suDoc, SensorUpdate.class);
+        } catch (Exception e) {
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            // TODO Log the error
+            e.printStackTrace();
+            collector.ack(input);
+            return;
+        }
+        if (su.getStreamsChain() == null) {
+            su.setStreamsChain(new ArrayList<ArrayList<String>>());
+            String[] chainInit = {input.getStringByField("soid"), input.getStringByField("streamid")};
+            su.getStreamsChain().add(new ArrayList<String>(Arrays.asList(chainInit)));
+            su.setTimestampChain(new ArrayList<Long>());
+            su.getTimestampChain().add(System.currentTimeMillis());
+            su.setOriginId(UUID.randomUUID().getMostSignificantBits());
+        }
+        /*else if( (System.currentTimeMillis() - su.getTimestampChain().get(su.getTimestampChain().size()-1)) > 2*60*1000 ||
+                 (System.currentTimeMillis() - su.getTimestampChain().get(0)) > 10*60*1000){
+            // Timeout
+            this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "timeout")
+            );
+            collector.ack(input);
+            //TODO Log the error
+            return;
+        }*/
+
+        try {
+            suDoc = mapper.writeValueAsString(su);
+        } catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
+            collector.ack(input);
+            return;
+        }
+
 		this.collector.emit(
 				"stream",
 				input,
 				new Values(null, input
 						.getStringByField("soid"), input
-						.getStringByField("streamid"), input
-						.getStringByField("su")));
-		
-		this.collector.emit(
-				"subscription",
+                        .getStringByField("streamid"), suDoc)
+        );
+
+        this.collector.emit(
+                "subscription",
 				input,
 				new Values(input
 						.getStringByField("soid"), input
-						.getStringByField("streamid"), input
-						.getStringByField("su")));
-		this.collector.ack(input);
-	}
+                        .getStringByField("streamid"), suDoc)
+        );
+        this.collector.ack(input);
+    }
 
 	public void cleanup() {
 	}
@@ -102,8 +155,9 @@ public class CheckOpidBolt implements IRichBolt {
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
 		declarer.declareStream("stream", new Fields("subsdoc","soid", "streamid", "su"));
+        if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
 
-	}
+    }
 
 	public Map<String, Object> getComponentConfiguration() {
 		return null;

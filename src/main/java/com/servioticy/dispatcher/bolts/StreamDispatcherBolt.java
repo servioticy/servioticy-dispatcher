@@ -15,21 +15,6 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher.bolts;
 
-import java.util.Map;
-import java.util.Map.Entry;
-
-import com.servioticy.restclient.RestClientErrorCodeException;
-import org.codehaus.jackson.map.ObjectMapper;
-
-import com.servioticy.datamodel.SO;
-import com.servioticy.datamodel.SOGroup;
-import com.servioticy.datamodel.SOSubscription;
-import com.servioticy.dispatcher.DispatcherContext;
-import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
-
-import com.servioticy.restclient.RestClient;
-import com.servioticy.restclient.RestResponse;
-
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
@@ -37,6 +22,20 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import com.servioticy.datamodel.SO;
+import com.servioticy.datamodel.SOGroup;
+import com.servioticy.datamodel.SOSubscription;
+import com.servioticy.datamodel.SensorUpdate;
+import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
+import com.servioticy.restclient.RestClient;
+import com.servioticy.restclient.RestClientErrorCodeException;
+import com.servioticy.restclient.RestResponse;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -92,8 +91,13 @@ public class StreamDispatcherBolt implements IRichBolt {
 			} catch (Exception e) {
 				// TODO Log the error
 				e.printStackTrace();
-				collector.ack(input);
-				return;
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "error")
+                );
+                collector.ack(input);
+                return;
 			}
 			destination = soSub.getDestination();
 		}
@@ -114,13 +118,24 @@ public class StreamDispatcherBolt implements IRichBolt {
                 collector.fail(input);
                 return;
             }
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            e.printStackTrace();
             collector.ack(input);
 			return;
         }catch (Exception e) {
 			// TODO Log the error
 			e.printStackTrace();
-			collector.ack(input);
-			return;
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            collector.ack(input);
+            return;
 		}
 		try{
 			so = mapper.readValue(soDoc,
@@ -128,8 +143,13 @@ public class StreamDispatcherBolt implements IRichBolt {
 		} catch (Exception e) {
 			// TODO Log the error
 			e.printStackTrace();
-			collector.ack(input);
-			return;
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            collector.ack(input);
+            return;
 		}
 		
 		String docId;
@@ -143,7 +163,6 @@ public class StreamDispatcherBolt implements IRichBolt {
 					}
 				}
 			}
-			
 			docId = streamId;
 		}
 		else{
@@ -155,17 +174,43 @@ public class StreamDispatcherBolt implements IRichBolt {
 			SOProcessor sop = new SOProcessor(soDoc, destination);
 			soDoc = sop.replaceAliases();
 			sop.compileJSONPaths();
-			for( String streamIdByDoc: sop.getStreamsByDocId( docId ) ){
-				this.collector.emit(	input, 
-										new Values(	destination,
-													streamIdByDoc,
+
+            SensorUpdate su = mapper.readValue(suDoc, SensorUpdate.class);
+            boolean emitted = false;
+            for (String streamIdByDoc : sop.getStreamsByDocId(docId)) {
+                // If the SU comes from the same stream than it is going, it must be stopped
+                boolean beenThere = false;
+                for (ArrayList<String> prevStream : su.getStreamsChain()) {
+                    beenThere = (destination == prevStream.get(0) && streamIdByDoc == prevStream.get(1));
+                    if (beenThere) break;
+                }
+
+                if (beenThere) {
+                    continue;
+                }
+                this.collector.emit("default", input,
+                        new Values(destination,
+                                streamIdByDoc,
 													soDoc,
 													docId,
 													suDoc));
-			}
-		}catch(Exception e){
-			collector.ack(input);
-			//TODO Log the error
+                emitted = true;
+            }
+            if (!emitted) {
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "no-stream")
+                );
+            }
+        } catch (Exception e) {
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            collector.ack(input);
+            //TODO Log the error
 			e.printStackTrace();
 			return;
 		}
@@ -178,8 +223,9 @@ public class StreamDispatcherBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("soid", "streamid", "so", "groupid", "su"));
-	}
+        declarer.declareStream("default", new Fields("soid", "streamid", "so", "groupid", "su"));
+        if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
+    }
 
 	public Map<String, Object> getComponentConfiguration() {
 		return null;

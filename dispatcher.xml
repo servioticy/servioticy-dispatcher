@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <context>
 	<servioticyAPI>http://localhost:8011/</servioticyAPI>
-	<kestrels>
-		<kestrel>
+    <benchmark>false</benchmark>
+    <benchResultsDir>~</benchResultsDir>
+    <kestrels>
+    <kestrel>
 			<addr>localhost</addr>
 		</kestrel>
 		<port>2229</port>
         <queue>services</queue>
 	</kestrels>
+	<pubsub>
+		<mqtt>
+			<name>servioticy</name>
+			<uri>tcp://localhost:1833</uri>
+			<username>compose</username>
+			<password>shines</password>
+		</mqtt>
+	</pubsub>
+	
 </context>
