@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <context>
 	<servioticyAPI>http://localhost:8011/</servioticyAPI>
-	<kestrels>
-		<kestrel>
+    <benchmark>false</benchmark>
+    <benchResultsDir>~</benchResultsDir>
+    <kestrels>
+    <kestrel>
 			<addr>localhost</addr>
 		</kestrel>
 		<port>2229</port>
