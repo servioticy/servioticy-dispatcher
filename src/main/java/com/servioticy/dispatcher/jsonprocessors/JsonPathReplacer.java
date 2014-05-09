@@ -176,7 +176,7 @@ public class JsonPathReplacer {
 //				if(jp.isPathDefinite()){
                 String json;
                 String key = jp.getKey();
-                String varName = Long.toHexString(UUID.randomUUID().getMostSignificantBits());
+                String varName = Long.toHexString(jp.getValue().getPath().hashCode());
                 mapVarSU.put(varName, jsons.get(key));
                 json = jsons.get(key);
                 try {
