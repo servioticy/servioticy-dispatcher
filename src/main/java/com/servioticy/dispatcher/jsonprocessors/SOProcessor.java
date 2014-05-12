@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import org.mozilla.javascript.Provelement;
+import org.mozilla.javascript.Provenance;
 import org.mozilla.javascript.ProvenanceAPI;
 
 /**
@@ -170,7 +171,10 @@ public class SOProcessor {
         provList.clear();
         provList.addAll(newProvList);
 
-        return (Boolean) ProvenanceAPI.getResultValue(provList);
+        String result = (String) ProvenanceAPI.getResultValue(provList);
+
+
+        return Boolean.parseBoolean(result);
         //engine.eval("var result = Boolean(" + preFilterCode + ")");
         //return (Boolean) engine.get("result");
 
@@ -223,7 +227,20 @@ public class SOProcessor {
                 provList.clear();
                 provList.addAll(newProvList);
 
-                suChannel.setCurrentValue(ProvenanceAPI.getResultValue(provList));
+                Object result = null;
+                if (pchannel.type.toLowerCase().equals("number")) {
+                    result = Double.parseDouble((String) ProvenanceAPI.getResultValue(provList));
+                } else if (pchannel.type.toLowerCase().equals("boolean")) {
+                    result = Boolean.parseBoolean((String) ProvenanceAPI.getResultValue(provList));
+                } else if (pchannel.type.toLowerCase().equals("string")) {
+                    result = (String) ProvenanceAPI.getResultValue(provList);
+                }
+                // TODO Array type
+                else {
+                    return null;
+                }
+
+                suChannel.setCurrentValue(result);
 
                 //suChannel.setCurrentValue(engine.get("result"));
             }
@@ -264,7 +281,9 @@ public class SOProcessor {
         provList.clear();
         provList.addAll(newProvList);
 
-        return (Boolean) ProvenanceAPI.getResultValue(provList);
+        String result = (String) ProvenanceAPI.getResultValue(provList);
+
+        return Boolean.parseBoolean(result);
     }
 
     private class PSOStream {
