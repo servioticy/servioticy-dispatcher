@@ -27,7 +27,7 @@ import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SOSubscription;
 import com.servioticy.datamodel.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
-import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
+import com.servioticy.dispatcher.SOUtils;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestResponse;
@@ -171,13 +171,11 @@ public class StreamDispatcherBolt implements IRichBolt {
 		
 		// TODO Could be useful to delete the unused groups from the SO. Open discussion.
 		try{
-			SOProcessor sop = new SOProcessor(soDoc, destination);
-			soDoc = sop.replaceAliases();
-			sop.compileJSONPaths();
+			SOUtils sou = new SOUtils(mapper.readValue(soDoc, SO.class));
 
             SensorUpdate su = mapper.readValue(suDoc, SensorUpdate.class);
             boolean emitted = false;
-            for (String streamIdByDoc : sop.getStreamsByDocId(docId)) {
+            for (String streamIdByDoc : sou.getStreamsBySourceId(docId)) {
                 // If the SU comes from the same stream than it is going, it must be stopped
                 boolean beenThere = false;
                 for (ArrayList<String> prevStream : su.getStreamsChain()) {

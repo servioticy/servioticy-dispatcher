@@ -56,132 +56,59 @@ public class TopologyTest {
 
 		try{
 			String opid = "sometestopid";
-			String originSoid = "1234567890";
+			String soid = "1234567890";
 			String origStreamid = "location";
-			String destSoid = "2345678901";
-			
+
 			DispatcherContext dc = new DispatcherContext();
             dc.loadConf(null);
 			
 			ObjectMapper mapper = new ObjectMapper();
-
-			// Origin SO
-			String originSo =		"{" +
-										"\"streams\":{" +
-											"\"location\": {" +
-												"\"channels\": {" +
-													"\"latitude\":{" +
-														"\"type\": \"number\"" +
-													"}," +
-													"\"longitude\":{" +
-														"\"type\": \"number\"" +
-													"}" +
-												"}" +
-											"}" +
-										"}" +
-									"}";
 			
 			// Subscriptions document
 			String subscriptions =	"{" +
-										"\"subscriptions\": [" +
-											"{" +
-												"\"id\": \"subid1\", " +
-												"\"callback\": \"internal\"," +
-											    "\"destination\": \"" + destSoid + "\"," +
-											    "\"customFields\": {" + 
-											        "\"groupId\": \"group1\"" + 
-											    "}" + 
-										    "}," +
-										    "{" +
-											    "\"callback\":\"http\"," +
-											    "\"destination\":\"http://172.20.200.229:5000/update/@latitude@/@longitude@\"," +
-											    "\"customFields\": {" +
-											      "\"aliases\": [" +
-											        "{" +
-											          "\"##\": \"{$.channels.\"," +
-											          "\"!!\": \".current-value}\"" +
-											        "}," +
-											        "{\"@latitude@\": \"##latitude!!\"}," +
-											        "{\"@longitude@\": \"##longitude!!\"}" +
-											      "]," +
-											      "\"method\":\"GET\"" +
-											    "}" +
-											"}" +
-										 "]" +
+										"\"subscriptions\": []" +
 									"}";
 			// Subscriber SO
-			String so =				"{" +
-										"\"aliases\":[" +
-											"{\"@nearDistance@\": \"0.0001\"}," +
-											"{\"@latitude@\": \"channels.latitude.current-value\"}," +
-											"{\"@longitude@\": \"channels.longitude.current-value\"}," +
-											"{\"@latDistance@\": \"{$group1.@latitude@} - {$group2.@latitude@}\"}," +
-											"{\"@longDistance@\": \"{$group1.@longitude@} - {$group2.@longitude@}\"}," +
-											"{\"@distance@\": \"Math.sqrt(Math.pow(@latDistance@, 2) + Math.pow(@longDistance@, 2))\"}" +
-										"]," +
-										"\"groups\":{" +
-											"\"group1\":{" +
-												"\"soIds\":[" +
-													"\"origin2\"," +
-													"\"origin3\"" +
-												"]," +
-												"\"stream\": \"location\"" +
-											"}," +
-											"\"group2\":{" +
-												"\"soIds\":[" +
-													"\"origin4\"," +
-													"\"origin5\"" +
-												"]," +
-												"\"stream\": \"location\"" +
-											"}" +
-										"}," +
-										"\"streams\":{" +
-											"\"proximity\": {" +
-												"\"channels\": {" +
-													"\"p\":{" +
-														"\"current-value\": \"@distance@\"," +
-														"\"type\": \"number\"" +
-													"}" +
-												"}," +
-												"\"post-filter\": \"{$proximity.} != null && {$proximity.channels.p.current-value} != {$result.channels.p.current-value}\"" +
-											"}," +
-											"\"near\":{" +
-												"\"channels\": {" +
-													"\"n\":{" +
-														"\"current-value\": \"@distance@ <= @nearDistance@\"," +
-														"\"type\": \"boolean\"" +
-													"}" +
-												"}," +
-												"\"post-filter\": \"{$near.} != null && {$near.channels.n.current-value} != {$result.channels.n.current-value}\"" +
-											"}" +
-										"}" +
-									"}";
-			
+			String so =	"{\n" +
+                        "    \"streams\": {\n" +
+                        "        \"weather\": {\n" +
+                        "            \"channels\":" +
+                        "                \"temperature\": {\n" +
+                        "                    \"type\": \"number\",\n" +
+                        "                    \"unit\": \"degrees\"\n" +
+                        "                }\n" +
+                        "            }\n" +
+                        "        },\n" +
+                        "        \"fahrenheit\": {\n" +
+                        "            \"channels\": {\n" +
+                        "                \"f\": {\n" +
+                        "                  \"current-value\": \"function(weather){return weather.channels.temperature.current-value * 1.8 + 32}\",\n" +
+                        "                    \"type\": \"number\"\n" +
+                        "                }\n" +
+                        "            }\n" +
+                        "        },\n" +
+                        "        \"aboveSeventy\": {\n" +
+                        "            \"channels\": {\n" +
+                        "                \"temperature\": {\n" +
+                        "                    \"current-value\": \"function(fahrenheit){return fahrenheit.channels.f.current-value}\",\n" +
+                        "                    \"type\": \"number\"\n" +
+                        "                }\n" +
+                        "            },\n" +
+                        "          \"post-filter\": \"function(result){result.channels.temperature.current-value > 70}\"\n" +
+                        "        }\n" +
+                        "    }\n" +
+                        "}";
+
 			// group1 SU
-			String group1SU =	"{" +
-									"\"channels\": {" +
-										"\"latitude\":{" +
-											"\"current-value\": 41.3879758" +
-										"}," +
-										"\"longitude\":{" +
-											"\"current-value\": 2.1150167" +
-										"}" +
-									"}," +
-									"\"lastUpdate\": 1392981962" +
-								"}";
-			
-			// group2 SU
-			String group2SU =	"{" +
-									"\"channels\": {" +
-										"\"latitude\":{" +
-											"\"current-value\": 41.387975" +
-										"}," +
-										"\"longitude\":{" +
-											"\"current-value\": 2.11501" +
-										"}" +
-									"}," +
-									"\"lastUpdate\": 1392981836" +
-								"}";
+			String weatherSU=	"{\n" +
+                                "    \"channels\": {\n" +
+                                "        \"temperature\":  {\n" +
+                                "            \"current-value\": 80\n" +
+                                "\t\t}\n" +
+                                "    },\n" +
+                                "    \"lastUpdate\": 1199192639\n" +
+                                "}";
+
 			// near SU
 			String nearSU =		"{" +
 									"\"channels\": {" +
@@ -220,37 +147,25 @@ public class TopologyTest {
 			// get subscriptions
 			when(restClient.restRequest(
 					dc.restBaseURL
-					+ "private/" + originSoid + "/streams/"
-					+ origStreamid
+					+ "private/" + soid + "/streams/weather"
 					+ "/subscriptions/", null, RestClient.GET,
 					null)).thenReturn(new RestResponse(subscriptions, 200));
-			// get origin so
+            when(restClient.restRequest(
+                    dc.restBaseURL
+                            + "private/" + soid + "/streams/fahrenheit"
+                            + "/subscriptions/", null, RestClient.GET,
+                    null)).thenReturn(new RestResponse(subscriptions, 200));
+            when(restClient.restRequest(
+                    dc.restBaseURL
+                            + "private/" + soid + "/streams/aboveSeventy"
+                            + "/subscriptions/", null, RestClient.GET,
+                    null)).thenReturn(new RestResponse(subscriptions, 200));
 
+			// get so
 			when(restClient.restRequest(
 					dc.restBaseURL
-					+ "private/" + originSoid, null, RestClient.GET,
-					null)).thenReturn(new RestResponse(originSo, 200));
-			// get subscriber so
-
-			when(restClient.restRequest(
-					dc.restBaseURL
-					+ "private/" + destSoid, null, RestClient.GET,
+					+ "private/" + soid, null, RestClient.GET,
 					null)).thenReturn(new RestResponse(so, 200));
-			// get 'group2' location group last update
-			when(restClient.restRequest(
-					dc.restBaseURL
-					+ "private/groups/lastUpdate", mapper.writeValueAsString(group), RestClient.POST,
-					null)).thenReturn(new RestResponse(group2SU, 200));
-			// get 'proximity' stream last update
-					when(restClient.restRequest(
-							dc.restBaseURL
-							+ "private/" + destSoid + "/streams/proximity/lastUpdate", null, RestClient.GET,
-							null)).thenReturn(new RestResponse(proxSU, 200));
-			// get 'near' stream last update
-			when(restClient.restRequest(
-					dc.restBaseURL
-					+ "private/" + destSoid + "/streams/near/lastUpdate", null, RestClient.GET,
-					null)).thenReturn(new RestResponse(nearSU, 200));
 			// store new SUs
 			when(restClient.restRequest(
 					any(String.class), 
@@ -272,9 +187,6 @@ public class TopologyTest {
 	        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 1)
         		.shuffleGrouping( "checkopid", "subscription");
 	        
-	        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
-	        	.fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
-	        
 	        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc, restClient), 1)
 	    		.shuffleGrouping("subretriever", "internalSub")
 	    		.shuffleGrouping("checkopid", "stream");
@@ -288,7 +200,7 @@ public class TopologyTest {
 	    	LocalCluster cluster = new LocalCluster();
 	    	cluster.submitTopology("dispatcher", conf, builder.createTopology());
 	    	
-	    	feeder.feed(new Values("sometestopid", "1234567890", "location", group1SU));
+	    	feeder.feed(new Values("sometestopid", "1234567890", "weather", weatherSU));
 	    	
 	    	String newDescriptor;
 	    	while((newDescriptor = (String) qc.get()) == null){
@@ -304,13 +216,12 @@ public class TopologyTest {
 	    	UpdateDescriptor ud = mapper.readValue(newDescriptor, UpdateDescriptor.class);
 	    	
 	    	Assert.assertTrue("Operation id", ud.getOpid() != null);
-	    	Assert.assertTrue("Origin SO id", ud.getSoid().equals(destSoid));
-	    	Assert.assertTrue("Origin stream id", ud.getStreamid().equals("proximity"));
-	    	Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 1392981962);
-	    	SUChannel such = ud.getSu().getChannels().get("p");
+	    	Assert.assertTrue("Origin SO id", ud.getSoid().equals(soid));
+	    	Assert.assertTrue("Origin stream id", ud.getStreamid().equals("fahrenheit"));
+	    	Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 1199192639);
+	    	SUChannel such = ud.getSu().getChannels().get("f");
 	    	double proximity = (Double)such.getCurrentValue();
-	    	Assert.assertTrue("New SU current-value", proximity >= 0.000006747);
-	    	Assert.assertTrue("New SU current-value", proximity <= 0.000006748);
+	    	Assert.assertTrue("New SU current-value", proximity == 176);
 		} catch (RestClientException e) {
 			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
 		} catch (RestClientErrorCodeException e) {

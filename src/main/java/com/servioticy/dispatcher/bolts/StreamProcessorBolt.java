@@ -26,8 +26,8 @@ import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.dispatcher.SOUtils;
 import com.servioticy.dispatcher.SUCache;
-import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
 import com.servioticy.queueclient.KestrelThriftClient;
 import com.servioticy.queueclient.QueueClient;
 import com.servioticy.restclient.RestClient;
@@ -196,14 +196,14 @@ public class StreamProcessorBolt implements IRichBolt {
 		String suDoc = input.getStringByField("su");
 		String soDoc = input.getStringByField("so");
 		String groupId = input.getStringByField("groupid");
-		SOProcessor sop;
+		SOUtils sou;
 		long timestamp;
 		Map<String, String> docs;
 		
 		try{
 			su = mapper.readValue(suDoc, SensorUpdate.class);
 			so = mapper.readValue(soDoc, SO.class);	
-			sop = new SOProcessor(soDoc, soId);
+			sou = new SOUtils(so);
 		} catch(Exception e){
 			// TODO Log the error
 			e.printStackTrace();
@@ -225,17 +225,14 @@ public class StreamProcessorBolt implements IRichBolt {
             collector.ack(input);
 			return;
 		}*/
-        // It is not needed to replace the alias, it has been already done in the previous bolt.
-		sop.compileJSONPaths();
-		
-		Set<String> docIds = sop.getDocIdsByStream(streamId);
+
+		Set<String> docIds = sou.getSourceIdsByStream(streamId);
 		// Remove the group for which we already have the SU
 		docIds.remove(groupId);
 		// The self last update from current stream
 		docIds.add(streamId);
 
 		docs = new HashMap<String, String>();
-		docs.put("", suDoc);
 		try{
 			docs.putAll(this.getStreamDocs(docIds, soId, so));
 			docs.putAll(this.getGroupDocs(docIds, soId, so));
@@ -299,7 +296,7 @@ public class StreamProcessorBolt implements IRichBolt {
         SensorUpdate resultSU;
         String resultSUDoc;
         try{
-			if(!sop.checkPreFilter(streamId, docs)){
+			if(!sou.checkPreFilter(streamId, docs)){
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
@@ -309,7 +306,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 return;
 			}
 
-            resultSU = sop.getResultSU(streamId, docs, timestamp);
+            resultSU = sou.getResultSU(streamId, docs, timestamp);
             if (resultSU == null) {
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
@@ -325,13 +322,8 @@ public class StreamProcessorBolt implements IRichBolt {
             if(!docs.containsKey("result")){
                 docs.put("result", resultSUDoc);
             }
-
-            // Deprecated. Only for retrocompatibility
-            if(!docs.containsKey("@result@")){
-                docs.put("@result@", resultSUDoc);
-            }
 			
-			if(!sop.checkPostFilter(streamId, docs)){
+			if(!sou.checkPostFilter(streamId, docs)){
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
