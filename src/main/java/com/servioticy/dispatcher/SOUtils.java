@@ -30,6 +30,16 @@ import java.util.*;
  *
  */
 public class SOUtils{
+    public static final int TYPE_SIMPLE = 0;
+    public static final int TYPE_NUMBER = 0;
+    public static final int TYPE_BOOLEAN = 1;
+    public static final int TYPE_STRING = 2;
+
+    public static final int TYPE_ARRAY = 3;
+    public static final int TYPE_ARRAY_NUMBER = 3;
+    public static final int TYPE_ARRAY_BOOLEAN = 4;
+    public static final int TYPE_ARRAY_STRING = 5;
+
     public SO so;
 
     public SOUtils(SO so){
@@ -125,6 +135,40 @@ public class SOUtils{
 
     }
 
+    private int parseType(String type){
+        type = type.toLowerCase().trim();
+
+        int typeCode = TYPE_SIMPLE;
+
+        if(type.startsWith("array")){
+            String arrayType =  type.substring("array".length(), type.length());
+            if(arrayType == null){
+                return -1;
+            }
+            arrayType = arrayType.trim();
+            if(!arrayType.startsWith("(") || !arrayType.endsWith(")")){
+                return -1;
+            }
+            arrayType = arrayType.substring(1, arrayType.length()-1);
+            if(arrayType == null){
+                return -1;
+            }
+            arrayType = arrayType.trim();
+            type = arrayType;
+            typeCode = TYPE_ARRAY;
+        }
+
+        if (type.equals("number")) {
+            return typeCode + TYPE_NUMBER;
+        } else if (type.equals("boolean")) {
+            return typeCode + TYPE_BOOLEAN;
+        } else if (type.equals("string")) {
+            return typeCode + TYPE_STRING;
+        }
+
+        return -1;
+    }
+
     public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
@@ -145,23 +189,42 @@ public class SOUtils{
             } else {
                 String currentValueCode = channel.getCurrentValue();
                 String type;
+                boolean array = false;
 
-                if (channel.getType().toLowerCase().trim().equals("number")) {
-                    type = "Number";
-                } else if (channel.getType().toLowerCase().trim().equals("boolean")) {
-                    type = "Boolean";
-                } else if (channel.getType().toLowerCase().trim().equals("string")) {
-                    type = "String";
+                switch(parseType(channel.getType())) {
+                    case TYPE_ARRAY_NUMBER:
+                        array = true;
+                    case TYPE_NUMBER:
+                        type = "Number";
+                        break;
+                    case TYPE_ARRAY_BOOLEAN:
+                        array = true;
+                    case TYPE_BOOLEAN:
+                        type = "Boolean";
+                        break;
+                    case TYPE_ARRAY_STRING:
+                        array = true;
+                    case TYPE_STRING:
+                        type = "String";
+                        break;
+                    default:
+                        return null;
                 }
-                // TODO Array type
-                else {
-                    return null;
-                }
+
                 String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
-                String finalCode = initializationCode(inputJsons) + "var " + resultVar + " = " + type + "(" + currentValueCode + "(" + functionArgsString(currentValueCode) + "));";
-                engine.eval(finalCode);
+                String finalCode;
+                if(!array) {
+                    finalCode = initializationCode(inputJsons) + "var " + resultVar + " = " + type + "(" + currentValueCode + "(" + functionArgsString(currentValueCode) + "));";
 
-                suChannel.setCurrentValue(engine.get(resultVar));
+                }else {
+                    finalCode = "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");"+
+                                "for(var i = 0; i < " + resultVar + ".length; i++){"+
+                                    resultVar +"[i] = " + type + "(" +resultVar + "[i]);" +
+                                "}";
+                }
+
+                engine.eval(finalCode);
+                suChannel.setCurrentValue(resultVar);
             }
             suChannel.setUnit(channel.getUnit());
 
