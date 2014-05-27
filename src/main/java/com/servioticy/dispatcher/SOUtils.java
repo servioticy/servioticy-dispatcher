@@ -217,7 +217,7 @@ public class SOUtils{
                     finalCode = initializationCode(inputJsons) + "var " + resultVar + " = " + type + "(" + currentValueCode + "(" + functionArgsString(currentValueCode) + "));";
 
                 }else {
-                    finalCode = "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");"+
+                    finalCode = initializationCode(inputJsons) + "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");"+
                                 "for(var i = 0; i < " + resultVar + ".length; i++){"+
                                     resultVar +"[i] = " + type + "(" +resultVar + "[i]);" +
                                 "}";
