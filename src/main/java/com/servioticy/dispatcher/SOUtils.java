@@ -46,18 +46,57 @@ public class SOUtils{
         this.so = so;
     }
 
-    public static String functionArgsString(String func){
-        int firstIndex = func.indexOf('(');
-        int lastIndex = func.indexOf(')');
+    public static int findClosing(String str, int beginIndex, int endIndex, String closing) {
+        String openKey = str.substring(beginIndex, endIndex);
+        int strIndex = endIndex;
+        int counter = 1;
+        int beginCloseIndex = -1;
+        while (counter > 0) {
+            int beginOpenIndex = str.indexOf(openKey, strIndex);
+            beginCloseIndex = str.indexOf(closing, strIndex);
+            if (beginOpenIndex < beginCloseIndex) {
+                counter++;
+                strIndex = beginOpenIndex + closing.length();
+            } else if (beginCloseIndex < beginOpenIndex) {
+                counter--;
+                strIndex = beginCloseIndex + closing.length();
+            } else {
+                return -1;
+            }
+        }
+        return beginCloseIndex;
+    }
 
-        if(     firstIndex>lastIndex ||
-                (func.indexOf(';') > -1 && func.indexOf(';') < lastIndex) ||
-                func.indexOf("function") > firstIndex ||
-                func.indexOf('{') < lastIndex){
-            return null;
+    public static boolean isFunction(String func) {
+        if (func == null) {
+            return false;
+        }
+        String trimmed = func.trim();
+        int beginArgsIndex = trimmed.indexOf("(");
+        int endArgsIndex = findClosing(trimmed, beginArgsIndex, beginArgsIndex + 1, ")");
+        int beginFuncIndex = trimmed.indexOf("(");
+        int endFuncIndex = findClosing(trimmed, beginFuncIndex, beginFuncIndex + 1, "}");
+
+        if (trimmed.indexOf("function") < beginArgsIndex &&
+                beginArgsIndex < trimmed.indexOf(')') &&
+                endArgsIndex != -1 &&
+                endArgsIndex < beginFuncIndex &&
+                beginFuncIndex < trimmed.indexOf('}') &&
+                endFuncIndex != -1 &&
+                (trimmed.indexOf(';') == -1 || trimmed.indexOf(';') > beginFuncIndex) &&
+                endFuncIndex == (trimmed.length() - 1)) {
+
+            return true;
         }
 
-        return func.substring(firstIndex+1, lastIndex).trim();
+        return false;
+    }
+
+    public static String functionArgsString(String func){
+        int beginIndex = func.indexOf('(');
+        int endIndex = findClosing(func, beginIndex, beginIndex + 1, ")");
+
+        return func.substring(beginIndex + 1, endIndex).trim();
     }
 
     public static List<String> functionArgs(String func){
@@ -179,15 +218,16 @@ public class SOUtils{
         su.setChannels(new LinkedHashMap<String, SUChannel>());
 
         SOStream stream = so.getStreams().get(streamId);
-        int nulls = 0;
         for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
             SOChannel channel = channelEntry.getValue();
             SUChannel suChannel = new SUChannel();
-            if (channel.getCurrentValue() == null) {
-                suChannel.setCurrentValue(null);
-                nulls++;
+            String currentValueCode = channel.getCurrentValue();
+            // TODO Check for invalid calls
+            // TODO Check for an invalid header
+            if (isFunction(currentValueCode)) {
+                // There is no code for one of the channels. Invalid.
+                return null;
             } else {
-                String currentValueCode = channel.getCurrentValue();
                 String type;
                 boolean array = false;
 
@@ -195,17 +235,17 @@ public class SOUtils{
                     case TYPE_ARRAY_NUMBER:
                         array = true;
                     case TYPE_NUMBER:
-                        type = "Number";
+                        type = "number";
                         break;
                     case TYPE_ARRAY_BOOLEAN:
                         array = true;
                     case TYPE_BOOLEAN:
-                        type = "Boolean";
+                        type = "boolean";
                         break;
                     case TYPE_ARRAY_STRING:
                         array = true;
                     case TYPE_STRING:
-                        type = "String";
+                        type = "string";
                         break;
                     default:
                         return null;
@@ -214,26 +254,38 @@ public class SOUtils{
                 String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
                 String finalCode;
                 if(!array) {
-                    finalCode = initializationCode(inputJsons) + "var " + resultVar + " = " + type + "(" + currentValueCode + "(" + functionArgsString(currentValueCode) + "));";
+                    finalCode = initializationCode(inputJsons) +
+                            "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
+                            "if(typeof " + resultVar + " !== '" + type + "'){" +
+                            resultVar + " = null;" +
+                            "}";
 
                 }else {
-                    finalCode = initializationCode(inputJsons) + "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");"+
-                                "for(var i = 0; i < " + resultVar + ".length; i++){"+
-                                    resultVar +"[i] = " + type + "(" +resultVar + "[i]);" +
-                                "}";
+                    finalCode = initializationCode(inputJsons) +
+                            "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
+                            "if(Object.prototype.toString.call(" + resultVar + ") !== '[object Array]') {" +
+                            resultVar + " = null;" +
+                            "}" +
+                            "else {" +
+                            "for(var i = 0; i < " + resultVar + ".length; i++){" +
+                            "if(typeof " + resultVar + "[i] !== '" + type + "'){" +
+                            resultVar + " = null;" +
+                            "break;" +
+                            "}" +
+                            "}" +
+                            "}";
                 }
 
                 engine.eval(finalCode);
-                suChannel.setCurrentValue(resultVar);
+                if (engine.get(resultVar) == null) {
+                    // Filtered output. The type is not the expected one.
+                    return null;
+                }
+                suChannel.setCurrentValue(engine.get(resultVar));
             }
             suChannel.setUnit(channel.getUnit());
 
             su.getChannels().put(channelEntry.getKey(), suChannel);
-        }
-
-        if (nulls >= su.getChannels().size()) {
-            // This stream is mapping a Web Object.
-            return null;
         }
 
         su.setStreamsChain(new ArrayList<ArrayList<String>>());
