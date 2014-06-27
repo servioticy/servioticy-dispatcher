@@ -257,22 +257,22 @@ public class SOUtils{
                     finalCode = initializationCode(inputJsons) +
                             "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
                             "if(typeof " + resultVar + " !== '" + type + "'){" +
-                            resultVar + " = null;" +
+                                resultVar + " = null;" +
                             "}";
 
                 }else {
                     finalCode = initializationCode(inputJsons) +
                             "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
                             "if(Object.prototype.toString.call(" + resultVar + ") !== '[object Array]') {" +
-                            resultVar + " = null;" +
+                                resultVar + " = null;" +
                             "}" +
                             "else {" +
-                            "for(var i = 0; i < " + resultVar + ".length; i++){" +
-                            "if(typeof " + resultVar + "[i] !== '" + type + "'){" +
-                            resultVar + " = null;" +
-                            "break;" +
-                            "}" +
-                            "}" +
+                                "for(var i = 0; i < " + resultVar + ".length; i++){" +
+                                    "if(typeof " + resultVar + "[i] !== '" + type + "'){" +
+                                       resultVar + " = null;" +
+                                       "break;" +
+                                    "}" +
+                                "}" +
                             "}";
                 }
 
