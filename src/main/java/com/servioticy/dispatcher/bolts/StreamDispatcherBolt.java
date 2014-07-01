@@ -221,7 +221,7 @@ public class StreamDispatcherBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream("default", new Fields("soid", "streamid", "so", "groupid", "su"));
+        declarer.declareStream("default", new Fields("soid", "streamid", "so", "originid", "su"));
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
     }
 

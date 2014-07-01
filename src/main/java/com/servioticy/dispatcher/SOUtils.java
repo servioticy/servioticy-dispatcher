@@ -27,9 +27,8 @@ import java.util.*;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
- *
  */
-public class SOUtils{
+public class SOUtils {
     public static final int TYPE_SIMPLE = 0;
     public static final int TYPE_NUMBER = 0;
     public static final int TYPE_BOOLEAN = 1;
@@ -42,7 +41,7 @@ public class SOUtils{
 
     public SO so;
 
-    public SOUtils(SO so){
+    public SOUtils(SO so) {
         this.so = so;
     }
 
@@ -92,42 +91,42 @@ public class SOUtils{
         return false;
     }
 
-    public static String functionArgsString(String func){
+    public static String functionArgsString(String func) {
         int beginIndex = func.indexOf('(');
         int endIndex = findClosing(func, beginIndex, beginIndex + 1, ")");
 
         return func.substring(beginIndex + 1, endIndex).trim();
     }
 
-    public static List<String> functionArgs(String func){
+    public static List<String> functionArgs(String func) {
         String argsStr = functionArgsString(func);
-        if(argsStr == null){
+        if (argsStr == null) {
             return null;
         }
         ArrayList<String> args = new ArrayList<String>(Arrays.asList(argsStr.split(",")));
-        for(String arg : args){
+        for (String arg : args) {
             arg = arg.trim();
         }
         return args;
     }
 
-    public Set<String> getStreamsBySourceId(String sourceId){
+    public Set<String> getStreamsBySourceId(String sourceId) {
         Set<String> streams = new HashSet<String>();
-        for(Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()){
+        for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()) {
             String streamId = streamEntry.getKey();
             SOStream stream = streamEntry.getValue();
-            for(Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()){
+            for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
                 String channelId = channelEntry.getKey();
                 SOChannel channel = channelEntry.getValue();
 
                 String cvFunction = channel.getCurrentValue();
 
-                if(cvFunction == null){
+                if (cvFunction == null) {
                     continue;
                 }
 
-                for(String arg : functionArgs(cvFunction)){
-                    if(arg.equals(sourceId)){
+                for (String arg : functionArgs(cvFunction)) {
+                    if (arg.equals(sourceId)) {
                         streams.add(streamId);
                     }
                 }
@@ -137,12 +136,12 @@ public class SOUtils{
         return streams;
     }
 
-    public Set<String> getSourceIdsByStream(String streamId){
+    public Set<String> getSourceIdsByStream(String streamId) {
         Set<String> sourceIds = new HashSet<String>();
         SOStream stream = so.getStreams().get(streamId);
         sourceIds.addAll(functionArgs(stream.getPreFilter()));
         sourceIds.addAll(functionArgs(stream.getPostFilter()));
-        for(Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()){
+        for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
             String channelId = channelEntry.getKey();
             SOChannel channel = channelEntry.getValue();
 
@@ -151,45 +150,30 @@ public class SOUtils{
         return sourceIds;
     }
 
-    public String initializationCode(Map<String, String> jsons){
+    public String initializationCode(Map<String, String> jsons) {
         String result = "";
-        for(Map.Entry<String, String> jsonEntry : jsons.entrySet()){
+        for (Map.Entry<String, String> jsonEntry : jsons.entrySet()) {
             result += "var " + jsonEntry.getKey() + " = " + jsonEntry.getValue() + ";";
         }
         return result;
     }
 
-    public boolean checkPreFilter(String streamId, Map<String, String> inputJsons) throws ScriptException {
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
-        SOStream stream = so.getStreams().get(streamId);
-        if (stream.getPreFilter() == null || stream.getPreFilter().trim().equals("")) {
-            return true;
-        }
-        String preFilterCode = stream.getPreFilter();
-        String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
-
-        engine.eval(initializationCode(inputJsons) + "var " + resultVar + "=Boolean(" + preFilterCode + "(" +  functionArgsString(preFilterCode) + "));");
-        return (Boolean) engine.get(resultVar);
-
-    }
-
-    private int parseType(String type){
+    private int parseType(String type) {
         type = type.toLowerCase().trim();
 
         int typeCode = TYPE_SIMPLE;
 
-        if(type.startsWith("array")){
-            String arrayType =  type.substring("array".length(), type.length());
-            if(arrayType == null){
+        if (type.startsWith("array")) {
+            String arrayType = type.substring("array".length(), type.length());
+            if (arrayType == null) {
                 return -1;
             }
             arrayType = arrayType.trim();
-            if(!arrayType.startsWith("(") || !arrayType.endsWith(")")){
+            if (!arrayType.startsWith("(") || !arrayType.endsWith(")")) {
                 return -1;
             }
-            arrayType = arrayType.substring(1, arrayType.length()-1);
-            if(arrayType == null){
+            arrayType = arrayType.substring(1, arrayType.length() - 1);
+            if (arrayType == null) {
                 return -1;
             }
             arrayType = arrayType.trim();
@@ -231,7 +215,7 @@ public class SOUtils{
                 String type;
                 boolean array = false;
 
-                switch(parseType(channel.getType())) {
+                switch (parseType(channel.getType())) {
                     case TYPE_ARRAY_NUMBER:
                         array = true;
                     case TYPE_NUMBER:
@@ -253,14 +237,14 @@ public class SOUtils{
 
                 String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
                 String finalCode;
-                if(!array) {
+                if (!array) {
                     finalCode = initializationCode(inputJsons) +
                             "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
                             "if(typeof " + resultVar + " !== '" + type + "'){" +
                             resultVar + " = null;" +
                             "}";
 
-                }else {
+                } else {
                     finalCode = initializationCode(inputJsons) +
                             "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
                             "if(Object.prototype.toString.call(" + resultVar + ") !== '[object Array]') {" +
@@ -294,20 +278,4 @@ public class SOUtils{
 
         return su;
     }
-
-    public boolean checkPostFilter(String streamId, Map<String, String> inputJsons) throws ScriptException {
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
-        SOStream stream = so.getStreams().get(streamId);
-        if (stream.getPostFilter() == null || stream.getPostFilter().trim().equals("")) {
-            return true;
-        }
-        String postFilterCode = stream.getPostFilter();
-        String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
-
-        String finalCode = initializationCode(inputJsons) + "var " + resultVar + "=Boolean(" + postFilterCode + "(" +  functionArgsString(postFilterCode) + "));";
-        engine.eval(finalCode);
-        return (Boolean) engine.get(resultVar);
-    }
-
 }

@@ -97,9 +97,9 @@ public class StreamProcessorBolt implements IRichBolt {
 			restClient = new RestClient();
 		}
 	}
-	
-	private Map<String, String> getGroupDocs(Set<String> docIds, String soId, SO so) throws IOException, RestClientException, RestClientErrorCodeException{
-		RestResponse rr;
+
+    private Map<String, String> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
+        RestResponse rr;
 		Map<String, String> groupDocs = new HashMap<String, String>();
 		ObjectMapper mapper = new ObjectMapper();
 
@@ -145,9 +145,9 @@ public class StreamProcessorBolt implements IRichBolt {
 		
 		return groupDocs;
 	}
-	
-	private Map<String, String> getStreamDocs(Set<String> docIds, String soId, SO so) throws IOException, RestClientException, RestClientErrorCodeException{
-		RestResponse rr;
+
+    private Map<String, String> getStreamSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
+        RestResponse rr;
 		Map<String, String> streamDocs = new HashMap<String, String>();
 		ObjectMapper mapper = new ObjectMapper();	
 		for(String docId: docIds){
@@ -158,7 +158,7 @@ public class StreamProcessorBolt implements IRichBolt {
             try {
                 rr = restClient.restRequest(
                         dc.restBaseURL
-                                + "private/" + soId + "/streams/" + docId + "/lastUpdate",
+                                + "private/" + so.getId() + "/streams/" + docId + "/lastUpdate",
                         null, RestClient.GET,
                         null
                 );
@@ -195,8 +195,8 @@ public class StreamProcessorBolt implements IRichBolt {
 		String streamId = input.getStringByField("streamid");
 		String suDoc = input.getStringByField("su");
 		String soDoc = input.getStringByField("so");
-		String groupId = input.getStringByField("groupid");
-		SOUtils sou;
+        String originId = input.getStringByField("originid");
+        SOUtils sou;
 		long timestamp;
 		Map<String, String> docs;
 		
@@ -228,16 +228,16 @@ public class StreamProcessorBolt implements IRichBolt {
 
 		Set<String> docIds = sou.getSourceIdsByStream(streamId);
 		// Remove the group for which we already have the SU
-		docIds.remove(groupId);
-		// The self last update from current stream
+        docIds.remove(originId);
+        // The self last update from current stream
 		docIds.add(streamId);
 
 		docs = new HashMap<String, String>();
 		try{
-			docs.putAll(this.getStreamDocs(docIds, soId, so));
-			docs.putAll(this.getGroupDocs(docIds, soId, so));
-			docs.put(groupId, suDoc);
-		} catch(Exception e){
+            docs.putAll(this.getStreamSUs(docIds, so));
+            docs.putAll(this.getGroupSUs(docIds, so));
+            docs.put(originId, suDoc);
+        } catch(Exception e){
 			// TODO Log the error
 			e.printStackTrace();
 			collector.fail(input);
@@ -296,16 +296,6 @@ public class StreamProcessorBolt implements IRichBolt {
         SensorUpdate resultSU;
         String resultSUDoc;
         try{
-			if(!sou.checkPreFilter(streamId, docs)){
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "pre-filter")
-                );
-                collector.ack(input);
-                return;
-			}
-
             resultSU = sou.getResultSU(streamId, docs, timestamp);
             if (resultSU == null) {
                 if (dc.benchmark) this.collector.emit("benchmark", input,
@@ -319,19 +309,6 @@ public class StreamProcessorBolt implements IRichBolt {
 			mapper.setSerializationInclusion(Inclusion.NON_NULL);
 			resultSUDoc = mapper.writeValueAsString(resultSU);
 
-            if(!docs.containsKey("result")){
-                docs.put("result", resultSUDoc);
-            }
-			
-			if(!sou.checkPostFilter(streamId, docs)){
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "post-filter")
-                );
-                collector.ack(input);
-                return;
-			}
 		} catch(Exception e){
 			// TODO Log the error
 			e.printStackTrace();
