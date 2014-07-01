@@ -239,7 +239,7 @@ public class SOUtils {
                     finalCode = initializationCode(inputJsons) +
                             "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
                             "if(typeof " + resultVar + " !== '" + type + "'){" +
-                            resultVar + " = null;" +
+                                resultVar + " = null;" +
                             "}";
 
                 } else {
