@@ -53,10 +53,10 @@ public class SOUtils {
         while (counter > 0) {
             int beginOpenIndex = str.indexOf(openKey, strIndex);
             beginCloseIndex = str.indexOf(closing, strIndex);
-            if (beginOpenIndex < beginCloseIndex) {
+            if (beginOpenIndex != -1 && beginOpenIndex < beginCloseIndex) {
                 counter++;
                 strIndex = beginOpenIndex + closing.length();
-            } else if (beginCloseIndex < beginOpenIndex) {
+            } else if (beginCloseIndex != -1 && (beginOpenIndex == -1 || beginCloseIndex < beginOpenIndex ) ) {
                 counter--;
                 strIndex = beginCloseIndex + closing.length();
             } else {
