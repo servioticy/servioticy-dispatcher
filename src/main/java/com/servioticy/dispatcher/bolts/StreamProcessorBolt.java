@@ -227,13 +227,14 @@ public class StreamProcessorBolt implements IRichBolt {
 		}*/
 
 		Set<String> docIds = sou.getSourceIdsByStream(streamId);
-		// Remove the group for which we already have the SU
+		// Remove the origin for which we already have the SU
         docIds.remove(originId);
         // The self last update from current stream
 		docIds.add(streamId);
 
 		docs = new HashMap<String, String>();
 		try{
+            docs.put("$input", suDoc);
             docs.putAll(this.getStreamSUs(docIds, so));
             docs.putAll(this.getGroupSUs(docIds, so));
             docs.put(originId, suDoc);
