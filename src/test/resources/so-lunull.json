@@ -1,0 +1,20 @@
+{
+    "id": "so-lunull.json",
+    "streams": {
+        "A": {
+            "channels": {
+                "$": {
+                    "type": "number"
+                }
+            }
+        },
+        "B": {
+            "channels": {
+                "$": {
+                    "current-value": "function(A){return B.channels.$['current-value']==null}",
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}
