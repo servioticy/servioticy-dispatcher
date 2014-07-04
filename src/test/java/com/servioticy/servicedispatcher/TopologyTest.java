@@ -16,15 +16,21 @@
 package com.servioticy.servicedispatcher;
 
 import backtype.storm.Config;
+import backtype.storm.ILocalCluster;
 import backtype.storm.LocalCluster;
+import backtype.storm.Testing;
+import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.testing.FeederSpout;
+import backtype.storm.testing.MkClusterParam;
+import backtype.storm.testing.MockedSources;
+import backtype.storm.testing.TestJob;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
-import com.servioticy.datamodel.SOGroup;
-import com.servioticy.datamodel.SUChannel;
-import com.servioticy.datamodel.UpdateDescriptor;
+import com.servioticy.datamodel.*;
+import com.servioticy.dispatcher.ActuationScheme;
 import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.dispatcher.UpdateDescriptorScheme;
 import com.servioticy.dispatcher.bolts.*;
 import com.servioticy.queueclient.QueueClient;
 import com.servioticy.queueclient.QueueClientException;
@@ -38,8 +44,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.fail;
@@ -53,9 +61,83 @@ public class TopologyTest {
 
     @Test
     public void testBasicSO{
-        ObjectMapper mapper = new ObjectMapper();
+        MkClusterParam mkClusterParam = new MkClusterParam();
+        mkClusterParam.setSupervisors(4); // TODO change this
+        Config daemonConf = new Config();
+        daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
+        mkClusterParam.setDaemonConf(daemonConf);
 
-        String opid = "someopid";
+        Testing.withSimulatedTimeLocalCluster(mkClusterParam,new TestJob() {
+            @Override
+            public void run(ILocalCluster iLocalCluster) throws Exception {
+                ObjectMapper mapper = new ObjectMapper();
+                DispatcherContext dc = new DispatcherContext();
+
+                String opid = "someopid";
+
+                Subscriptions subscriptions = mapper.readValue(new File("subscriptions-group.json"), Subscriptions.class);
+                String subscriptionsStr = mapper.writeValueAsString(subscriptions);
+                SO so = mapper.readValue(new File("so-basic.json"), SO.class);
+                String soStr = mapper.writeValueAsString(so);
+
+                // Mocking up the rest calls...
+                RestClient restClient = mock(RestClient.class, withSettings().serializable());
+                // store new SUs
+                when(restClient.restRequest(
+                        any(String.class),
+                        any(String.class), eq(RestClient.PUT),
+                        any(Map.class))).thenReturn(new RestResponse("", 200));
+                // get opid
+                when(restClient.restRequest(
+                        dc.restBaseURL
+                                + "private/" + opid, null,
+                        RestClient.GET,
+                        null)).thenReturn(new RestResponse("", 200));
+                // get subscriptions
+                when(restClient.restRequest(
+                        dc.restBaseURL
+                                + "private/" + so.getId() + "/streams/A"
+                                + "/subscriptions/", null, RestClient.GET,
+                        null)).thenReturn(new RestResponse(subscriptionsStr, 200));
+                // get so
+                when(restClient.restRequest(
+                        dc.restBaseURL
+                                + "private/" + so.getId(), null, RestClient.GET,
+                        null)).thenReturn(new RestResponse(soStr, 200));
+
+                TopologyBuilder builder = new TopologyBuilder();
+                QueueClient qc = QueueClient.factory("queue-simple.xml");
+                qc.connect();
+
+                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
+                builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()), 4);
+
+                builder.setBolt("checkopid", new CheckOpidBolt(dc), 10)
+                        .shuffleGrouping("dispatcher");
+
+                builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 2)
+                        .shuffleGrouping("actions");
+
+                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 4)
+                        .shuffleGrouping("checkopid", "subscription");
+
+                builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(dc), 1)
+                        .fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
+
+                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 13)
+                        .shuffleGrouping("subretriever", "internalSub")
+                        .shuffleGrouping("checkopid", "stream");
+                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 17)
+                        .shuffleGrouping("streamdispatcher", "default");
+
+                // prepare the mock data
+                MockedSources mockedSources = new MockedSources();
+                mockedSources.addMockData("dispatcher", new Values("someopid", so.getId(), "A", ));
+                mockedSources.addMockData("actions");
+
+            }
+        });
+
     }
 
 	@Test
