@@ -222,8 +222,8 @@ public class TopologyTest {
                 SO additionalSO = mapper.readValue(new File(cl.getResource("additional_so.json").toURI()), SO.class);
                 String additionalSOStr = mapper.writeValueAsString(additionalSO);
                 SensorUpdate suA = mapper.readValue(new File(cl.getResource("su-A.json").toURI()), SensorUpdate.class);
-                String suAStr = mapper.writeValueAsString(suA);
                 suA.setLastUpdate(2);
+                String suAStr = mapper.writeValueAsString(suA);
                 SensorUpdate suGroup = mapper.readValue(new File(cl.getResource("su-group.json").toURI()), SensorUpdate.class);
                 String suGroupStr = mapper.writeValueAsString(suGroup);
 
@@ -512,7 +512,7 @@ public class TopologyTest {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("so-self.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("so-lunull.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
                 SensorUpdate suA = mapper.readValue(new File(cl.getResource("su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
