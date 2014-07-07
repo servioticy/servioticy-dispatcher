@@ -626,6 +626,132 @@ public class TopologyTest {
         });
     }
 
+    @Test
+    public void testFilter(){
+        MkClusterParam mkClusterParam = new MkClusterParam();
+        mkClusterParam.setSupervisors(4); // TODO change this
+        Config daemonConf = new Config();
+        daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
+        mkClusterParam.setDaemonConf(daemonConf);
+
+        Testing.withSimulatedTimeLocalCluster(mkClusterParam,new TestJob() {
+            @Override
+            public void run(ILocalCluster cluster) throws Exception {
+                TopologyBuilder builder = new TopologyBuilder();
+                QueueClient qc = QueueClient.factory("queue-simple.xml");
+                qc.connect();
+
+                ClassLoader cl = Thread.currentThread().getContextClassLoader();
+
+                ObjectMapper mapper = new ObjectMapper();
+                DispatcherContext dc = new DispatcherContext();
+                dc.loadConf(null);
+
+                String opid = "someopid";
+
+                SO so = mapper.readValue(new File(cl.getResource("so-filter.json").toURI()), SO.class);
+                String soStr = mapper.writeValueAsString(so);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("su-A.json").toURI()), SensorUpdate.class);
+                suA.setLastUpdate(2);
+                suA.getChannels().get("$").setCurrentValue(-1);
+                String suAStr = mapper.writeValueAsString(suA);
+
+                // Mocking up the rest calls...
+                RestClient restClient = mock(RestClient.class, withSettings().serializable());
+                // store new SUs
+                when(restClient.restRequest(
+                        any(String.class),
+                        any(String.class), eq(RestClient.PUT),
+                        any(Map.class))).thenReturn(new RestResponse("", 200));
+                // get opid
+                when(restClient.restRequest(
+                        dc.restBaseURL
+                                + "private/opid/" + opid, null,
+                        RestClient.GET,
+                        null)).thenReturn(new RestResponse("", 200));
+                // get subscriptions
+                when(restClient.restRequest(
+                        dc.restBaseURL
+                                + "private/" + so.getId() + "/streams/A"
+                                + "/subscriptions/", null, RestClient.GET,
+                        null)).thenReturn(new RestResponse(null, 204));
+                // get so
+                when(restClient.restRequest(
+                        dc.restBaseURL
+                                + "private/" + so.getId(), null, RestClient.GET,
+                        null)).thenReturn(new RestResponse(soStr, 200));
+                // get SU
+                when(restClient.restRequest(
+                        dc.restBaseURL
+                                + "private/" + so.getId() + "/streams/B/lastUpdate",
+                        null, RestClient.GET,
+                        null)).thenReturn(new RestResponse(null, 204));
+
+                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
+
+                builder.setBolt("checkopid", new CheckOpidBolt(dc,restClient), 10)
+                        .shuffleGrouping("dispatcher");
+
+                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
+                        .shuffleGrouping("checkopid", "subscription");
+
+                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
+                        .shuffleGrouping("subretriever", "internalSub")
+                        .shuffleGrouping("checkopid", "stream");
+                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
+                        .shuffleGrouping("streamdispatcher", "default");
+                StormTopology topology = builder.createTopology();
+
+                // prepare the mock data
+                MockedSources mockedSources = new MockedSources();
+                mockedSources.addMockData("dispatcher", new Values(opid, so.getId(), "A", suAStr));
+
+                // prepare the config
+                Config conf = new Config();
+                conf.setNumWorkers(2);
+
+                CompleteTopologyParam completeTopologyParam = new CompleteTopologyParam();
+                completeTopologyParam.setMockedSources(mockedSources);
+                completeTopologyParam.setStormConf(conf);
+
+                Map result = Testing.completeTopology(cluster, topology,
+                        completeTopologyParam);
+
+                // check whether the result is right
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values(opid, so.getId(), "A", suAStr)),
+                        Testing.readTuples(result, "dispatcher", "default")));
+
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values(null, so.getId(), "A", suAStr)),
+                        Testing.readTuples(result, "checkopid", "stream")));
+
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(), "A", suAStr)),
+                        Testing.readTuples(result, "checkopid", "subscription")));
+
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(),
+                                "B",
+                                soStr,
+                                "A",
+                                suAStr)),
+                        Testing.readTuples(result, "streamdispatcher", "default")));
+
+                String newDescriptor;
+                int i = 0;
+                while((newDescriptor = (String) qc.get()) == null){
+                    if(i==10){
+                        Assert.assertTrue("Filtered", true);
+                    }
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    i++;
+                }
+                Assert.fail("Not filtered");
+            }
+        });
+    }
 //	@Test
 //	public void testExampleTopology() {
 //
