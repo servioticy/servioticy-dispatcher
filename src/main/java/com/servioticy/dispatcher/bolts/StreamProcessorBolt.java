@@ -185,28 +185,28 @@ public class StreamProcessorBolt implements IRichBolt {
 	}
 	
 	public void execute(Tuple input) {
-		RestResponse rr;
-		SensorUpdate su;
-		SensorUpdate previousSU;
-		String previousSUDoc;
-		SO so;
-		ObjectMapper mapper = new ObjectMapper();
-		String soId = input.getStringByField("soid");
-		String streamId = input.getStringByField("streamid");
-		String suDoc = input.getStringByField("su");
-		String soDoc = input.getStringByField("so");
+        RestResponse rr;
+        SensorUpdate su;
+        SensorUpdate previousSU;
+        String previousSUDoc;
+        SO so;
+        ObjectMapper mapper = new ObjectMapper();
+        String soId = input.getStringByField("soid");
+        String streamId = input.getStringByField("streamid");
+        String suDoc = input.getStringByField("su");
+        String soDoc = input.getStringByField("so");
         String originId = input.getStringByField("originid");
         SOUtils sou;
-		long timestamp;
-		Map<String, String> docs;
-		
-		try{
-			su = mapper.readValue(suDoc, SensorUpdate.class);
-			so = mapper.readValue(soDoc, SO.class);	
-			sou = new SOUtils(so);
-		} catch(Exception e){
-			// TODO Log the error
-			e.printStackTrace();
+        long timestamp;
+        Map<String, String> docs;
+
+        try {
+            su = mapper.readValue(suDoc, SensorUpdate.class);
+            so = mapper.readValue(soDoc, SO.class);
+            sou = new SOUtils(so);
+        } catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
             if (dc.benchmark) this.collector.emit("benchmark", input,
                     new Values(suDoc,
                             System.currentTimeMillis(),
@@ -214,7 +214,7 @@ public class StreamProcessorBolt implements IRichBolt {
             );
             collector.ack(input);
             return;
-		}
+        }
         /*if(suCache.check(soId + ";" + streamId, su.getLastUpdate())){
             // This SU or a posterior one has already been sent, do not send this one.
             this.collector.emit("benchmark", input,
@@ -226,37 +226,37 @@ public class StreamProcessorBolt implements IRichBolt {
 			return;
 		}*/
 
-		Set<String> docIds = sou.getSourceIdsByStream(streamId);
-		// Remove the origin for which we already have the SU
+        Set<String> docIds = sou.getSourceIdsByStream(streamId);
+        // Remove the origin for which we already have the SU
         docIds.remove(originId);
         // The self last update from current stream
-		docIds.add(streamId);
+        docIds.add(streamId);
 
-		docs = new HashMap<String, String>();
-		try{
+        docs = new HashMap<String, String>();
+        try {
             docs.put("$input", suDoc);
             docs.putAll(this.getStreamSUs(docIds, so));
             docs.putAll(this.getGroupSUs(docIds, so));
             docs.put(originId, suDoc);
-        } catch(Exception e){
-			// TODO Log the error
-			e.printStackTrace();
-			collector.fail(input);
-			return;
-		}
-		// Obtain the highest timestamp from the input docs
-		timestamp = su.getLastUpdate();
-		for(Map.Entry<String, String> doc: docs.entrySet()){
-			SensorUpdate inputSU;
-			try{
-				String docContent = doc.getValue();
-				if(docContent.equals("null")){
-					continue;
-				}
-				inputSU = mapper.readValue(docContent, SensorUpdate.class);
-			} catch(Exception e){
-				// TODO Log the error
-				e.printStackTrace();
+        } catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
+            collector.fail(input);
+            return;
+        }
+        // Obtain the highest timestamp from the input docs
+        timestamp = su.getLastUpdate();
+        for (Map.Entry<String, String> doc : docs.entrySet()) {
+            SensorUpdate inputSU;
+            try {
+                String docContent = doc.getValue();
+                if (docContent.equals("null")) {
+                    continue;
+                }
+                inputSU = mapper.readValue(docContent, SensorUpdate.class);
+            } catch (Exception e) {
+                // TODO Log the error
+                e.printStackTrace();
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
@@ -264,17 +264,17 @@ public class StreamProcessorBolt implements IRichBolt {
                 );
                 collector.ack(input);
                 return;
-			}
-			timestamp = inputSU.getLastUpdate() > timestamp ? inputSU.getLastUpdate() : timestamp;
-		}
-		
-		previousSUDoc = docs.get(streamId);
-		if(!previousSUDoc.equals("null")){
-			try{
-				previousSU = mapper.readValue(previousSUDoc, SensorUpdate.class);
-			} catch(Exception e){
-				// TODO Log the error
-				e.printStackTrace();
+            }
+            timestamp = inputSU.getLastUpdate() > timestamp ? inputSU.getLastUpdate() : timestamp;
+        }
+
+        previousSUDoc = docs.get(streamId);
+        if (!previousSUDoc.equals("null")) {
+            try {
+                previousSU = mapper.readValue(previousSUDoc, SensorUpdate.class);
+            } catch (Exception e) {
+                // TODO Log the error
+                e.printStackTrace();
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
@@ -282,9 +282,9 @@ public class StreamProcessorBolt implements IRichBolt {
                 );
                 collector.ack(input);
                 return;
-			}
-			// There is already a newer update stored
-			if(timestamp <= previousSU.getLastUpdate()){
+            }
+            // There is already a newer update stored
+            if (timestamp <= previousSU.getLastUpdate()) {
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
@@ -292,11 +292,11 @@ public class StreamProcessorBolt implements IRichBolt {
                 );
                 collector.ack(input);
                 return;
-			}
-		}
+            }
+        }
         SensorUpdate resultSU;
         String resultSUDoc;
-        try{
+        try {
             resultSU = sou.getResultSU(streamId, docs, timestamp);
             if (resultSU == null) {
                 if (dc.benchmark) this.collector.emit("benchmark", input,
@@ -306,13 +306,13 @@ public class StreamProcessorBolt implements IRichBolt {
                 );
                 collector.ack(input);
                 return;
-			}
-			mapper.setSerializationInclusion(Inclusion.NON_NULL);
-			resultSUDoc = mapper.writeValueAsString(resultSU);
+            }
+            mapper.setSerializationInclusion(Inclusion.NON_NULL);
+            resultSUDoc = mapper.writeValueAsString(resultSU);
 
-		} catch(Exception e){
-			// TODO Log the error
-			e.printStackTrace();
+        } catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
             if (dc.benchmark) this.collector.emit("benchmark", input,
                     new Values(suDoc,
                             System.currentTimeMillis(),
@@ -320,15 +320,16 @@ public class StreamProcessorBolt implements IRichBolt {
             );
             collector.ack(input);
             return;
-		}
+        }
+        if(dc.benchmark) {
+            String[] fromStr = {so.getId(), streamId};
+            resultSU.setStreamsChain(su.getStreamsChain());
+            resultSU.setTimestampChain(su.getTimestampChain());
+            resultSU.setOriginId(su.getOriginId());
 
-        String[] fromStr = {so.getId(), streamId};
-        resultSU.setStreamsChain(su.getStreamsChain());
-        resultSU.setTimestampChain(su.getTimestampChain());
-        resultSU.setOriginId(su.getOriginId());
-
-        resultSU.getStreamsChain().add(new ArrayList<String>(Arrays.asList(fromStr)));
-        resultSU.getTimestampChain().add(System.currentTimeMillis());
+            resultSU.getStreamsChain().add(new ArrayList<String>(Arrays.asList(fromStr)));
+            resultSU.getTimestampChain().add(System.currentTimeMillis());
+        }
 
         try {
             resultSUDoc = mapper.writeValueAsString(resultSU);

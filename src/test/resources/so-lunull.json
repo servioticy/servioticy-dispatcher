@@ -11,7 +11,7 @@
         "B": {
             "channels": {
                 "$": {
-                    "current-value": "function(A){return B.channels.$['current-value']==null}",
+                    "current-value": "function(A){return B==null}",
                     "type": "boolean"
                 }
             }

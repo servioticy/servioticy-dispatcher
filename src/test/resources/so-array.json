@@ -1,7 +1,7 @@
 {
     "id": "so",
     "streams": {
-        "A": {
+        "C": {
             "channels": {
                 "$": {
                     "type": "Array[number]"
@@ -11,7 +11,7 @@
         "B": {
             "channels": {
                 "$": {
-                    "current-value": "function(A){var result=[];A.channels.$['current-value'].forEach(function(entry){result.push(entry > 10)});return result}",
+                    "current-value": "function(C){var result=[];C.channels.$['current-value'].forEach(function(entry){result.push(entry > 10)});return result}",
                     "type": "Array[boolean]"
                 }
             }

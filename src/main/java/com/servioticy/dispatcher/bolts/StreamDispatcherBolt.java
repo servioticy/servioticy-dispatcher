@@ -173,19 +173,19 @@ public class StreamDispatcherBolt implements IRichBolt {
 		try{
 			SOUtils sou = new SOUtils(mapper.readValue(soDoc, SO.class));
 
-            SensorUpdate su = mapper.readValue(suDoc, SensorUpdate.class);
+//            SensorUpdate su = mapper.readValue(suDoc, SensorUpdate.class);
             boolean emitted = false;
             for (String streamIdByDoc : sou.getStreamsBySourceId(docId)) {
                 // If the SU comes from the same stream than it is going, it must be stopped
-                boolean beenThere = false;
-                for (ArrayList<String> prevStream : su.getStreamsChain()) {
-                    beenThere = (destination == prevStream.get(0) && streamIdByDoc == prevStream.get(1));
-                    if (beenThere) break;
-                }
-
-                if (beenThere) {
-                    continue;
-                }
+//                boolean beenThere = false;
+//                for (ArrayList<String> prevStream : su.getStreamsChain()) {
+//                    beenThere = (destination == prevStream.get(0) && streamIdByDoc == prevStream.get(1));
+//                    if (beenThere) break;
+//                }
+//
+//                if (beenThere) {
+//                    continue;
+//                }
                 this.collector.emit("default", input,
                         new Values(destination,
                                 streamIdByDoc,

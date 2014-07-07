@@ -108,7 +108,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
         // In case there are no subscriptions.
         int hCode = subscriptionsRR.getHttpCode();
         if (hCode == 204) {
-            this.collector.emit("benchmark", input,
+            if(dc.benchmark) this.collector.emit("benchmark", input,
                     new Values(suDoc,
                             System.currentTimeMillis(),
                             "no-group")
@@ -123,7 +123,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
         } catch (Exception e) {
             // TODO Log the error
             e.printStackTrace();
-            this.collector.emit("benchmark", input,
+            if(dc.benchmark) this.collector.emit("benchmark", input,
                     new Values(suDoc,
                             System.currentTimeMillis(),
                             "error")
@@ -134,7 +134,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 
         // No subscriptions
         if (subscriptions.getSubscriptions() == null || subscriptions.getSubscriptions().isEmpty()) {
-            this.collector.emit("benchmark", input,
+            if(dc.benchmark) this.collector.emit("benchmark", input,
                     new Values(suDoc,
                             System.currentTimeMillis(),
                             "no-group")
@@ -172,7 +172,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
             } catch (Exception e) {
                 // TODO Log the error
                 e.printStackTrace();
-                this.collector.emit("benchmark", input,
+                if(dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
                                 "error")
