@@ -19,11 +19,9 @@ import backtype.storm.Config;
 import backtype.storm.ILocalCluster;
 import backtype.storm.LocalCluster;
 import backtype.storm.Testing;
+import backtype.storm.generated.StormTopology;
 import backtype.storm.spout.KestrelThriftSpout;
-import backtype.storm.testing.FeederSpout;
-import backtype.storm.testing.MkClusterParam;
-import backtype.storm.testing.MockedSources;
-import backtype.storm.testing.TestJob;
+import backtype.storm.testing.*;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
@@ -69,7 +67,7 @@ public class TopologyTest {
 
         Testing.withSimulatedTimeLocalCluster(mkClusterParam,new TestJob() {
             @Override
-            public void run(ILocalCluster iLocalCluster) throws Exception {
+            public void run(ILocalCluster cluster) throws Exception {
                 ObjectMapper mapper = new ObjectMapper();
                 DispatcherContext dc = new DispatcherContext();
 
@@ -129,13 +127,41 @@ public class TopologyTest {
                         .shuffleGrouping("checkopid", "stream");
                 builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 17)
                         .shuffleGrouping("streamdispatcher", "default");
+                StormTopology topology = builder.createTopology();
 
                 // prepare the mock data
                 MockedSources mockedSources = new MockedSources();
-                mockedSources.addMockData("dispatcher", new Values("someopid", so.getId(), "A", ));
+                mockedSources.addMockData("dispatcher", new Values(opid, so.getId(), "A", ));
                 mockedSources.addMockData("actions");
 
+                // prepare the config
+                Config conf = new Config();
+                conf.setNumWorkers(2);
+
+                CompleteTopologyParam completeTopologyParam = new CompleteTopologyParam();
+                completeTopologyParam.setMockedSources(mockedSources);
+                completeTopologyParam.setStormConf(conf);
+
+                Map result = Testing.completeTopology(cluster, topology,
+                        completeTopologyParam);
+
+                // check whether the result is right
+                assertTrue(Testing.multiseteq(new Values(new Values("nathan"),
+                        new Values("bob"), new Values("joey"), new Values(
+                        "nathan")), Testing.readTuples(result, "1")));
+                assertTrue(Testing.multiseteq(new Values(new Values("nathan", 1),
+                        new Values("nathan", 2), new Values("bob", 1),
+                        new Values("joey", 1)), Testing.readTuples(result, "2")));
+                assertTrue(Testing.multiseteq(new Values(new Values(1), new Values(2),
+                        new Values(3), new Values(4)), Testing.readTuples(
+                        result, "3")));
+                assertTrue(Testing.multiseteq(new Values(new Values(1), new Values(2),
+                        new Values(3), new Values(4)), Testing.readTuples(
+                        result, "4")));
             }
+
+
+        }
         });
 
     }
