@@ -1,13 +1,5 @@
 {
     "id": "so",
-    "groups": {
-        "group": {
-            "soIds": [
-                "additional_so"
-            ],
-            "stream": "some_stream"
-        }
-    },
     "streams": {
         "A": {
             "channels": {
@@ -19,7 +11,7 @@
         "B": {
             "channels": {
                 "$": {
-                    "current-value": "function(A,group){return $input.channels.$['current-value']}",
+                    "current-value": "function(A){return $input.channels.$['current-value']}",
                     "type": "number"
                 }
             }

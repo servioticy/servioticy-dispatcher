@@ -167,7 +167,7 @@ public class SOUtils {
                 return -1;
             }
             arrayType = arrayType.trim();
-            if (!arrayType.startsWith("(") || !arrayType.endsWith(")")) {
+            if (!arrayType.startsWith("[") || !arrayType.endsWith("]")) {
                 return -1;
             }
             arrayType = arrayType.substring(1, arrayType.length() - 1);
