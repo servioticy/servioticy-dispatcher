@@ -194,7 +194,7 @@ public class SOUtils {
         return -1;
     }
 
-    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, String origin, long timestamp) throws IOException, ScriptException {
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
 

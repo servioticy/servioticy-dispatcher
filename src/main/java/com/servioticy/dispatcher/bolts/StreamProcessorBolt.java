@@ -34,9 +34,12 @@ import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestClientException;
 import com.servioticy.restclient.RestResponse;
+import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 
+import javax.script.ScriptException;
 import java.io.IOException;
 import java.util.*;
 
@@ -302,7 +305,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
-                                "null-result")
+                                "filtered")
                 );
                 collector.ack(input);
                 return;
@@ -310,6 +313,16 @@ public class StreamProcessorBolt implements IRichBolt {
             mapper.setSerializationInclusion(Inclusion.NON_NULL);
             resultSUDoc = mapper.writeValueAsString(resultSU);
 
+        } catch (ScriptException e) {
+            // TODO Log the error
+            e.printStackTrace();
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "script-error")
+            );
+            collector.ack(input);
+            return;
         } catch (Exception e) {
             // TODO Log the error
             e.printStackTrace();
