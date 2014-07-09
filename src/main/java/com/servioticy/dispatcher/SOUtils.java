@@ -148,10 +148,14 @@ public class SOUtils {
         return sourceIds;
     }
 
-    public String initializationCode(Map<String, String> jsons) {
+    public String initializationCode(Map<String, String> jsons, String origin) {
         String result = "";
         for (Map.Entry<String, String> jsonEntry : jsons.entrySet()) {
             result += "var " + jsonEntry.getKey() + " = " + jsonEntry.getValue() + ";";
+        }
+        // $input needs to be EXACTLY the same object as the origin one
+        if(jsons.get("$input") == null){
+            result += "var $input="+origin+";";
         }
         return result;
     }
@@ -190,7 +194,7 @@ public class SOUtils {
         return -1;
     }
 
-    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
 
@@ -236,14 +240,14 @@ public class SOUtils {
                 String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
                 String finalCode;
                 if (!array) {
-                    finalCode = initializationCode(inputJsons) +
+                    finalCode = initializationCode(inputJsons, origin) +
                             "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
                             "if(typeof " + resultVar + " !== '" + type + "'){" +
                                 resultVar + " = null;" +
                             "}";
 
                 } else {
-                    finalCode = initializationCode(inputJsons) +
+                    finalCode = initializationCode(inputJsons, origin) +
                             "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
                             "if(Object.prototype.toString.call(" + resultVar + ") !== '[object Array]') {" +
                                 resultVar + " = null;" +

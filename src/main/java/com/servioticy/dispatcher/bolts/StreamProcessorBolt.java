@@ -234,7 +234,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
         docs = new HashMap<String, String>();
         try {
-            docs.put("$input", suDoc);
+            //docs.put("$input", suDoc);
             docs.putAll(this.getStreamSUs(docIds, so));
             docs.putAll(this.getGroupSUs(docIds, so));
             docs.put(originId, suDoc);
@@ -297,7 +297,7 @@ public class StreamProcessorBolt implements IRichBolt {
         SensorUpdate resultSU;
         String resultSUDoc;
         try {
-            resultSU = sou.getResultSU(streamId, docs, timestamp);
+            resultSU = sou.getResultSU(streamId, docs, originId, timestamp);
             if (resultSU == null) {
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,

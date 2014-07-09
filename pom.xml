@@ -78,6 +78,13 @@
         </dependency>
     </dependencies>
     <build>
+
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+        </testResources>
         <plugins>
             <!--
             bind the maven-assembly-plugin to the package phase

@@ -166,7 +166,7 @@ public class CompositionTest {
                 String newDescriptor;
                 int i = 0;
                 while((newDescriptor = (String) qc.get()) == null){
-                    if(i==10){
+                    if(i==50){
                         Assert.fail("Timeout");
                     }
                     try {
@@ -463,7 +463,7 @@ public class CompositionTest {
                 String newDescriptor;
                 int i = 0;
                 while((newDescriptor = (String) qc.get()) == null){
-                    if(i==10){
+                    if(i==50){
                         Assert.fail("Timeout");
                     }
                     try {
@@ -600,7 +600,7 @@ public class CompositionTest {
                 String newDescriptor;
                 int i = 0;
                 while((newDescriptor = (String) qc.get()) == null){
-                    if(i==10){
+                    if(i==50){
                         Assert.fail("Timeout");
                     }
                     try {
@@ -738,7 +738,7 @@ public class CompositionTest {
                 String newDescriptor;
                 int i = 0;
                 while((newDescriptor = (String) qc.get()) == null){
-                    if(i==10){
+                    if(i==50){
                         Assert.assertTrue("Filtered", true);
                         return;
                     }
@@ -863,7 +863,7 @@ public class CompositionTest {
                 String newDescriptor;
                 int i = 0;
                 while((newDescriptor = (String) qc.get()) == null){
-                    if(i==10){
+                    if(i==50){
                         Assert.fail("Timeout");
                     }
                     try {
@@ -883,8 +883,8 @@ public class CompositionTest {
                 Assert.assertTrue("Origin stream id", ud.getStreamid().equals("B"));
                 Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 1);
                 SUChannel suCh = ud.getSu().getChannels().get("$");
-                double cValue = (Double)suCh.getCurrentValue();
-                Assert.assertTrue("New SU current-value", cValue == 1);
+                boolean cValue = (Boolean)suCh.getCurrentValue();
+                Assert.assertTrue("New SU current-value", cValue);
 
             }
         });
@@ -999,7 +999,7 @@ public class CompositionTest {
                 String newDescriptor;
                 int i = 0;
                 while((newDescriptor = (String) qc.get()) == null){
-                    if(i==10){
+                    if(i==50){
                         Assert.fail("Timeout");
                     }
                     try {

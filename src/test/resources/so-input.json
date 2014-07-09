@@ -11,8 +11,8 @@
         "B": {
             "channels": {
                 "$": {
-                    "current-value": "function(A){return $input.channels.$['current-value']}",
-                    "type": "number"
+                    "current-value": "function(A){return $input == A}",
+                    "type": "boolean"
                 }
             }
         }
