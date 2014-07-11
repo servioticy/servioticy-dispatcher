@@ -367,19 +367,6 @@ public class StreamProcessorBolt implements IRichBolt {
             resultSU.getStreamsChain().add(new ArrayList<String>(Arrays.asList(fromStr)));
             resultSU.getTimestampChain().add(System.currentTimeMillis());
         }
-        try {
-            resultSUDoc = mapper.writeValueAsString(resultSU);
-        } catch (Exception e) {
-            // TODO Log the error
-
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            collector.ack(input);
-            return;
-        }
 
         // generate opid
         String opid = Integer.toHexString(resultSUDoc.hashCode());
