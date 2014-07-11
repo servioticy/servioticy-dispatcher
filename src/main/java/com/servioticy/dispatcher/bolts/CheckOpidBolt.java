@@ -86,51 +86,56 @@ public class CheckOpidBolt implements IRichBolt {
             this.collector.fail(input);
             return;
         }
+        if(dc.benchmark) {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                su = mapper.readValue(suDoc, SensorUpdate.class);
+            } catch (Exception e) {
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "error")
+                );
+                // TODO Log the error
+                e.printStackTrace();
+                collector.ack(input);
+                return;
+            }
+            if (su.getStreamsChain() == null) {
+                su.setStreamsChain(new ArrayList<ArrayList<String>>());
+                String[] chainInit = {input.getStringByField("soid"), input.getStringByField("streamid")};
+                su.getStreamsChain().add(new ArrayList<String>(Arrays.asList(chainInit)));
+                su.setTimestampChain(new ArrayList<Long>());
+                su.getTimestampChain().add(System.currentTimeMillis());
+                su.setOriginId(UUID.randomUUID().getMostSignificantBits());
+            }
+            /*else if( (System.currentTimeMillis() - su.getTimestampChain().get(su.getTimestampChain().size()-1)) > 2*60*1000 ||
+                     (System.currentTimeMillis() - su.getTimestampChain().get(0)) > 10*60*1000){
+                // Timeout
+                this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "timeout")
+                );
+                collector.ack(input);
+                //TODO Log the error
+                return;
+            }*/
 
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            su = mapper.readValue(suDoc, SensorUpdate.class);
-        } catch (Exception e) {
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            // TODO Log the error
-            e.printStackTrace();
-            collector.ack(input);
-            return;
+            try {
+                suDoc = mapper.writeValueAsString(su);
+            } catch (Exception e) {
+                this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "error")
+                );
+                // TODO Log the error
+                e.printStackTrace();
+                collector.ack(input);
+                return;
+            }
         }
-        if (su.getStreamsChain() == null) {
-            su.setStreamsChain(new ArrayList<ArrayList<String>>());
-            String[] chainInit = {input.getStringByField("soid"), input.getStringByField("streamid")};
-            su.getStreamsChain().add(new ArrayList<String>(Arrays.asList(chainInit)));
-            su.setTimestampChain(new ArrayList<Long>());
-            su.getTimestampChain().add(System.currentTimeMillis());
-            su.setOriginId(UUID.randomUUID().getMostSignificantBits());
-        }
-        /*else if( (System.currentTimeMillis() - su.getTimestampChain().get(su.getTimestampChain().size()-1)) > 2*60*1000 ||
-                 (System.currentTimeMillis() - su.getTimestampChain().get(0)) > 10*60*1000){
-            // Timeout
-            this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "timeout")
-            );
-            collector.ack(input);
-            //TODO Log the error
-            return;
-        }*/
-
-        try {
-            suDoc = mapper.writeValueAsString(su);
-        } catch (Exception e) {
-            // TODO Log the error
-            e.printStackTrace();
-            collector.ack(input);
-            return;
-        }
-
 		this.collector.emit(
 				"stream",
 				input,

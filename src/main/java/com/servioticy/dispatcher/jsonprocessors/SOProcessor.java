@@ -297,16 +297,4 @@ public class SOProcessor {
         public String unit;
         public String type;
     }
-
-    private class PSOStream {
-        public LinkedHashMap<String, PSOChannel> channels;
-        public JsonPathReplacer preFilter;
-        public JsonPathReplacer postFilter;
-    }
-
-    private class PSOChannel {
-        public JsonPathReplacer currentValue;
-        public String unit;
-        public String type;
-    }
 }
