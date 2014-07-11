@@ -4,7 +4,7 @@
     <benchmark>false</benchmark>
     <benchResultsDir>~</benchResultsDir>
     <kestrels>
-    <kestrel>
+        <kestrel>
 			<addr>localhost</addr>
 		</kestrel>
 		<port>2229</port>
