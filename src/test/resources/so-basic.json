@@ -1,0 +1,34 @@
+{
+    "id": "so",
+    "groups": {
+        "group": {
+            "soIds": [
+                "additional_so"
+            ],
+            "stream": "some_stream"
+        }
+    },
+    "streams": {
+        "A": {
+            "pre-filter": "true",
+            "channels": {
+                "a": {
+                    "type": "number",
+                    "unit": ""
+                }
+            },
+            "post-filter": "true"
+        },
+        "B": {
+            "pre-filter": "true",
+            "channels": {
+                "a": {
+                    "current-value": "{$A.channels.a.current-value}+{$group.channels.a.current-value}",
+                    "type": "number",
+                    "unit": ""
+                }
+            },
+            "post-filter": "true"
+        }
+    }
+}
