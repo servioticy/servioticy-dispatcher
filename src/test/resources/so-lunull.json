@@ -15,7 +15,7 @@
             "pre-filter": "true",
             "channels": {
                 "a": {
-                    "current-value": "{$A.channels.a['current-value']} !=null && {$B.channels.a['current-value']}==null",
+                    "current-value": "{$A.channels.a['current-value']} !=null && {$B.channels.a['current-value']} ==null",
                     "type": "boolean",
                     "unit": ""
                 }
