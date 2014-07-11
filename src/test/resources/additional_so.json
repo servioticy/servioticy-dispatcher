@@ -1,0 +1,15 @@
+{
+    "id": "additional_so",
+    "streams": {
+        "some_stream": {
+            "pre-filter": "true",
+            "post-filter": "true",
+            "channels": {
+                "a": {
+                    "type": "number",
+                    "unit": ""
+                }
+            }
+        }
+    }
+}

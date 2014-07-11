@@ -1,0 +1,26 @@
+{
+    "id": "so",
+    "streams": {
+        "A": {
+            "pre-filter": "true",
+            "post-filter": "true",
+            "channels": {
+                "a": {
+                    "type": "number",
+                    "unit":""
+                }
+            }
+        },
+        "B": {
+            "pre-filter": "{$A.channels.a.current-value}!=-1",
+            "channels": {
+                "a": {
+                    "current-value": "{$A.channels.a.current-value}",
+                    "type": "number",
+                    "unit":""
+                }
+            },
+            "post-filter": "true"
+        }
+    }
+}

@@ -156,6 +156,71 @@ public class JsonPathReplacer {
         return jpids;
     }
 
+    public String replace(Map<String, String> jsons, HashMap<String, String> inputVars, Map<String, String> mapVarSU) throws InvalidPathException {
+        if (this.str == null) {
+            this.str = "";
+        }
+        String result = this.str;
+        int indexOffset = 0;
+        StringBuilder sb = new StringBuilder(result);
+        for (Map.Entry<Integer, LinkedList<Map.Entry<String, JsonPath>>> jpsReplacement : this.jsonPaths.entrySet()) {
+            int index = jpsReplacement.getKey() + indexOffset;
+            LinkedList<Map.Entry<String, JsonPath>> jps = jpsReplacement.getValue();
+
+//			String startStr = (index == 0) ? "" : result.substring(0, index);
+//			String endStr = (index == result.length()) ? "" : result.substring(index, result.length());
+
+            String partial = "";
+
+            for (Map.Entry<String, JsonPath> jp : jps) {
+//				if(jp.isPathDefinite()){
+                String json;
+                String key = jp.getKey();
+                String varName = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
+                mapVarSU.put(varName, jsons.get(key));
+                json = jsons.get(key);
+                try {
+                    // If the path does not exist in the input json, throws InvalidPathException
+                    Object content = jp.getValue().read(json);
+                    if (content instanceof String) {
+                        inputVars.put(varName,"\"" + content + "\"");
+                    } else {
+                        ObjectMapper mapper = new ObjectMapper();
+                        inputVars.put(varName,mapper.writeValueAsString(content));
+
+                    }
+                    partial += varName;
+                } catch (java.lang.IllegalArgumentException e) {
+                    // The input is not a json
+                    // TODO This should be done *only* on queries. In navigations of implicit queries or selfdocument, it should be an error
+                    //	and the document shouldn't be processed.
+                    inputVars.put(varName, "null");
+                    partial += varName;
+                } catch (Exception e) {
+                    // Not a correct input json
+                    // TODO log this
+                    e.printStackTrace();
+                    inputVars.put(varName, "null");
+                    partial += varName;
+                }
+//				}
+            }
+
+            if (index > sb.toString().length()) {
+                sb.append(partial);
+            } else {
+                sb.replace(index, index, partial);
+            }
+
+//			result = startStr + partial + endStr;
+            indexOffset += partial.length();
+
+        }
+        result = sb.toString();
+
+        return result;
+    }
+
     public String replace(Map<String, String> jsons) throws InvalidPathException {
         if (this.str == null) {
             this.str = "";
@@ -176,29 +241,26 @@ public class JsonPathReplacer {
 //				if(jp.isPathDefinite()){
                 String json;
                 String key = jp.getKey();
+                String varName = "$" + Long.toHexString(jp.getValue().getPath().hashCode());
+                json = jsons.get(key);
                 try {
                     // If the path does not exist in the input json, throws InvalidPathException
-                    json = jsons.get(key);
                     Object content = jp.getValue().read(json);
-                    if (content instanceof String) {
-                        partial += "\"" + content + "\"";
-                    } else {
-                        ObjectMapper mapper = new ObjectMapper();
-                        partial += mapper.writeValueAsString(content);
-                    }
+                    partial += varName;
                 } catch (java.lang.IllegalArgumentException e) {
                     // The input is not a json
                     // TODO This should be done *only* on queries. In navigations of implicit queries or selfdocument, it should be an error
                     //	and the document shouldn't be processed.
-                    partial += "null";
+                    partial += varName;
                 } catch (Exception e) {
                     // Not a correct input json
                     // TODO log this
                     e.printStackTrace();
-                    partial += "null";
+                    partial += varName;
                 }
 //				}
             }
+
             if (index > sb.toString().length()) {
                 sb.append(partial);
             } else {
