@@ -351,15 +351,15 @@ public class StreamProcessorBolt implements IRichBolt {
             collector.ack(input);
             return;
 		}
+        if(dc.benchmark) {
+            String[] fromStr = {so.getId(), streamId};
+            resultSU.setStreamsChain(su.getStreamsChain());
+            resultSU.setTimestampChain(su.getTimestampChain());
+            resultSU.setOriginId(su.getOriginId());
 
-        String[] fromStr = {so.getId(), streamId};
-        resultSU.setStreamsChain(su.getStreamsChain());
-        resultSU.setTimestampChain(su.getTimestampChain());
-        resultSU.setOriginId(su.getOriginId());
-
-        resultSU.getStreamsChain().add(new ArrayList<String>(Arrays.asList(fromStr)));
-        resultSU.getTimestampChain().add(System.currentTimeMillis());
-
+            resultSU.getStreamsChain().add(new ArrayList<String>(Arrays.asList(fromStr)));
+            resultSU.getTimestampChain().add(System.currentTimeMillis());
+        }
         try {
             resultSUDoc = mapper.writeValueAsString(resultSU);
         } catch (Exception e) {
