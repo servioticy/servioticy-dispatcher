@@ -29,10 +29,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 
-import org.mozilla.javascript.Provelement;
-import org.mozilla.javascript.Provenance;
-import org.mozilla.javascript.ProvenanceAPI;
-
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
@@ -153,38 +149,23 @@ public class SOProcessor {
         return result;
     }
 
-    public boolean checkPreFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU) throws ScriptException {
+    public boolean checkPreFilter(String streamId, Map<String, String> inputJsons) throws ScriptException {
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
         PSOStream pstream = this.streams.get(streamId);
         if (pstream.preFilter == null) {
             return true;
         }
-        HashMap<String, String> inputVar = new HashMap();
-        String preFilterCode = pstream.preFilter.replace(inputJsons, inputVar, mapVarSU);
+        String preFilterCode = pstream.preFilter.replace(inputJsons);
 
-        inputVar.put(ProvenanceAPI.COMPUTATION, "Boolean(" + preFilterCode + ")");
-        String fullComputationString = ProvenanceAPI.buildString(inputVar);
-
-        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList);
-
-        provList.clear();
-        provList.addAll(newProvList);
-
-        String result = (String) ProvenanceAPI.getResultValue(provList);
-
-
-        return Boolean.parseBoolean(result);
-        //engine.eval("var result = Boolean(" + preFilterCode + ")");
-        //return (Boolean) engine.get("result");
+        engine.eval("var result = Boolean(" + preFilterCode + ")");
+        return (Boolean) engine.get("result");
 
     }
 
-    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, long timestamp, List<Provelement> provList, Map<String, String> mapVarSU) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
-
-        ObjectMapper mapper = new ObjectMapper();
 
         SensorUpdate su = new SensorUpdate();
 
@@ -200,9 +181,7 @@ public class SOProcessor {
                 suChannel.setCurrentValue(null);
                 nulls++;
             } else {
-                HashMap<String, String> inputVar = new HashMap();
-                String currentValueCode = pchannel.currentValue.replace(inputJsons, inputVar, mapVarSU);
-
+                String currentValueCode = pchannel.currentValue.replace(inputJsons);
                 String type;
 
                 if (pchannel.type.toLowerCase().equals("number")) {
@@ -216,33 +195,9 @@ public class SOProcessor {
                 else {
                     return null;
                 }
+                engine.eval("var result = " + type + "(" + currentValueCode + ")");
 
-
-                inputVar.put(ProvenanceAPI.COMPUTATION, type + "(" + currentValueCode + ")");
-                //engine.eval("var result = " + type + "(" + currentValueCode + ")");
-                String fullComputationString = ProvenanceAPI.buildString(inputVar);
-
-                List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList);
-
-                provList.clear();
-                provList.addAll(newProvList);
-
-                Object result = null;
-                if (pchannel.type.toLowerCase().equals("number")) {
-                    result = Double.parseDouble((String) ProvenanceAPI.getResultValue(provList));
-                } else if (pchannel.type.toLowerCase().equals("boolean")) {
-                    result = Boolean.parseBoolean((String) ProvenanceAPI.getResultValue(provList));
-                } else if (pchannel.type.toLowerCase().equals("string")) {
-                    result = (String) ProvenanceAPI.getResultValue(provList);
-                }
-                // TODO Array type
-                else {
-                    return null;
-                }
-
-                suChannel.setCurrentValue(result);
-
-                //suChannel.setCurrentValue(engine.get("result"));
+                suChannel.setCurrentValue(engine.get("result"));
             }
             suChannel.setUnit(pchannel.unit);
 
@@ -261,29 +216,17 @@ public class SOProcessor {
         return su;
     }
 
-    public boolean checkPostFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU) throws ScriptException {
+    public boolean checkPostFilter(String streamId, Map<String, String> inputJsons) throws ScriptException {
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
         PSOStream pstream = this.streams.get(streamId);
         if (pstream.postFilter == null) {
             return true;
         }
+        String postFilterCode = pstream.postFilter.replace(inputJsons);
 
-
-        HashMap<String, String> inputVar = new HashMap();
-        String postFilterCode = pstream.postFilter.replace(inputJsons, inputVar, mapVarSU);
-
-        inputVar.put(ProvenanceAPI.COMPUTATION, "Boolean(" + postFilterCode + ")");
-        String fullComputationString = ProvenanceAPI.buildString(inputVar);
-
-        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList);
-
-        provList.clear();
-        provList.addAll(newProvList);
-
-        String result = (String) ProvenanceAPI.getResultValue(provList);
-
-        return Boolean.parseBoolean(result);
+        engine.eval("var result = Boolean(" + postFilterCode + ")");
+        return (Boolean) engine.get("result");
     }
 
     private class PSOStream {
