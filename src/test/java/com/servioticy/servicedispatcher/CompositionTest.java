@@ -187,7 +187,7 @@ public class CompositionTest {
                 SUChannel suCh = ud.getSu().getChannels().get("a");
                 double cValue = (Double) suCh.getCurrentValue();
                 Assert.assertTrue("New SU current-value", cValue == 2);
-
+                qc.disconnect();
             }
         });
     }
@@ -345,7 +345,7 @@ public class CompositionTest {
                 SUChannel suCh = ud.getSu().getChannels().get("a");
                 double cValue = (Double) suCh.getCurrentValue();
                 Assert.assertTrue("New SU current-value", cValue == 2);
-
+                qc.disconnect();
             }
         });
     }
@@ -484,7 +484,7 @@ public class CompositionTest {
                 SUChannel suCh = ud.getSu().getChannels().get("a");
                 double cValue = (Double) suCh.getCurrentValue();
                 Assert.assertTrue("New SU current-value", cValue == 2);
-
+                qc.disconnect();
             }
         });
     }
@@ -621,7 +621,7 @@ public class CompositionTest {
                 SUChannel suCh = ud.getSu().getChannels().get("a");
                 boolean cValue = (Boolean) suCh.getCurrentValue();
                 Assert.assertTrue("New SU current-value", cValue);
-
+                qc.disconnect();
             }
         });
     }
@@ -749,6 +749,7 @@ public class CompositionTest {
                     }
                     i++;
                 }
+                qc.disconnect();
                 Assert.fail("Not filtered");
             }
         });
@@ -877,6 +878,7 @@ public class CompositionTest {
                     }
                     i++;
                 }
+                qc.disconnect();
                 Assert.fail("Not filtered");
             }
         });
