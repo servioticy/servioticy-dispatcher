@@ -90,7 +90,7 @@ public class HttpSubProcessor {
         Map<String, String> inputJsons = new HashMap<String, String>();
         inputJsons.put("", inputJson);
 
-        return this.url.replace(inputJsons);
+        return this.url.replace(inputJsons, false);
     }
 
     public String getBody(String inputJson) {
@@ -99,7 +99,7 @@ public class HttpSubProcessor {
         }
         Map<String, String> inputJsons = new HashMap<String, String>();
         inputJsons.put("", inputJson);
-        return this.body.replace(inputJsons);
+        return this.body.replace(inputJsons, false);
     }
 
     public HashMap<String, String> getHeaders(String inputJson) {
@@ -109,7 +109,7 @@ public class HttpSubProcessor {
         HashMap<String, String> headers = new HashMap<String, String>();
 
         for (Entry<JsonPathReplacer, JsonPathReplacer> ppheader : this.headers.entrySet()) {
-            headers.put(ppheader.getKey().replace(inputJsons), ppheader.getValue().replace(inputJsons));
+            headers.put(ppheader.getKey().replace(inputJsons, false), ppheader.getValue().replace(inputJsons, false));
         }
 
         return headers;

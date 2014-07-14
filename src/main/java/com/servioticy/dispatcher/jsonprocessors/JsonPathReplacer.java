@@ -156,7 +156,7 @@ public class JsonPathReplacer {
         return jpids;
     }
 
-    public String replace(Map<String, String> jsons) throws InvalidPathException {
+    public String replace(Map<String, String> jsons, boolean stringify) throws InvalidPathException {
         if (this.str == null) {
             this.str = "";
         }
@@ -180,9 +180,11 @@ public class JsonPathReplacer {
                     // If the path does not exist in the input json, throws InvalidPathException
                     json = jsons.get(key);
                     Object content = jp.getValue().read(json);
-                    if (content instanceof String) {
-                        partial += "\"" + content + "\"";
-                    } else {
+                    if (stringify && content instanceof String) {
+                        partial += "'" + content + "'";
+                    } else if(!stringify && content instanceof String){
+                        partial += content;
+                    } else{
                         ObjectMapper mapper = new ObjectMapper();
                         partial += mapper.writeValueAsString(content);
                     }
@@ -190,6 +192,7 @@ public class JsonPathReplacer {
                     // The input is not a json
                     // TODO This should be done *only* on queries. In navigations of implicit queries or selfdocument, it should be an error
                     //	and the document shouldn't be processed.
+                    e.printStackTrace();
                     partial += "null";
                 } catch (Exception e) {
                     // Not a correct input json

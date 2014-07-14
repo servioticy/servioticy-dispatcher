@@ -156,7 +156,7 @@ public class SOProcessor {
         if (pstream.preFilter == null) {
             return true;
         }
-        String preFilterCode = pstream.preFilter.replace(inputJsons);
+        String preFilterCode = pstream.preFilter.replace(inputJsons, true);
 
         engine.eval("var result = Boolean(" + preFilterCode + ")");
         return (Boolean) engine.get("result");
@@ -181,7 +181,7 @@ public class SOProcessor {
                 suChannel.setCurrentValue(null);
                 nulls++;
             } else {
-                String currentValueCode = pchannel.currentValue.replace(inputJsons);
+                String currentValueCode = pchannel.currentValue.replace(inputJsons, true);
                 String type;
 
                 if (pchannel.type.toLowerCase().equals("number")) {
@@ -223,7 +223,7 @@ public class SOProcessor {
         if (pstream.postFilter == null) {
             return true;
         }
-        String postFilterCode = pstream.postFilter.replace(inputJsons);
+        String postFilterCode = pstream.postFilter.replace(inputJsons, true);
 
         engine.eval("var result = Boolean(" + postFilterCode + ")");
         return (Boolean) engine.get("result");
