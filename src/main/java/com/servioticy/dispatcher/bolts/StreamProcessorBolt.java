@@ -345,7 +345,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 return;
 			}
             String provJson = ProvenanceAPI.buildProvenanceJSON("", provList, mapVarSU);
-            resultSU.setProvenance(mapper.readValue(provJson,Object.class));
+            resultSU.setSecurity(mapper.readValue(provJson, Object.class));
             resultSUDoc = mapper.writeValueAsString(resultSU);
 		} catch(Exception e){
 			// TODO Log the error
