@@ -36,6 +36,8 @@ import com.servioticy.restclient.RestClientException;
 import com.servioticy.restclient.RestResponse;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
+import org.mozilla.javascript.Provelement;
+import org.mozilla.javascript.ProvenanceAPI;
 
 import java.io.IOException;
 import java.util.*;
@@ -298,8 +300,10 @@ public class StreamProcessorBolt implements IRichBolt {
 		}
         SensorUpdate resultSU;
         String resultSUDoc;
+        List<Provelement> provList = new LinkedList<Provelement>();
+        Map<String, String> mapVarSU = new HashMap<String, String>();
         try{
-			if(!sop.checkPreFilter(streamId, docs)){
+			if(!sop.checkPreFilter(streamId, docs, provList, mapVarSU)){
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
@@ -309,7 +313,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 return;
 			}
 
-            resultSU = sop.getResultSU(streamId, docs, timestamp);
+            resultSU = sop.getResultSU(streamId, docs, timestamp, provList, mapVarSU);
             if (resultSU == null) {
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
@@ -331,7 +335,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 docs.put("@result@", resultSUDoc);
             }
 			
-			if(!sop.checkPostFilter(streamId, docs)){
+			if(!sop.checkPostFilter(streamId, docs, provList, mapVarSU)){
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
@@ -340,6 +344,9 @@ public class StreamProcessorBolt implements IRichBolt {
                 collector.ack(input);
                 return;
 			}
+            String provJson = ProvenanceAPI.buildProvenanceJSON("", provList, mapVarSU);
+            resultSU.setProvenance(mapper.readValue(provJson,Object.class));
+            resultSUDoc = mapper.writeValueAsString(resultSU);
 		} catch(Exception e){
 			// TODO Log the error
 			e.printStackTrace();
