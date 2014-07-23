@@ -22,6 +22,8 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SensorUpdate;
@@ -34,8 +36,11 @@ import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestClientException;
 import com.servioticy.restclient.RestResponse;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
+import de.passau.uni.sec.compose.pdp.servioticy.LocalPDP;
+import de.passau.uni.sec.compose.pdp.servioticy.PDP;
+import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
+
+import de.passau.uni.sec.compose.pdp.servioticy.exception.PDPServioticyException;
 import org.mozilla.javascript.Provelement;
 import org.mozilla.javascript.ProvenanceAPI;
 
@@ -100,7 +105,7 @@ public class StreamProcessorBolt implements IRichBolt {
 		}
 	}
 	
-	private Map<String, String> getGroupDocs(Set<String> docIds, String soId, SO so) throws IOException, RestClientException, RestClientErrorCodeException{
+	private Map<String, String> getGroupDocs(Set<String> docIds, String soId, SO so) throws IOException, RestClientException, RestClientErrorCodeException, PDPServioticyException {
 		RestResponse rr;
 		Map<String, String> groupDocs = new HashMap<String, String>();
 		ObjectMapper mapper = new ObjectMapper();
@@ -141,7 +146,22 @@ public class StreamProcessorBolt implements IRichBolt {
 			}
 			lastSU = rr.getResponse();
 
-			groupDocs.put(docId, lastSU);
+            PDP pdp = new LocalPDP();
+
+            // TODO Fill these fields properly
+            pdp.setIdmHost("");
+            pdp.setIdmPort(0);
+            pdp.setIdmUser("");
+            pdp.setIdmPassword("");
+
+            PermissionCacheObject pco = null;
+            pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(mapper.readValue(lastSU, SensorUpdate.class).getSecurity())), null,
+                    PDP.operationID.DispatchData);
+            if(!pco.isPermission()){
+                groupDocs.put(docId, "null");
+            }else {
+                groupDocs.put(docId, lastSU);
+            }
 			
 		}
 		
@@ -323,7 +343,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 collector.ack(input);
                 return;
 			}
-			mapper.setSerializationInclusion(Inclusion.NON_NULL);
+			mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 			resultSUDoc = mapper.writeValueAsString(resultSU);
 
             if(!docs.containsKey("result")){

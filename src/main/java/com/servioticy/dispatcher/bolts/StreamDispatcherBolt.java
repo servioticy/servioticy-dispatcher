@@ -22,6 +22,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SOSubscription;
@@ -31,9 +32,12 @@ import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestResponse;
-import org.codehaus.jackson.map.ObjectMapper;
 
-import java.util.ArrayList;
+import de.passau.uni.sec.compose.pdp.servioticy.LocalPDP;
+import de.passau.uni.sec.compose.pdp.servioticy.PDP;
+import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
+import de.passau.uni.sec.compose.pdp.servioticy.exception.PDPServioticyException;
+
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -176,6 +180,24 @@ public class StreamDispatcherBolt implements IRichBolt {
             sop.compileJSONPaths();
 
             SensorUpdate su = mapper.readValue(suDoc, SensorUpdate.class);
+            PDP pdp = new LocalPDP();
+
+            // TODO Fill these fields properly
+            pdp.setIdmHost("");
+            pdp.setIdmPort(0);
+            pdp.setIdmUser("");
+            pdp.setIdmPassword("");
+
+            PermissionCacheObject pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
+                    PDP.operationID.DispatchData);
+            if(!pco.isPermission()){
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "forbidden")
+                );
+                collector.ack(input);
+            }
             boolean emitted = false;
             for (String streamIdByDoc : sop.getStreamsByDocId(docId)) {
                 // If the SU comes from the same stream than it is going, it must be stopped

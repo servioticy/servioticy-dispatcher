@@ -23,6 +23,7 @@ import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.testing.*;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Values;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.*;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.UpdateDescriptorScheme;
@@ -30,7 +31,6 @@ import com.servioticy.dispatcher.bolts.*;
 import com.servioticy.queueclient.QueueClient;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestResponse;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -38,7 +38,6 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
 /**

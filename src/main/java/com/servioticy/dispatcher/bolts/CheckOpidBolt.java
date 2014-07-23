@@ -22,11 +22,11 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestResponse;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
