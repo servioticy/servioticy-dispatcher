@@ -15,9 +15,9 @@
  ******************************************************************************/
 package com.servioticy.dispatcher.jsonprocessors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import java.util.*;
 import java.util.Map.Entry;

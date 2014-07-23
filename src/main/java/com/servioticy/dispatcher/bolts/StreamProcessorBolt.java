@@ -22,6 +22,8 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SensorUpdate;
@@ -34,8 +36,6 @@ import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestClientException;
 import com.servioticy.restclient.RestResponse;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 
 import java.io.IOException;
 import java.util.*;
@@ -319,7 +319,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 collector.ack(input);
                 return;
 			}
-			mapper.setSerializationInclusion(Inclusion.NON_NULL);
+			mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 			resultSUDoc = mapper.writeValueAsString(resultSU);
 
             if(!docs.containsKey("result")){

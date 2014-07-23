@@ -15,11 +15,9 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher;
 
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
-import org.codehaus.jackson.map.ObjectMapper;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.UpdateDescriptor;
 
 import backtype.storm.spout.Scheme;

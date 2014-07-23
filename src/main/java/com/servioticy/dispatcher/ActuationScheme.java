@@ -17,12 +17,11 @@ package com.servioticy.dispatcher;
 
 import java.util.List;
 
-import org.codehaus.jackson.map.ObjectMapper;
-
 import backtype.storm.spout.Scheme;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.ActuationDescriptor;
 
 /**

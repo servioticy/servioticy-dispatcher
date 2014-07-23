@@ -15,21 +15,16 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher.bolts;
 
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.log4j.Logger;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
-import clojure.lang.PersistentArrayMap;
 
 import com.servioticy.datamodel.PubSubSubscription;
 import com.servioticy.datamodel.SensorUpdate;

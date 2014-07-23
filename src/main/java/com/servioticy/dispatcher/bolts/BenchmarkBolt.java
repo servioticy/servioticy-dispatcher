@@ -20,9 +20,9 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.File;
 import java.io.FileWriter;

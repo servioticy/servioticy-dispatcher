@@ -22,6 +22,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SOSubscription;
@@ -31,9 +32,7 @@ import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestResponse;
-import org.codehaus.jackson.map.ObjectMapper;
 
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 

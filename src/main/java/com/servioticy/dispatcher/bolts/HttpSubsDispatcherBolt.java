@@ -18,8 +18,7 @@ package com.servioticy.dispatcher.bolts;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codehaus.jackson.map.ObjectMapper;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.HttpSubscription;
 import com.servioticy.datamodel.SensorUpdate;
 import com.servioticy.dispatcher.SUCache;
