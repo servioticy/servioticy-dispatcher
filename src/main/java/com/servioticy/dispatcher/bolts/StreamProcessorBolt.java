@@ -30,10 +30,7 @@ import com.servioticy.dispatcher.SOUtils;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.queueclient.KestrelThriftClient;
 import com.servioticy.queueclient.QueueClient;
-import com.servioticy.restclient.RestClient;
-import com.servioticy.restclient.RestClientErrorCodeException;
-import com.servioticy.restclient.RestClientException;
-import com.servioticy.restclient.RestResponse;
+import com.servioticy.restclient.*;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -42,6 +39,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -101,8 +99,8 @@ public class StreamProcessorBolt implements IRichBolt {
 		}
 	}
 
-    private Map<String, String> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
-        RestResponse rr;
+    private Map<String, String> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException {
+        Map<String, FutureRestResponse> rrs = new HashMap();
 		Map<String, String> groupDocs = new HashMap<String, String>();
 		ObjectMapper mapper = new ObjectMapper();
 
@@ -116,16 +114,21 @@ public class StreamProcessorBolt implements IRichBolt {
 			}
 			SOGroup group = so.getGroups().get(docId);
 			// TODO Resolve dynsets
-			String lastSU;
 			String glurstr = mapper.writeValueAsString(group);
 
+            rrs.put(docId, restClient.restRequest(
+                    dc.restBaseURL
+                            + "private/groups/lastUpdate",
+                    glurstr, RestClient.POST,
+                    null
+            ));
+		}
+        for(Map.Entry<String, FutureRestResponse> frrEntry: rrs.entrySet()){
+            FutureRestResponse frr = frrEntry.getValue();
+            String docId = frrEntry.getKey();
+            RestResponse rr;
             try {
-                rr = restClient.restRequest(
-                        dc.restBaseURL
-                                + "private/groups/lastUpdate",
-                        glurstr, RestClient.POST,
-                        null
-                );
+                rr = frr.get();
             } catch (RestClientErrorCodeException e) {
                 // TODO Log the error
                 e.printStackTrace();
@@ -137,34 +140,40 @@ public class StreamProcessorBolt implements IRichBolt {
             }
             // In case there is no update.
             if(rr.getHttpCode() == 204){
-				groupDocs.put(docId, "null");
-				continue;
-			}
-			lastSU = rr.getResponse();
+                groupDocs.put(docId, "null");
+                continue;
+            }
+            String lastSU;
+            lastSU = rr.getResponse();
 
-			groupDocs.put(docId, lastSU);
-			
-		}
+            groupDocs.put(docId, lastSU);
+        }
 		
 		return groupDocs;
 	}
 
-    private Map<String, String> getStreamSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
-        RestResponse rr;
+    private Map<String, String> getStreamSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException {
+        Map<String, FutureRestResponse> rrs = new HashMap();
 		Map<String, String> streamDocs = new HashMap<String, String>();
 		ObjectMapper mapper = new ObjectMapper();	
 		for(String docId: docIds){
 			if(!so.getStreams().containsKey(docId)){
 				continue;
 			}
-			String lastSU;
+            rrs.put(docId,restClient.restRequest(
+                    dc.restBaseURL
+                            + "private/" + so.getId() + "/streams/" + docId + "/lastUpdate",
+                    null, RestClient.GET,
+                    null
+            ));
+
+		}
+        for(Map.Entry<String, FutureRestResponse> frrEntry: rrs.entrySet()) {
+            FutureRestResponse frr = frrEntry.getValue();
+            String docId = frrEntry.getKey();
+            RestResponse rr;
             try {
-                rr = restClient.restRequest(
-                        dc.restBaseURL
-                                + "private/" + so.getId() + "/streams/" + docId + "/lastUpdate",
-                        null, RestClient.GET,
-                        null
-                );
+                rr = frr.get();
             } catch (RestClientErrorCodeException e) {
                 // TODO Log the error
                 e.printStackTrace();
@@ -175,15 +184,15 @@ public class StreamProcessorBolt implements IRichBolt {
                 continue;
             }
             // In case there is no update.
-            if(rr.getHttpCode() == 204){
+            if (rr.getHttpCode() == 204) {
                 streamDocs.put(docId, "null");
                 continue;
             }
+            String lastSU;
             lastSU = rr.getResponse();
-			// TODO If there is not a lastSU, don't put it.
-			streamDocs.put(docId, lastSU);
-		}
-		
+            // TODO If there is not a lastSU, don't put it.
+            streamDocs.put(docId, lastSU);
+        }
 		return streamDocs;
 	}
 	

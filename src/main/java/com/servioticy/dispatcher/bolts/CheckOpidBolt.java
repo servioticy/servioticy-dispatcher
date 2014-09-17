@@ -73,19 +73,19 @@ public class CheckOpidBolt implements IRichBolt {
         String suDoc = input.getStringByField("su");
         SensorUpdate su;
 
-        try {
-            rr = restClient.restRequest(
-                    dc.restBaseURL
-                            + "private/opid/" + opid, null,
-                    RestClient.GET, null
-            );
-
-        } catch (Exception e) {
-            // TODO Log the error
-            // Retry until timeout
-            this.collector.fail(input);
-            return;
-        }
+//        try {
+//            rr = restClient.restRequest(
+//                    dc.restBaseURL
+//                            + "private/opid/" + opid, null,
+//                    RestClient.GET, null
+//            );
+//
+//        } catch (Exception e) {
+//            // TODO Log the error
+//            // Retry until timeout
+//            this.collector.fail(input);
+//            return;
+//        }
 
         if (dc.benchmark) {
             ObjectMapper mapper = new ObjectMapper();

@@ -109,7 +109,7 @@ public class StreamDispatcherBolt implements IRichBolt {
 			rr = restClient.restRequest(
 					dc.restBaseURL
 						+ "private/" + destination, null, RestClient.GET,
-						null);
+						null).get();
 			soDoc = rr.getResponse();
 		} catch(RestClientErrorCodeException e){
             // TODO Log the error

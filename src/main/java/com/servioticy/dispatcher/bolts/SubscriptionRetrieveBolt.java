@@ -79,7 +79,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                             + streamid
                             + "/subscriptions/", null, RestClient.GET,
                     null
-            );
+            ).get();
         } catch (RestClientErrorCodeException e) {
             // TODO Log the error
             e.printStackTrace();
