@@ -32,9 +32,8 @@ import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestClientException;
 import com.servioticy.restclient.RestResponse;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -314,8 +313,6 @@ public class TopologyTest {
 		} catch (RestClientException e) {
 			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
 		} catch (RestClientErrorCodeException e) {
-			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
-		} catch (JsonParseException e) {
 			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());
 		} catch (JsonMappingException e) {
 			fail("Test failed: " + e.getMessage() + "\n" + e.getStackTrace());

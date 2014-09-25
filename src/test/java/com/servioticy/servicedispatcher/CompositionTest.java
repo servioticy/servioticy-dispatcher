@@ -30,7 +30,7 @@ import com.servioticy.dispatcher.bolts.*;
 import com.servioticy.queueclient.QueueClient;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestResponse;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
