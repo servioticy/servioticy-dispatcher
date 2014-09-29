@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
-public class SOUtils_0_3 implements SOUtils {
+public class SOProcessor020 extends SOProcessor{
     public static final int TYPE_SIMPLE = 0;
     public static final int TYPE_NUMBER = 0;
     public static final int TYPE_BOOLEAN = 1;
@@ -37,9 +37,9 @@ public class SOUtils_0_3 implements SOUtils {
     public static final int TYPE_ARRAY_BOOLEAN = 4;
     public static final int TYPE_ARRAY_STRING = 5;
 
-    public SO so;
+    public SO020 so;
 
-    public SOUtils_0_3(SO so) {
+    public SOProcessor020(SO020 so) {
         this.so = so;
     }
 
@@ -136,7 +136,7 @@ public class SOUtils_0_3 implements SOUtils {
 
     public Set<String> getSourceIdsByStream(String streamId) {
         Set<String> sourceIds = new HashSet<String>();
-        SOStream stream = so.getStreams().get(streamId);
+        SOStream stream = this.so.getStreams().get(streamId);
         for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
             String channelId = channelEntry.getKey();
             SOChannel channel = channelEntry.getValue();

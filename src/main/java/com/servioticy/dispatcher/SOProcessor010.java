@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package com.servioticy.dispatcher.jsonprocessors;
+package com.servioticy.dispatcher;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.*;
+import com.servioticy.dispatcher.jsonprocessors.AliasReplacer;
+import com.servioticy.dispatcher.jsonprocessors.JsonPathReplacer;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -32,28 +35,24 @@ import java.util.Map.Entry;
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
-public class SOProcessor {
+public class SOProcessor010 extends SOProcessor{
 
-    String id;
     AliasReplacer aliases;
     LinkedHashMap<String, PSOStream> streams;
     LinkedHashMap<String, Object> queries;
-    SO so;
-    String jso;
+    SO010 so;
     Map<String, HashSet<String>> streamsByDocId;
     Map<String, HashSet<String>> docIdsByStream;
 
-    public SOProcessor(String json, String soid) throws JsonParseException, JsonMappingException, IOException {
-        this.id = soid;
+    public SOProcessor010(SO010 so) throws JsonParseException, JsonMappingException, IOException {
 
         this.streamsByDocId = new HashMap<String, HashSet<String>>();
         this.docIdsByStream = new HashMap<String, HashSet<String>>();
 
-        jso = json;
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        this.so = mapper.readValue(json, SO.class);
+        this.so = so;
         aliases = new AliasReplacer(this.so.getAliases());
 
         // Streams
@@ -73,7 +72,7 @@ public class SOProcessor {
     public String replaceAliases() throws JsonGenerationException, JsonMappingException, IOException {
         ObjectMapper mapper = new ObjectMapper();
         for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()) {
-            SOStream stream = streamEntry.getValue();
+            SOStream010 stream = (SOStream010) streamEntry.getValue();
             for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
                 SOChannel channel = channelEntry.getValue();
 
@@ -91,7 +90,7 @@ public class SOProcessor {
     public void compileJSONPaths() {
         for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()) {
             PSOStream pstream = new PSOStream();
-            SOStream stream = streamEntry.getValue();
+            SOStream010 stream = (SOStream010) streamEntry.getValue();
             String streamId = streamEntry.getKey();
 
             this.docIdsByStream.put(streamId, new HashSet<String>());
@@ -133,7 +132,7 @@ public class SOProcessor {
         }
     }
 
-    public Set<String> getStreamsByDocId(String docId) {
+    public Set<String> getStreamsBySourceId(String docId) {
         Set<String> result = new HashSet<String>();
         if (this.streamsByDocId.get(docId) != null) {
             result.addAll(this.streamsByDocId.get(docId));
@@ -141,7 +140,7 @@ public class SOProcessor {
         return result;
     }
 
-    public Set<String> getDocIdsByStream(String streamid) {
+    public Set<String> getSourceIdsByStream(String streamid) {
         Set<String> result = new HashSet<String>();
         if (this.docIdsByStream.get(streamid) != null) {
             result.addAll(this.docIdsByStream.get(streamid));
@@ -163,7 +162,11 @@ public class SOProcessor {
 
     }
 
-    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+        ObjectMapper mapper = new ObjectMapper();
+        if (!checkPreFilter(streamId, inputJsons)){
+            return null;
+        }
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
 
@@ -213,6 +216,15 @@ public class SOProcessor {
 
         su.setTimestampChain(new ArrayList<Long>());
 
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        String resultSUDoc = mapper.writeValueAsString(su);
+        if(!inputJsons.containsKey("result")){
+            inputJsons.put("result", resultSUDoc);
+        }
+
+        if(!checkPostFilter(streamId, inputJsons)){
+            return null;
+        }
         return su;
     }
 

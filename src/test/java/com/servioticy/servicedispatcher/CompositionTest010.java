@@ -45,7 +45,7 @@ import static org.mockito.Mockito.*;
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  *
  */
-public class CompositionTest {
+public class CompositionTest010 {
 
     @Test
     public void testBasicCompositionFromStream() {
@@ -70,12 +70,12 @@ public class CompositionTest {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("so-basic.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-basic.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
                 String suAStr = mapper.writeValueAsString(suA);
-                SensorUpdate suGroup = mapper.readValue(new File(cl.getResource("su-group.json").toURI()), SensorUpdate.class);
+                SensorUpdate suGroup = mapper.readValue(new File(cl.getResource("0.1.0/su-group.json").toURI()), SensorUpdate.class);
                 String suGroupStr = mapper.writeValueAsString(suGroup);
 
                 // Mocking up the rest calls...
@@ -215,16 +215,16 @@ public class CompositionTest {
 
                 String opid = "someopid";
 
-                Subscriptions subscriptions = mapper.readValue(new File(cl.getResource("subscriptions-group.json").toURI()), Subscriptions.class);
+                Subscriptions subscriptions = mapper.readValue(new File(cl.getResource("0.1.0/subscriptions-group.json").toURI()), Subscriptions.class);
                 String subscriptionsStr = mapper.writeValueAsString(subscriptions);
-                SO so = mapper.readValue(new File(cl.getResource("so-basic.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-basic.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
-                SO additionalSO = mapper.readValue(new File(cl.getResource("additional_so.json").toURI()), SO.class);
+                SO additionalSO = mapper.readValue(new File(cl.getResource("0.1.0/additional_so.json").toURI()), SO.class);
                 String additionalSOStr = mapper.writeValueAsString(additionalSO);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
                 String suAStr = mapper.writeValueAsString(suA);
-                SensorUpdate suGroup = mapper.readValue(new File(cl.getResource("su-group.json").toURI()), SensorUpdate.class);
+                SensorUpdate suGroup = mapper.readValue(new File(cl.getResource("0.1.0/su-group.json").toURI()), SensorUpdate.class);
                 String suGroupStr = mapper.writeValueAsString(suGroup);
 
                 // Mocking up the rest calls...
@@ -373,12 +373,12 @@ public class CompositionTest {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("so-self.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-self.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
                 String suAStr = mapper.writeValueAsString(suA);
-                SensorUpdate suB = mapper.readValue(new File(cl.getResource("su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suB = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 String suBStr = mapper.writeValueAsString(suB);
 
                 // Mocking up the rest calls...
@@ -512,9 +512,9 @@ public class CompositionTest {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("so-lunull.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-lunull.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
                 String suAStr = mapper.writeValueAsString(suA);
 
@@ -649,9 +649,9 @@ public class CompositionTest {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("so-prefilter.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-prefilter.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
                 suA.getChannels().get("a").setCurrentValue(-1);
                 String suAStr = mapper.writeValueAsString(suA);
@@ -778,9 +778,9 @@ public class CompositionTest {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("so-postfilter.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-postfilter.json").toURI()), SO010.class);
                 String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
                 suA.getChannels().get("a").setCurrentValue(-1);
                 String suAStr = mapper.writeValueAsString(suA);
