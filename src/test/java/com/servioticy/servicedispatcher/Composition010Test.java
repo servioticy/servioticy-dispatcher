@@ -35,7 +35,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -46,17 +45,17 @@ import static org.mockito.Mockito.*;
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  *
  */
-public class CompositionTest020 {
+public class Composition010Test {
 
     @Test
-    public void testBasicCompositionFromStream(){
+    public void testBasicCompositionFromStream() {
         MkClusterParam mkClusterParam = new MkClusterParam();
         mkClusterParam.setSupervisors(4); // TODO change this
         Config daemonConf = new Config();
         daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
         mkClusterParam.setDaemonConf(daemonConf);
 
-        Testing.withSimulatedTimeLocalCluster(mkClusterParam,new TestJob() {
+        Testing.withSimulatedTimeLocalCluster(mkClusterParam, new TestJob() {
             @Override
             public void run(ILocalCluster cluster) throws Exception {
                 TopologyBuilder builder = new TopologyBuilder();
@@ -71,12 +70,12 @@ public class CompositionTest020 {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("0.2.0/so-basic.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-basic.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.2.0/su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
                 String suAStr = mapper.writeValueAsString(suA);
-                SensorUpdate suGroup = mapper.readValue(new File(cl.getResource("0.2.0/su-group.json").toURI()), SensorUpdate.class);
+                SensorUpdate suGroup = mapper.readValue(new File(cl.getResource("0.1.0/su-group.json").toURI()), SensorUpdate.class);
                 String suGroupStr = mapper.writeValueAsString(suGroup);
 
                 // Mocking up the rest calls...
@@ -118,16 +117,16 @@ public class CompositionTest020 {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc,restClient), 10)
+                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
-                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
+                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
                         .shuffleGrouping("checkopid", "subscription");
 
-                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
+                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc, restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
                         .shuffleGrouping("checkopid", "stream");
-                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
+                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc, qc, restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
 
@@ -165,9 +164,8 @@ public class CompositionTest020 {
 
                 String newDescriptor;
                 int i = 0;
-                while((newDescriptor = (String) qc.get()) == null){
-                    if(i==40){
-                        qc.disconnect();
+                while ((newDescriptor = (String) qc.get()) == null) {
+                    if (i == 50) {
                         Assert.fail("Timeout");
                     }
                     try {
@@ -178,7 +176,6 @@ public class CompositionTest020 {
                     }
                     i++;
                 }
-                qc.disconnect();
                 Assert.assertTrue("Return value", newDescriptor != null);
 
                 UpdateDescriptor ud = mapper.readValue(newDescriptor, UpdateDescriptor.class);
@@ -187,10 +184,10 @@ public class CompositionTest020 {
                 Assert.assertTrue("Origin SO id", ud.getSoid().equals(so.getId()));
                 Assert.assertTrue("Origin stream id", ud.getStreamid().equals("B"));
                 Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 2);
-                SUChannel suCh = ud.getSu().getChannels().get("$");
-                double cValue = (Double)suCh.getCurrentValue();
+                SUChannel suCh = ud.getSu().getChannels().get("a");
+                double cValue = (Double) suCh.getCurrentValue();
                 Assert.assertTrue("New SU current-value", cValue == 2);
-
+                qc.disconnect();
             }
         });
     }
@@ -218,16 +215,16 @@ public class CompositionTest020 {
 
                 String opid = "someopid";
 
-                Subscriptions subscriptions = mapper.readValue(new File(cl.getResource("0.2.0/subscriptions-group.json").toURI()), Subscriptions.class);
+                Subscriptions subscriptions = mapper.readValue(new File(cl.getResource("0.1.0/subscriptions-group.json").toURI()), Subscriptions.class);
                 String subscriptionsStr = mapper.writeValueAsString(subscriptions);
-                SO so = mapper.readValue(new File(cl.getResource("0.2.0/so-basic.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-basic.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
-                SO additionalSO = mapper.readValue(new File(cl.getResource("0.2.0/additional_so.json").toURI()), SO.class);
+                SO additionalSO = mapper.readValue(new File(cl.getResource("0.1.0/additional_so.json").toURI()), SO.class);
                 String additionalSOStr = mapper.writeValueAsString(additionalSO);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.2.0/su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
                 String suAStr = mapper.writeValueAsString(suA);
-                SensorUpdate suGroup = mapper.readValue(new File(cl.getResource("0.2.0/su-group.json").toURI()), SensorUpdate.class);
+                SensorUpdate suGroup = mapper.readValue(new File(cl.getResource("0.1.0/su-group.json").toURI()), SensorUpdate.class);
                 String suGroupStr = mapper.writeValueAsString(suGroup);
 
                 // Mocking up the rest calls...
@@ -326,8 +323,7 @@ public class CompositionTest020 {
                 String newDescriptor;
                 int i = 0;
                 while ((newDescriptor = (String) qc.get()) == null) {
-                    if (i==40) {
-                        qc.disconnect();
+                    if (i == 10) {
                         Assert.fail("Timeout");
                     }
                     try {
@@ -338,7 +334,6 @@ public class CompositionTest020 {
                     }
                     i++;
                 }
-                qc.disconnect();
                 Assert.assertTrue("Return value", newDescriptor != null);
 
                 UpdateDescriptor ud = mapper.readValue(newDescriptor, UpdateDescriptor.class);
@@ -347,23 +342,23 @@ public class CompositionTest020 {
                 Assert.assertTrue("Origin SO id", ud.getSoid().equals(so.getId()));
                 Assert.assertTrue("Origin stream id", ud.getStreamid().equals("B"));
                 Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 2);
-                SUChannel suCh = ud.getSu().getChannels().get("$");
+                SUChannel suCh = ud.getSu().getChannels().get("a");
                 double cValue = (Double) suCh.getCurrentValue();
                 Assert.assertTrue("New SU current-value", cValue == 2);
-
+                qc.disconnect();
             }
         });
     }
 
     @Test
-    public void testSelfLastUpdate(){
+    public void testSelfLastUpdate() {
         MkClusterParam mkClusterParam = new MkClusterParam();
         mkClusterParam.setSupervisors(4); // TODO change this
         Config daemonConf = new Config();
         daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
         mkClusterParam.setDaemonConf(daemonConf);
 
-        Testing.withSimulatedTimeLocalCluster(mkClusterParam,new TestJob() {
+        Testing.withSimulatedTimeLocalCluster(mkClusterParam, new TestJob() {
             @Override
             public void run(ILocalCluster cluster) throws Exception {
                 TopologyBuilder builder = new TopologyBuilder();
@@ -378,12 +373,12 @@ public class CompositionTest020 {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("0.2.0/so-self.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-self.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.2.0/su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
                 String suAStr = mapper.writeValueAsString(suA);
-                SensorUpdate suB = mapper.readValue(new File(cl.getResource("0.2.0/su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suB = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 String suBStr = mapper.writeValueAsString(suB);
 
                 // Mocking up the rest calls...
@@ -419,16 +414,16 @@ public class CompositionTest020 {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc,restClient), 10)
+                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
-                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
+                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
                         .shuffleGrouping("checkopid", "subscription");
 
-                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
+                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc, restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
                         .shuffleGrouping("checkopid", "stream");
-                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
+                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc, qc, restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
 
@@ -466,9 +461,8 @@ public class CompositionTest020 {
 
                 String newDescriptor;
                 int i = 0;
-                while((newDescriptor = (String) qc.get()) == null){
-                    if(i==40){
-                        qc.disconnect();
+                while ((newDescriptor = (String) qc.get()) == null) {
+                    if (i == 50) {
                         Assert.fail("Timeout");
                     }
                     try {
@@ -479,7 +473,6 @@ public class CompositionTest020 {
                     }
                     i++;
                 }
-                qc.disconnect();
                 Assert.assertTrue("Return value", newDescriptor != null);
 
                 UpdateDescriptor ud = mapper.readValue(newDescriptor, UpdateDescriptor.class);
@@ -488,23 +481,23 @@ public class CompositionTest020 {
                 Assert.assertTrue("Origin SO id", ud.getSoid().equals(so.getId()));
                 Assert.assertTrue("Origin stream id", ud.getStreamid().equals("B"));
                 Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 2);
-                SUChannel suCh = ud.getSu().getChannels().get("$");
-                double cValue = (Double)suCh.getCurrentValue();
-                Assert.assertTrue("New SU current-value", cValue == 1);
-
+                SUChannel suCh = ud.getSu().getChannels().get("a");
+                double cValue = (Double) suCh.getCurrentValue();
+                Assert.assertTrue("New SU current-value", cValue == 2);
+                qc.disconnect();
             }
         });
     }
 
     @Test
-    public void testEmptyLastUpdate(){
+    public void testEmptyLastUpdate() {
         MkClusterParam mkClusterParam = new MkClusterParam();
         mkClusterParam.setSupervisors(4); // TODO change this
         Config daemonConf = new Config();
         daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
         mkClusterParam.setDaemonConf(daemonConf);
 
-        Testing.withSimulatedTimeLocalCluster(mkClusterParam,new TestJob() {
+        Testing.withSimulatedTimeLocalCluster(mkClusterParam, new TestJob() {
             @Override
             public void run(ILocalCluster cluster) throws Exception {
                 TopologyBuilder builder = new TopologyBuilder();
@@ -519,9 +512,9 @@ public class CompositionTest020 {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("0.2.0/so-lunull.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-lunull.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.2.0/su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
                 String suAStr = mapper.writeValueAsString(suA);
 
@@ -558,16 +551,16 @@ public class CompositionTest020 {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc,restClient), 10)
+                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
-                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
+                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
                         .shuffleGrouping("checkopid", "subscription");
 
-                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
+                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc, restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
                         .shuffleGrouping("checkopid", "stream");
-                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
+                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc, qc, restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
 
@@ -605,9 +598,8 @@ public class CompositionTest020 {
 
                 String newDescriptor;
                 int i = 0;
-                while((newDescriptor = (String) qc.get()) == null){
-                    if(i==40){
-                        qc.disconnect();
+                while ((newDescriptor = (String) qc.get()) == null) {
+                    if (i == 50) {
                         Assert.fail("Timeout");
                     }
                     try {
@@ -618,7 +610,6 @@ public class CompositionTest020 {
                     }
                     i++;
                 }
-                qc.disconnect();
                 Assert.assertTrue("Return value", newDescriptor != null);
 
                 UpdateDescriptor ud = mapper.readValue(newDescriptor, UpdateDescriptor.class);
@@ -627,23 +618,23 @@ public class CompositionTest020 {
                 Assert.assertTrue("Origin SO id", ud.getSoid().equals(so.getId()));
                 Assert.assertTrue("Origin stream id", ud.getStreamid().equals("B"));
                 Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 2);
-                SUChannel suCh = ud.getSu().getChannels().get("$");
-                boolean cValue = (Boolean)suCh.getCurrentValue();
+                SUChannel suCh = ud.getSu().getChannels().get("a");
+                boolean cValue = (Boolean) suCh.getCurrentValue();
                 Assert.assertTrue("New SU current-value", cValue);
-
+                qc.disconnect();
             }
         });
     }
 
     @Test
-    public void testFilter(){
+    public void testPreFilter() {
         MkClusterParam mkClusterParam = new MkClusterParam();
         mkClusterParam.setSupervisors(4); // TODO change this
         Config daemonConf = new Config();
         daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
         mkClusterParam.setDaemonConf(daemonConf);
 
-        Testing.withSimulatedTimeLocalCluster(mkClusterParam,new TestJob() {
+        Testing.withSimulatedTimeLocalCluster(mkClusterParam, new TestJob() {
             @Override
             public void run(ILocalCluster cluster) throws Exception {
                 TopologyBuilder builder = new TopologyBuilder();
@@ -658,11 +649,11 @@ public class CompositionTest020 {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("0.2.0/so-filter.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-prefilter.json").toURI()), SO.class);
                 String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.2.0/su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
                 suA.setLastUpdate(2);
-                suA.getChannels().get("$").setCurrentValue(-1);
+                suA.getChannels().get("a").setCurrentValue(-1);
                 String suAStr = mapper.writeValueAsString(suA);
 
                 // Mocking up the rest calls...
@@ -698,16 +689,16 @@ public class CompositionTest020 {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc,restClient), 10)
+                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
-                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
+                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
                         .shuffleGrouping("checkopid", "subscription");
 
-                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
+                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc, restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
                         .shuffleGrouping("checkopid", "stream");
-                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
+                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc, qc, restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
 
@@ -745,9 +736,8 @@ public class CompositionTest020 {
 
                 String newDescriptor;
                 int i = 0;
-                while((newDescriptor = (String) qc.get()) == null){
-                    if(i==40){
-                        qc.disconnect();
+                while ((newDescriptor = (String) qc.get()) == null) {
+                    if (i == 40) {
                         Assert.assertTrue("Filtered", true);
                         return;
                     }
@@ -766,14 +756,14 @@ public class CompositionTest020 {
     }
 
     @Test
-    public void testAnyInput(){
+    public void testPostFilter() {
         MkClusterParam mkClusterParam = new MkClusterParam();
         mkClusterParam.setSupervisors(4); // TODO change this
         Config daemonConf = new Config();
         daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
         mkClusterParam.setDaemonConf(daemonConf);
 
-        Testing.withSimulatedTimeLocalCluster(mkClusterParam,new TestJob() {
+        Testing.withSimulatedTimeLocalCluster(mkClusterParam, new TestJob() {
             @Override
             public void run(ILocalCluster cluster) throws Exception {
                 TopologyBuilder builder = new TopologyBuilder();
@@ -788,10 +778,13 @@ public class CompositionTest020 {
 
                 String opid = "someopid";
 
-                SO so = mapper.readValue(new File(cl.getResource("0.2.0/so-input.json").toURI()), SO.class);
+                SO so = mapper.readValue(new File(cl.getResource("0.1.0/so-postfilter.json").toURI()), SO010.class);
                 String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.2.0/su-A.json").toURI()), SensorUpdate.class);
+                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.1.0/su-A.json").toURI()), SensorUpdate.class);
+                suA.setLastUpdate(2);
+                suA.getChannels().get("a").setCurrentValue(-1);
                 String suAStr = mapper.writeValueAsString(suA);
+
                 // Mocking up the rest calls...
                 RestClient restClient = mock(RestClient.class, withSettings().serializable());
                 // store new SUs
@@ -825,16 +818,16 @@ public class CompositionTest020 {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc,restClient), 10)
+                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
-                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
+                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
                         .shuffleGrouping("checkopid", "subscription");
 
-                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
+                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc, restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
                         .shuffleGrouping("checkopid", "stream");
-                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
+                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc, qc, restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
 
@@ -872,10 +865,10 @@ public class CompositionTest020 {
 
                 String newDescriptor;
                 int i = 0;
-                while((newDescriptor = (String) qc.get()) == null){
-                    if(i==40){
-                        qc.disconnect();
-                        Assert.fail("Timeout");
+                while ((newDescriptor = (String) qc.get()) == null) {
+                    if (i == 50) {
+                        Assert.assertTrue("Filtered", true);
+                        return;
                     }
                     try {
                         Thread.sleep(100);
@@ -886,154 +879,7 @@ public class CompositionTest020 {
                     i++;
                 }
                 qc.disconnect();
-                Assert.assertTrue("Return value", newDescriptor != null);
-
-                UpdateDescriptor ud = mapper.readValue(newDescriptor, UpdateDescriptor.class);
-
-                Assert.assertTrue("Operation id", ud.getOpid() != null);
-                Assert.assertTrue("Origin SO id", ud.getSoid().equals(so.getId()));
-                Assert.assertTrue("Origin stream id", ud.getStreamid().equals("B"));
-                Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 1);
-                SUChannel suCh = ud.getSu().getChannels().get("$");
-                boolean cValue = (Boolean)suCh.getCurrentValue();
-                Assert.assertTrue("New SU current-value", cValue);
-            }
-        });
-    }
-
-
-    @Test
-    public void testArray(){
-        MkClusterParam mkClusterParam = new MkClusterParam();
-        mkClusterParam.setSupervisors(4); // TODO change this
-        Config daemonConf = new Config();
-        daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
-        mkClusterParam.setDaemonConf(daemonConf);
-
-        Testing.withSimulatedTimeLocalCluster(mkClusterParam,new TestJob() {
-            @Override
-            public void run(ILocalCluster cluster) throws Exception {
-                TopologyBuilder builder = new TopologyBuilder();
-                QueueClient qc = QueueClient.factory("queue-simple.xml");
-                qc.connect();
-
-                ClassLoader cl = Thread.currentThread().getContextClassLoader();
-
-                ObjectMapper mapper = new ObjectMapper();
-                DispatcherContext dc = new DispatcherContext();
-                dc.loadConf(null);
-
-                String opid = "someopid";
-
-                SO so = mapper.readValue(new File(cl.getResource("0.2.0/so-array.json").toURI()), SO.class);
-                String soStr = mapper.writeValueAsString(so);
-                SensorUpdate suA = mapper.readValue(new File(cl.getResource("0.2.0/su-C.json").toURI()), SensorUpdate.class);
-                String suAStr = mapper.writeValueAsString(suA);
-                // Mocking up the rest calls...
-                RestClient restClient = mock(RestClient.class, withSettings().serializable());
-                // store new SUs
-                when(restClient.restRequest(
-                        any(String.class),
-                        any(String.class), eq(RestClient.PUT),
-                        any(Map.class))).thenReturn(new RestResponse("", 200));
-                // get opid
-                when(restClient.restRequest(
-                        dc.restBaseURL
-                                + "private/opid/" + opid, null,
-                        RestClient.GET,
-                        null)).thenReturn(new RestResponse("", 200));
-                // get subscriptions
-                when(restClient.restRequest(
-                        dc.restBaseURL
-                                + "private/" + so.getId() + "/streams/C"
-                                + "/subscriptions/", null, RestClient.GET,
-                        null)).thenReturn(new RestResponse(null, 204));
-                // get so
-                when(restClient.restRequest(
-                        dc.restBaseURL
-                                + "private/" + so.getId(), null, RestClient.GET,
-                        null)).thenReturn(new RestResponse(soStr, 200));
-                // get SU
-                when(restClient.restRequest(
-                        dc.restBaseURL
-                                + "private/" + so.getId() + "/streams/B/lastUpdate",
-                        null, RestClient.GET,
-                        null)).thenReturn(new RestResponse(null, 204));
-
-                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
-
-                builder.setBolt("checkopid", new CheckOpidBolt(dc,restClient), 10)
-                        .shuffleGrouping("dispatcher");
-
-                builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
-                        .shuffleGrouping("checkopid", "subscription");
-
-                builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
-                        .shuffleGrouping("subretriever", "internalSub")
-                        .shuffleGrouping("checkopid", "stream");
-                builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
-                        .shuffleGrouping("streamdispatcher", "default");
-                StormTopology topology = builder.createTopology();
-
-                // prepare the mock data
-                MockedSources mockedSources = new MockedSources();
-                mockedSources.addMockData("dispatcher", new Values(opid, so.getId(), "C", suAStr));
-
-                // prepare the config
-                Config conf = new Config();
-                conf.setNumWorkers(2);
-
-                CompleteTopologyParam completeTopologyParam = new CompleteTopologyParam();
-                completeTopologyParam.setMockedSources(mockedSources);
-                completeTopologyParam.setStormConf(conf);
-
-                Map result = Testing.completeTopology(cluster, topology,
-                        completeTopologyParam);
-
-                // check whether the result is right
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(opid, so.getId(), "C", suAStr)),
-                        Testing.readTuples(result, "dispatcher", "default")));
-
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(null, so.getId(), "C", suAStr)),
-                        Testing.readTuples(result, "checkopid", "stream")));
-
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(), "C", suAStr)),
-                        Testing.readTuples(result, "checkopid", "subscription")));
-
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(),
-                                "B",
-                                soStr,
-                                "C",
-                                suAStr)),
-                        Testing.readTuples(result, "streamdispatcher", "default")));
-
-                String newDescriptor;
-                int i = 0;
-                while((newDescriptor = (String) qc.get()) == null){
-                    if(i==40){
-                        qc.disconnect();
-                        Assert.fail("Timeout");
-                    }
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                    i++;
-                }
-                qc.disconnect();
-                Assert.assertTrue("Return value", newDescriptor != null);
-
-                UpdateDescriptor ud = mapper.readValue(newDescriptor, UpdateDescriptor.class);
-
-                Assert.assertTrue("Operation id", ud.getOpid() != null);
-                Assert.assertTrue("Origin SO id", ud.getSoid().equals(so.getId()));
-                Assert.assertTrue("Origin stream id", ud.getStreamid().equals("B"));
-                Assert.assertTrue("New SU timestamp", ud.getSu().getLastUpdate() == 1);
-                SUChannel suCh = ud.getSu().getChannels().get("$");
-                ArrayList<Boolean> cValue = (ArrayList<Boolean>)suCh.getCurrentValue();
-                Assert.assertTrue("New SU current-value", cValue.get(0) && !cValue.get(1) && !cValue.get(2) && cValue.get(3) && cValue.get(4));
+                Assert.fail("Not filtered");
             }
         });
     }
