@@ -28,8 +28,9 @@ import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOGroup;
 import com.servioticy.datamodel.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.dispatcher.SOProcessor;
+import com.servioticy.dispatcher.SOProcessor010;
 import com.servioticy.dispatcher.SUCache;
-import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
 import com.servioticy.queueclient.KestrelThriftClient;
 import com.servioticy.queueclient.QueueClient;
 import com.servioticy.restclient.RestClient;
@@ -37,6 +38,7 @@ import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestClientException;
 import com.servioticy.restclient.RestResponse;
 
+import javax.script.ScriptException;
 import java.io.IOException;
 import java.util.*;
 
@@ -97,9 +99,9 @@ public class StreamProcessorBolt implements IRichBolt {
 			restClient = new RestClient();
 		}
 	}
-	
-	private Map<String, String> getGroupDocs(Set<String> docIds, String soId, SO so) throws IOException, RestClientException, RestClientErrorCodeException{
-		RestResponse rr;
+
+    private Map<String, String> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
+        RestResponse rr;
 		Map<String, String> groupDocs = new HashMap<String, String>();
 		ObjectMapper mapper = new ObjectMapper();
 
@@ -145,9 +147,9 @@ public class StreamProcessorBolt implements IRichBolt {
 		
 		return groupDocs;
 	}
-	
-	private Map<String, String> getStreamDocs(Set<String> docIds, String soId, SO so) throws IOException, RestClientException, RestClientErrorCodeException{
-		RestResponse rr;
+
+    private Map<String, String> getStreamSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
+        RestResponse rr;
 		Map<String, String> streamDocs = new HashMap<String, String>();
 		ObjectMapper mapper = new ObjectMapper();	
 		for(String docId: docIds){
@@ -158,7 +160,7 @@ public class StreamProcessorBolt implements IRichBolt {
             try {
                 rr = restClient.restRequest(
                         dc.restBaseURL
-                                + "private/" + soId + "/streams/" + docId + "/lastUpdate",
+                                + "private/" + so.getId() + "/streams/" + docId + "/lastUpdate",
                         null, RestClient.GET,
                         null
                 );
@@ -185,28 +187,28 @@ public class StreamProcessorBolt implements IRichBolt {
 	}
 	
 	public void execute(Tuple input) {
-		RestResponse rr;
-		SensorUpdate su;
-		SensorUpdate previousSU;
-		String previousSUDoc;
-		SO so;
-		ObjectMapper mapper = new ObjectMapper();
-		String soId = input.getStringByField("soid");
-		String streamId = input.getStringByField("streamid");
-		String suDoc = input.getStringByField("su");
-		String soDoc = input.getStringByField("so");
-		String groupId = input.getStringByField("groupid");
-		SOProcessor sop;
-		long timestamp;
-		Map<String, String> docs;
-		
-		try{
-			su = mapper.readValue(suDoc, SensorUpdate.class);
-			so = mapper.readValue(soDoc, SO.class);	
-			sop = new SOProcessor(soDoc, soId);
-		} catch(Exception e){
-			// TODO Log the error
-			e.printStackTrace();
+        RestResponse rr;
+        SensorUpdate su;
+        SensorUpdate previousSU;
+        String previousSUDoc;
+        SO so;
+        ObjectMapper mapper = new ObjectMapper();
+        String soId = input.getStringByField("soid");
+        String streamId = input.getStringByField("streamid");
+        String suDoc = input.getStringByField("su");
+        String soDoc = input.getStringByField("so");
+        String originId = input.getStringByField("originid");
+        SOProcessor sop;
+        long timestamp;
+        Map<String, String> docs;
+
+        try {
+            su = mapper.readValue(suDoc, SensorUpdate.class);
+            so = mapper.readValue(soDoc, SO.class);
+            sop = SOProcessor.factory(so);
+        } catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
             if (dc.benchmark) this.collector.emit("benchmark", input,
                     new Values(suDoc,
                             System.currentTimeMillis(),
@@ -214,7 +216,7 @@ public class StreamProcessorBolt implements IRichBolt {
             );
             collector.ack(input);
             return;
-		}
+        }
         /*if(suCache.check(soId + ";" + streamId, su.getLastUpdate())){
             // This SU or a posterior one has already been sent, do not send this one.
             this.collector.emit("benchmark", input,
@@ -225,40 +227,42 @@ public class StreamProcessorBolt implements IRichBolt {
             collector.ack(input);
 			return;
 		}*/
-        // It is not needed to replace the alias, it has been already done in the previous bolt.
-		sop.compileJSONPaths();
-		
-		Set<String> docIds = sop.getDocIdsByStream(streamId);
-		// Remove the group for which we already have the SU
-		docIds.remove(groupId);
-		// The self last update from current stream
-		docIds.add(streamId);
+        if(sop.getClass() == SOProcessor010.class) {
+            // It is not needed to replace the alias, it has been already done in the previous bolt.
+            ((SOProcessor010)sop).compileJSONPaths();
+        }
 
-		docs = new HashMap<String, String>();
-		docs.put("", suDoc);
-		try{
-			docs.putAll(this.getStreamDocs(docIds, soId, so));
-			docs.putAll(this.getGroupDocs(docIds, soId, so));
-			docs.put(groupId, suDoc);
-		} catch(Exception e){
-			// TODO Log the error
-			e.printStackTrace();
-			collector.fail(input);
-			return;
-		}
-		// Obtain the highest timestamp from the input docs
-		timestamp = su.getLastUpdate();
-		for(Map.Entry<String, String> doc: docs.entrySet()){
-			SensorUpdate inputSU;
-			try{
-				String docContent = doc.getValue();
-				if(docContent.equals("null")){
-					continue;
-				}
-				inputSU = mapper.readValue(docContent, SensorUpdate.class);
-			} catch(Exception e){
-				// TODO Log the error
-				e.printStackTrace();
+        Set<String> docIds = sop.getSourceIdsByStream(streamId);
+        // Remove the origin for which we already have the SU
+        docIds.remove(originId);
+        // The self last update from current stream
+        docIds.add(streamId);
+
+        docs = new HashMap<String, String>();
+        try {
+            //docs.put("$any", suDoc);
+            docs.putAll(this.getStreamSUs(docIds, so));
+            docs.putAll(this.getGroupSUs(docIds, so));
+            docs.put(originId, suDoc);
+        } catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
+            collector.fail(input);
+            return;
+        }
+        // Obtain the highest timestamp from the input docs
+        timestamp = su.getLastUpdate();
+        for (Map.Entry<String, String> doc : docs.entrySet()) {
+            SensorUpdate inputSU;
+            try {
+                String docContent = doc.getValue();
+                if (docContent.equals("null")) {
+                    continue;
+                }
+                inputSU = mapper.readValue(docContent, SensorUpdate.class);
+            } catch (Exception e) {
+                // TODO Log the error
+                e.printStackTrace();
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
@@ -266,17 +270,17 @@ public class StreamProcessorBolt implements IRichBolt {
                 );
                 collector.ack(input);
                 return;
-			}
-			timestamp = inputSU.getLastUpdate() > timestamp ? inputSU.getLastUpdate() : timestamp;
-		}
-		
-		previousSUDoc = docs.get(streamId);
-		if(!previousSUDoc.equals("null")){
-			try{
-				previousSU = mapper.readValue(previousSUDoc, SensorUpdate.class);
-			} catch(Exception e){
-				// TODO Log the error
-				e.printStackTrace();
+            }
+            timestamp = inputSU.getLastUpdate() > timestamp ? inputSU.getLastUpdate() : timestamp;
+        }
+
+        previousSUDoc = docs.get(streamId);
+        if (!previousSUDoc.equals("null")) {
+            try {
+                previousSU = mapper.readValue(previousSUDoc, SensorUpdate.class);
+            } catch (Exception e) {
+                // TODO Log the error
+                e.printStackTrace();
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
@@ -284,9 +288,9 @@ public class StreamProcessorBolt implements IRichBolt {
                 );
                 collector.ack(input);
                 return;
-			}
-			// There is already a newer update stored
-			if(timestamp <= previousSU.getLastUpdate()){
+            }
+            // There is already a newer update stored
+            if (timestamp <= previousSU.getLastUpdate()) {
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
@@ -294,55 +298,37 @@ public class StreamProcessorBolt implements IRichBolt {
                 );
                 collector.ack(input);
                 return;
-			}
-		}
+            }
+        }
         SensorUpdate resultSU;
         String resultSUDoc;
-        try{
-			if(!sop.checkPreFilter(streamId, docs)){
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "pre-filter")
-                );
-                collector.ack(input);
-                return;
-			}
-
-            resultSU = sop.getResultSU(streamId, docs, timestamp);
+        try {
+            resultSU = sop.getResultSU(streamId, docs, originId, timestamp);
             if (resultSU == null) {
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
-                                "null-result")
+                                "filtered")
                 );
                 collector.ack(input);
                 return;
-			}
-			mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-			resultSUDoc = mapper.writeValueAsString(resultSU);
-
-            if(!docs.containsKey("result")){
-                docs.put("result", resultSUDoc);
             }
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            resultSUDoc = mapper.writeValueAsString(resultSU);
 
-            // Deprecated. Only for retrocompatibility
-            if(!docs.containsKey("@result@")){
-                docs.put("@result@", resultSUDoc);
-            }
-			
-			if(!sop.checkPostFilter(streamId, docs)){
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "post-filter")
-                );
-                collector.ack(input);
-                return;
-			}
-		} catch(Exception e){
-			// TODO Log the error
-			e.printStackTrace();
+        } catch (ScriptException e) {
+            // TODO Log the error
+            e.printStackTrace();
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "script-error")
+            );
+            collector.ack(input);
+            return;
+        } catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
             if (dc.benchmark) this.collector.emit("benchmark", input,
                     new Values(suDoc,
                             System.currentTimeMillis(),
@@ -359,21 +345,21 @@ public class StreamProcessorBolt implements IRichBolt {
 
             resultSU.getStreamsChain().add(new ArrayList<String>(Arrays.asList(fromStr)));
             resultSU.getTimestampChain().add(System.currentTimeMillis());
-            try {
-                resultSUDoc = mapper.writeValueAsString(resultSU);
-            } catch (Exception e) {
-                // TODO Log the error
-
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "error")
-                );
-                collector.ack(input);
-                return;
-            }
         }
 
+        try {
+            resultSUDoc = mapper.writeValueAsString(resultSU);
+        } catch (Exception e) {
+            // TODO Log the error
+
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            collector.ack(input);
+            return;
+        }
 
         // generate opid
         String opid = Integer.toHexString(resultSUDoc.hashCode());
