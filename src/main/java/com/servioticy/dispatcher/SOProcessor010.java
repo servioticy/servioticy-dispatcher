@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.*;
 import com.servioticy.dispatcher.jsonprocessors.AliasReplacer;
 import com.servioticy.dispatcher.jsonprocessors.JsonPathReplacer;
+import org.elasticsearch.common.geo.GeoPoint;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -185,22 +186,30 @@ public class SOProcessor010 extends SOProcessor{
                 nulls++;
             } else {
                 String currentValueCode = pchannel.currentValue.replace(inputJsons);
-                String type;
-
-                if (pchannel.type.toLowerCase().equals("number")) {
-                    type = "Number";
-                } else if (pchannel.type.toLowerCase().equals("boolean")) {
-                    type = "Boolean";
-                } else if (pchannel.type.toLowerCase().equals("string")) {
-                    type = "String";
+                Class type;
+                String typeName;
+                Object result = null;
+                typeName = pchannel.type.toLowerCase();
+                boolean primitive = true;
+                if (typeName.equals("number")) {
+                    type = Double.class;
+                } else if (typeName.equals("boolean")) {
+                    type = Boolean.class;
+                } else if (typeName.equals("string")) {
+                    type = String.class;
                 }
-                // TODO Array type
+                else if (typeName.equals("geo_point")){
+                    type = GeoPoint.class;
+
+                }
                 else {
                     return null;
                 }
-                engine.eval("var result = " + type + "(" + currentValueCode + ")");
 
-                suChannel.setCurrentValue(engine.get("result"));
+                engine.eval("var result = JSON.stringify(" + currentValueCode + ")");
+                result = mapper.readValue((String)engine.get("result"), type);
+                suChannel.setCurrentValue(result);
+
             }
             suChannel.setUnit(pchannel.unit);
 

@@ -15,7 +15,10 @@
  ******************************************************************************/
 package com.servioticy.dispatcher;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.*;
+import org.elasticsearch.common.geo.GeoPoint;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -31,11 +34,13 @@ public class SOProcessor020 extends SOProcessor{
     public static final int TYPE_NUMBER = 0;
     public static final int TYPE_BOOLEAN = 1;
     public static final int TYPE_STRING = 2;
+    public static final int TYPE_GEOPOINT = 3;
 
-    public static final int TYPE_ARRAY = 3;
-    public static final int TYPE_ARRAY_NUMBER = 3;
-    public static final int TYPE_ARRAY_BOOLEAN = 4;
-    public static final int TYPE_ARRAY_STRING = 5;
+    public static final int TYPE_ARRAY = 4;
+    public static final int TYPE_ARRAY_NUMBER = 4;
+    public static final int TYPE_ARRAY_BOOLEAN = 5;
+    public static final int TYPE_ARRAY_STRING = 6;
+    public static final int TYPE_ARRAY_GEOPOINT = 7;
 
     public SO020 so;
 
@@ -187,12 +192,15 @@ public class SOProcessor020 extends SOProcessor{
             return typeCode + TYPE_BOOLEAN;
         } else if (type.equals("string")) {
             return typeCode + TYPE_STRING;
+        } else if (type.equals("geo_point")) {
+            return typeCode + TYPE_GEOPOINT;
         }
 
         return -1;
     }
 
     public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, String origin, long timestamp) throws IOException, ScriptException {
+        ObjectMapper mapper = new ObjectMapper();
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
 
@@ -212,24 +220,39 @@ public class SOProcessor020 extends SOProcessor{
                 // There is no code for one of the channels. Invalid.
                 return null;
             } else {
-                String type;
+                TypeReference type;
+                Class dataClass;
                 boolean array = false;
 
                 switch (parseType(channel.getType())) {
                     case TYPE_ARRAY_NUMBER:
+                        type = new TypeReference<List<Double>>(){};
                         array = true;
+                        break;
                     case TYPE_NUMBER:
-                        type = "number";
+                        type = new TypeReference<Double>(){};
                         break;
                     case TYPE_ARRAY_BOOLEAN:
+                        type = new TypeReference<List<Boolean>>(){};
                         array = true;
+                        break;
                     case TYPE_BOOLEAN:
-                        type = "boolean";
+                        type = new TypeReference<Boolean>(){};
                         break;
                     case TYPE_ARRAY_STRING:
+                        type = new TypeReference<List<String>>(){};
                         array = true;
+                        break;
                     case TYPE_STRING:
-                        type = "string";
+                        type = new TypeReference<String>(){};
+                        break;
+                    // non-primitive types
+                    case TYPE_ARRAY_GEOPOINT:
+                        type = new TypeReference<List<GeoPoint>>(){};
+                        array = true;
+                        break;
+                    case TYPE_GEOPOINT:
+                        type = new TypeReference<GeoPoint>(){};
                         break;
                     default:
                         return null;
@@ -237,35 +260,17 @@ public class SOProcessor020 extends SOProcessor{
 
                 String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
                 String finalCode;
-                if (!array) {
-                    finalCode = initializationCode(inputJsons, origin) +
-                            "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
-                            "if(typeof " + resultVar + " !== '" + type + "'){" +
-                            resultVar + " = null;" +
-                            "}";
 
-                } else {
-                    finalCode = initializationCode(inputJsons, origin) +
-                            "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ");" +
-                            "if(Object.prototype.toString.call(" + resultVar + ") !== '[object Array]') {" +
-                            resultVar + " = null;" +
-                            "}" +
-                            "else {" +
-                            "for(var i = 0; i < " + resultVar + ".length; i++){" +
-                            "if(typeof " + resultVar + "[i] !== '" + type + "'){" +
-                            resultVar + " = null;" +
-                            "break;" +
-                            "}" +
-                            "}" +
-                            "}";
-                }
+                engine.eval(initializationCode(inputJsons, origin) +
+                        "var " + resultVar + " = JSON.stringify(" + currentValueCode + "(" + functionArgsString(currentValueCode) + ")" + ")");
+                Object result = mapper.readValue((String)engine.get(resultVar), type);
 
-                engine.eval(finalCode);
-                if (engine.get(resultVar) == null) {
+
+                if (result == null) {
                     // Filtered output. The type is not the expected one.
                     return null;
                 }
-                suChannel.setCurrentValue(engine.get(resultVar));
+                suChannel.setCurrentValue(result);
             }
             suChannel.setUnit(channel.getUnit());
 
