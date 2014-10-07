@@ -22,7 +22,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.servioticy.datamodel.ActuationDescriptor;
+import com.servioticy.datamodel.actuation.ActuationDescriptor;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
