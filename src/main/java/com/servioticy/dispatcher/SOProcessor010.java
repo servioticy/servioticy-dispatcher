@@ -229,9 +229,9 @@ public class SOProcessor010 extends SOProcessor{
             return null;
         }
 
-        su.setStreamsChain(new ArrayList<ArrayList<String>>());
+        su.setTriggerPath(new ArrayList<ArrayList<String>>());
 
-        su.setTimestampChain(new ArrayList<Long>());
+        su.setPathTimestamps(new ArrayList<Long>());
 
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         String resultSUDoc = mapper.writeValueAsString(su);

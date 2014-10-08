@@ -68,13 +68,13 @@ public class BenchmarkBolt implements IRichBolt {
         }
 
 
-        int chainSize = su.getTimestampChain() == null ? 0 : su.getTimestampChain().size();
+        int chainSize = su.getPathTimestamps() == null ? 0 : su.getPathTimestamps().size();
 
         String csvLine = Long.toHexString(su.getOriginId()) + "," + su.getLastUpdate() + "," + stopTS + "," + reason + "," + chainSize;
         for (int i = 0; i < chainSize; i++) {
             csvLine += ",";
-            csvLine += su.getTimestampChain().get(i) + ",";
-            csvLine += su.getStreamsChain().get(i).get(0) + "," + su.getStreamsChain().get(i).get(1);
+            csvLine += su.getPathTimestamps().get(i) + ",";
+            csvLine += su.getTriggerPath().get(i).get(0) + "," + su.getTriggerPath().get(i).get(1);
         }
 
         try {

@@ -23,7 +23,6 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.serviceobject.SOGroup;
@@ -341,12 +340,12 @@ public class StreamProcessorBolt implements IRichBolt {
 		}
         if(dc.benchmark) {
             String[] fromStr = {so.getId(), streamId};
-            resultSU.setStreamsChain(su.getStreamsChain());
-            resultSU.setTimestampChain(su.getTimestampChain());
+            resultSU.setTriggerPath(su.getTriggerPath());
+            resultSU.setPathTimestamps(su.getPathTimestamps());
             resultSU.setOriginId(su.getOriginId());
 
-            resultSU.getStreamsChain().add(new ArrayList<String>(Arrays.asList(fromStr)));
-            resultSU.getTimestampChain().add(System.currentTimeMillis());
+            resultSU.getTriggerPath().add(new ArrayList<String>(Arrays.asList(fromStr)));
+            resultSU.getPathTimestamps().add(System.currentTimeMillis());
         }
 
         try {
@@ -406,8 +405,8 @@ public class StreamProcessorBolt implements IRichBolt {
 		}
 
         // Remove the data that doesn't need to be stored.
-        resultSU.setStreamsChain(null);
-        resultSU.setTimestampChain(null);
+        resultSU.setTriggerPath(null);
+        resultSU.setPathTimestamps(null);
         resultSU.setOriginId(null);
 
         try {
