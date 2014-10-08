@@ -182,7 +182,7 @@ public class StreamDispatcherBolt implements IRichBolt {
             for (String streamIdByDoc : sop.getStreamsBySourceId(docId)) {
                 // If the SU comes from the same stream than it is going, it must be stopped
 //                boolean beenThere = false;
-//                for (ArrayList<String> prevStream : su.getStreamsChain()) {
+//                for (ArrayList<String> prevStream : su.getTriggerPath()) {
 //                    beenThere = (destination == prevStream.get(0) && streamIdByDoc == prevStream.get(1));
 //                    if (beenThere) break;
 //                }

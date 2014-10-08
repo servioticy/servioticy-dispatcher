@@ -86,12 +86,14 @@ public class PrepareBolt implements IRichBolt {
             this.collector.fail(input);
             return;
         }
+
         if(dc.benchmark) {
+
             ObjectMapper mapper = new ObjectMapper();
             try {
                 su = mapper.readValue(suDoc, SensorUpdate.class);
             } catch (Exception e) {
-                if (dc.benchmark) this.collector.emit("benchmark", input,
+                this.collector.emit("benchmark", input,
                         new Values(suDoc,
                                 System.currentTimeMillis(),
                                 "error")
@@ -101,16 +103,16 @@ public class PrepareBolt implements IRichBolt {
                 collector.ack(input);
                 return;
             }
-            if (su.getStreamsChain() == null) {
-                su.setStreamsChain(new ArrayList<ArrayList<String>>());
+            if (su.getTriggerPath() == null) {
+                su.setTriggerPath(new ArrayList<ArrayList<String>>());
                 String[] chainInit = {input.getStringByField("soid"), input.getStringByField("streamid")};
-                su.getStreamsChain().add(new ArrayList<String>(Arrays.asList(chainInit)));
-                su.setTimestampChain(new ArrayList<Long>());
-                su.getTimestampChain().add(System.currentTimeMillis());
+                su.getTriggerPath().add(new ArrayList<String>(Arrays.asList(chainInit)));
+                su.setPathTimestamps(new ArrayList<Long>());
+                su.getPathTimestamps().add(System.currentTimeMillis());
                 su.setOriginId(UUID.randomUUID().getMostSignificantBits());
             }
-            /*else if( (System.currentTimeMillis() - su.getTimestampChain().get(su.getTimestampChain().size()-1)) > 2*60*1000 ||
-                     (System.currentTimeMillis() - su.getTimestampChain().get(0)) > 10*60*1000){
+            /*else if( (System.currentTimeMillis() - su.getPathTimestamps().get(su.getPathTimestamps().size()-1)) > 2*60*1000 ||
+                     (System.currentTimeMillis() - su.getPathTimestamps().get(0)) > 10*60*1000){
                 // Timeout
                 this.collector.emit("benchmark", input,
                         new Values(suDoc,
@@ -135,6 +137,7 @@ public class PrepareBolt implements IRichBolt {
                 collector.ack(input);
                 return;
             }
+
         }
         this.collector.emit(
                 "stream",

@@ -282,9 +282,9 @@ public class SOProcessor020 extends SOProcessor{
             su.getChannels().put(channelEntry.getKey(), suChannel);
         }
 
-        su.setStreamsChain(new ArrayList<ArrayList<String>>());
+        su.setTriggerPath(new ArrayList<ArrayList<String>>());
 
-        su.setTimestampChain(new ArrayList<Long>());
+        su.setPathTimestamps(new ArrayList<Long>());
 
         return su;
     }
