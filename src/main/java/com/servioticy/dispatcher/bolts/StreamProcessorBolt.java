@@ -24,6 +24,7 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.serviceobject.SOGroup;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
@@ -278,6 +279,19 @@ public class StreamProcessorBolt implements IRichBolt {
             return;
         }
 
+        //Reputation
+        for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
+            SensorUpdate entrySU = entry.getValue();
+            this.collector.emit(Reputation.STREAM_SO_SO, input,
+                    new Values("in-soid",
+                            "in-streamid",
+                            "out-soid",
+                            "out-streamid",
+                            "user_timestamp",
+                            "date",
+                            "event")
+            );
+        }
         // Obtain the highest timestamp from the input docs
         timestamp = su.getLastUpdate();
         for (Map.Entry<String, SensorUpdate> doc : sensorUpdates.entrySet()) {
@@ -468,6 +482,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
+        declarer.declareStream(Reputation.STREAM_SO_SO, new Fields("in-soid", "in-streamid", "out-soid", "out-streamid", "user_timestamp", "date", "event"));
 
 	}
 
