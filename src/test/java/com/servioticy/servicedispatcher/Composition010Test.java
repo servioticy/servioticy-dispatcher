@@ -122,7 +122,7 @@ public class Composition010Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
+                builder.setBolt("checkopid", new PrepareBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
@@ -275,7 +275,7 @@ public class Composition010Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
+                builder.setBolt("checkopid", new PrepareBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
@@ -419,7 +419,7 @@ public class Composition010Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
+                builder.setBolt("checkopid", new PrepareBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
@@ -556,7 +556,7 @@ public class Composition010Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
+                builder.setBolt("checkopid", new PrepareBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
@@ -694,7 +694,7 @@ public class Composition010Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
+                builder.setBolt("checkopid", new PrepareBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
@@ -823,7 +823,7 @@ public class Composition010Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new CheckOpidBolt(dc, restClient), 10)
+                builder.setBolt("checkopid", new PrepareBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)

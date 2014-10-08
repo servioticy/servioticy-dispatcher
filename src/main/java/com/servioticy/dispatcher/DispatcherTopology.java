@@ -74,7 +74,7 @@ public class DispatcherTopology {
         builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
         builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()), 4);
 
-        builder.setBolt("checkopid", new CheckOpidBolt(dc), 10)
+        builder.setBolt("checkopid", new PrepareBolt(dc), 10)
                 .shuffleGrouping("dispatcher");
 
         builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 2)

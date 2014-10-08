@@ -15,6 +15,7 @@
  ******************************************************************************/
 package com.servioticy.dispatcher;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.serviceobject.SO020;
@@ -137,7 +138,6 @@ public class SOProcessor020 extends SOProcessor{
                         streams.add(streamId);
                     }
                 }
-
             }
         }
         return streams;
@@ -155,13 +155,14 @@ public class SOProcessor020 extends SOProcessor{
         return sourceIds;
     }
 
-    public String initializationCode(Map<String, String> jsons, String origin) {
+    public String initializationCode(Map<String, SensorUpdate> sensorUpdates, String origin) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
         String result = "";
-        for (Map.Entry<String, String> jsonEntry : jsons.entrySet()) {
-            result += "var " + jsonEntry.getKey() + " = " + jsonEntry.getValue() + ";";
+        for (Map.Entry<String, SensorUpdate> suEntry : sensorUpdates.entrySet()) {
+            result += "var " + suEntry.getKey() + " = " + mapper.writeValueAsString(suEntry.getValue()) + ";";
         }
         // $input needs to be EXACTLY the same object as the origin one
-        if(jsons.get("$input") == null){
+        if(sensorUpdates.get("$input") == null){
             result += "var $input="+origin+";";
         }
         return result;
@@ -203,7 +204,7 @@ public class SOProcessor020 extends SOProcessor{
         return -1;
     }
 
-    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, String origin, long timestamp) throws IOException, ScriptException {
+    public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws IOException, ScriptException {
         ObjectMapper mapper = new ObjectMapper();
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
@@ -265,7 +266,7 @@ public class SOProcessor020 extends SOProcessor{
                 String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
                 String finalCode;
 
-                engine.eval(initializationCode(inputJsons, origin) +
+                engine.eval(initializationCode(inputSUs, origin) +
                         "var " + resultVar + " = JSON.stringify(" + currentValueCode + "(" + functionArgsString(currentValueCode) + ")" + ")");
                 Object result = mapper.readValue((String)engine.get(resultVar), type);
 

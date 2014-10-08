@@ -43,7 +43,7 @@ public abstract class SOProcessor {
         return null;
     }
 
-    public abstract SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException;
+    public abstract SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException;
     public abstract Set<String> getSourceIdsByStream(String streamId);
     public abstract Set<String> getStreamsBySourceId(String docId);
 }
