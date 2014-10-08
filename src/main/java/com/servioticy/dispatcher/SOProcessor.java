@@ -17,7 +17,10 @@ package com.servioticy.dispatcher;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.servioticy.datamodel.*;
+import com.servioticy.datamodel.serviceobject.SO;
+import com.servioticy.datamodel.serviceobject.SO010;
+import com.servioticy.datamodel.serviceobject.SO020;
+import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 
 import javax.script.ScriptException;
 import java.io.IOException;

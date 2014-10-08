@@ -18,7 +18,11 @@ package com.servioticy.dispatcher;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.servioticy.datamodel.*;
+import com.servioticy.datamodel.serviceobject.SO020;
+import com.servioticy.datamodel.serviceobject.SOChannel;
+import com.servioticy.datamodel.serviceobject.SOStream;
+import com.servioticy.datamodel.sensorupdate.SUChannel;
+import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import org.elasticsearch.common.geo.GeoPoint;
 
 import javax.script.ScriptEngine;

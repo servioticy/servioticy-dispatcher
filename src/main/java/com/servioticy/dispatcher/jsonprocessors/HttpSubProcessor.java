@@ -15,7 +15,7 @@
  ******************************************************************************/
 package com.servioticy.dispatcher.jsonprocessors;
 
-import com.servioticy.datamodel.HttpSubscription;
+import com.servioticy.datamodel.subscription.HttpSubscription;
 import com.servioticy.restclient.RestClient;
 
 import java.util.HashMap;

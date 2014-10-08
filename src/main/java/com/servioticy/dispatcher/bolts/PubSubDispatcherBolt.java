@@ -26,8 +26,8 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 
-import com.servioticy.datamodel.PubSubSubscription;
-import com.servioticy.datamodel.SensorUpdate;
+import com.servioticy.datamodel.subscription.PubSubSubscription;
+import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.pubsub.PubSubPublisherFactory;
