@@ -37,7 +37,7 @@ import java.util.UUID;
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  *
  */
-public class CheckOpidBolt implements IRichBolt {
+public class PrepareBolt implements IRichBolt {
     /**
      *
      */
@@ -46,12 +46,12 @@ public class CheckOpidBolt implements IRichBolt {
     private RestClient restClient;
     private DispatcherContext dc;
 
-    public CheckOpidBolt(DispatcherContext dc) {
+    public PrepareBolt(DispatcherContext dc) {
         this.dc = dc;
     }
 
     // For testing purposes
-    public CheckOpidBolt(DispatcherContext dc, RestClient restClient) {
+    public PrepareBolt(DispatcherContext dc, RestClient restClient) {
         this.dc = dc;
         this.restClient = restClient;
     }

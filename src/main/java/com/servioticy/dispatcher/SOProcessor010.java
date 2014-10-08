@@ -163,9 +163,13 @@ public class SOProcessor010 extends SOProcessor{
 
     }
 
-    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+    public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
         ObjectMapper mapper = new ObjectMapper();
-        if (!checkPreFilter(streamId, inputJsons)){
+        Map<String, String> inputDocs = new HashMap<String, String>();
+        for(Map.Entry<String,SensorUpdate> inputSUEntry: inputSUs.entrySet()){
+            inputDocs.put(inputSUEntry.getKey(), mapper.writeValueAsString(inputSUEntry.getValue()));
+        }
+        if (!checkPreFilter(streamId, inputDocs)){
             return null;
         }
         ScriptEngineManager factory = new ScriptEngineManager();
@@ -185,12 +189,11 @@ public class SOProcessor010 extends SOProcessor{
                 suChannel.setCurrentValue(null);
                 nulls++;
             } else {
-                String currentValueCode = pchannel.currentValue.replace(inputJsons);
+                String currentValueCode = pchannel.currentValue.replace(inputDocs);
                 Class type;
                 String typeName;
                 Object result = null;
                 typeName = pchannel.type.toLowerCase();
-                boolean primitive = true;
                 if (typeName.equals("number")) {
                     type = Double.class;
                 } else if (typeName.equals("boolean")) {
@@ -227,11 +230,11 @@ public class SOProcessor010 extends SOProcessor{
 
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         String resultSUDoc = mapper.writeValueAsString(su);
-        if(!inputJsons.containsKey("result")){
-            inputJsons.put("result", resultSUDoc);
+        if(!inputDocs.containsKey("result")){
+            inputDocs.put("result", resultSUDoc);
         }
 
-        if(!checkPostFilter(streamId, inputJsons)){
+        if(!checkPostFilter(streamId, inputDocs)){
             return null;
         }
         return su;

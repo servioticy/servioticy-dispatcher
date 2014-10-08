@@ -23,6 +23,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.SO;
 import com.servioticy.datamodel.SOGroup;
@@ -100,9 +101,9 @@ public class StreamProcessorBolt implements IRichBolt {
 		}
 	}
 
-    private Map<String, String> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
+    private Map<String, SensorUpdate> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
         RestResponse rr;
-		Map<String, String> groupDocs = new HashMap<String, String>();
+		Map<String, SensorUpdate> groupDocs = new HashMap<String, SensorUpdate>();
 		ObjectMapper mapper = new ObjectMapper();
 
         if(so.getGroups() == null){
@@ -115,7 +116,6 @@ public class StreamProcessorBolt implements IRichBolt {
 			}
 			SOGroup group = so.getGroups().get(docId);
 			// TODO Resolve dynsets
-			String lastSU;
 			String glurstr = mapper.writeValueAsString(group);
 
             try {
@@ -131,66 +131,66 @@ public class StreamProcessorBolt implements IRichBolt {
                 if (e.getRestResponse().getHttpCode() >= 500) {
                     throw e;
                 }
-                groupDocs.put(docId, "null");
+                groupDocs.put(docId, null);
                 continue;
             }
             // In case there is no update.
             if(rr.getHttpCode() == 204){
-				groupDocs.put(docId, "null");
+				groupDocs.put(docId, null);
 				continue;
 			}
-			lastSU = rr.getResponse();
 
-			groupDocs.put(docId, lastSU);
+			groupDocs.put(docId, mapper.readValue(rr.getResponse(), SensorUpdate.class));
 			
 		}
 		
 		return groupDocs;
 	}
 
-    private Map<String, String> getStreamSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
+    private Map<String, SensorUpdate> getStreamSUs(Set<String> streamIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
         RestResponse rr;
-		Map<String, String> streamDocs = new HashMap<String, String>();
+		Map<String, SensorUpdate> streamDocs = new HashMap<String, SensorUpdate>();
 		ObjectMapper mapper = new ObjectMapper();	
-		for(String docId: docIds){
-			if(!so.getStreams().containsKey(docId)){
+		for(String streamId: streamIds){
+			if(!so.getStreams().containsKey(streamId)){
 				continue;
 			}
-			String lastSU;
-            try {
-                rr = restClient.restRequest(
-                        dc.restBaseURL
-                                + "private/" + so.getId() + "/streams/" + docId + "/lastUpdate",
-                        null, RestClient.GET,
-                        null
-                );
-            } catch (RestClientErrorCodeException e) {
-                // TODO Log the error
-                e.printStackTrace();
-                if (e.getRestResponse().getHttpCode() >= 500) {
-                    throw e;
-                }
-                streamDocs.put(docId, "null");
-                continue;
-            }
-            // In case there is no update.
-            if(rr.getHttpCode() == 204){
-                streamDocs.put(docId, "null");
-                continue;
-            }
-            lastSU = rr.getResponse();
-			// TODO If there is not a lastSU, don't put it.
-			streamDocs.put(docId, lastSU);
+
+			streamDocs.put(streamId, getStreamSU(streamId, so));
 		}
 		
 		return streamDocs;
 	}
+
+    private SensorUpdate getStreamSU(String streamId, SO so) throws RestClientErrorCodeException, IOException, RestClientException {
+        RestResponse rr;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            rr = restClient.restRequest(
+                    dc.restBaseURL
+                            + "private/" + so.getId() + "/streams/" + streamId + "/lastUpdate",
+                    null, RestClient.GET,
+                    null
+            );
+        } catch (RestClientErrorCodeException e) {
+            // TODO Log the error
+            e.printStackTrace();
+            if (e.getRestResponse().getHttpCode() >= 500) {
+                throw e;
+            }
+            return null;
+        }
+        // In case there is no update.
+        if(rr.getHttpCode() == 204){
+            return null;
+        }
+        return mapper.readValue(rr.getResponse(), SensorUpdate.class);
+    }
 	
 	public void execute(Tuple input) {
         RestResponse rr;
         SensorUpdate su;
         SensorUpdate previousSU;
-        String previousSUDoc;
         SO so;
         ObjectMapper mapper = new ObjectMapper();
         String soId = input.getStringByField("soid");
@@ -200,7 +200,7 @@ public class StreamProcessorBolt implements IRichBolt {
         String originId = input.getStringByField("originid");
         SOProcessor sop;
         long timestamp;
-        Map<String, String> docs;
+        Map<String, SensorUpdate> sensorUpdates;
 
         try {
             su = mapper.readValue(suDoc, SensorUpdate.class);
@@ -235,31 +235,59 @@ public class StreamProcessorBolt implements IRichBolt {
         Set<String> docIds = sop.getSourceIdsByStream(streamId);
         // Remove the origin for which we already have the SU
         docIds.remove(originId);
-        // The self last update from current stream
+        // Get the last update from the current stream
+
         docIds.add(streamId);
 
-        docs = new HashMap<String, String>();
         try {
-            //docs.put("$any", suDoc);
-            docs.putAll(this.getStreamSUs(docIds, so));
-            docs.putAll(this.getGroupSUs(docIds, so));
-            docs.put(originId, suDoc);
+            previousSU = this.getStreamSU(streamId, so);
+        } catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            collector.ack(input);
+            return;
+        }
+        // There is already a newer generated update than the one received
+        if (previousSU != null) {
+            if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "old")
+                );
+                collector.ack(input);
+                return;
+            }
+        }
+        // At this point we know for sure that at least one input SU is newer
+
+        sensorUpdates = new HashMap<String, SensorUpdate>();
+        try {
+            sensorUpdates.putAll(this.getStreamSUs(docIds, so));
+            sensorUpdates.put(streamId, previousSU);
+            sensorUpdates.putAll(this.getGroupSUs(docIds, so));
+            sensorUpdates.put(originId, su);
         } catch (Exception e) {
             // TODO Log the error
             e.printStackTrace();
             collector.fail(input);
             return;
         }
+
         // Obtain the highest timestamp from the input docs
         timestamp = su.getLastUpdate();
-        for (Map.Entry<String, String> doc : docs.entrySet()) {
+        for (Map.Entry<String, SensorUpdate> doc : sensorUpdates.entrySet()) {
             SensorUpdate inputSU;
             try {
-                String docContent = doc.getValue();
-                if (docContent.equals("null")) {
+                inputSU = doc.getValue();
+                if (inputSU == null) {
                     continue;
                 }
-                inputSU = mapper.readValue(docContent, SensorUpdate.class);
             } catch (Exception e) {
                 // TODO Log the error
                 e.printStackTrace();
@@ -274,36 +302,10 @@ public class StreamProcessorBolt implements IRichBolt {
             timestamp = inputSU.getLastUpdate() > timestamp ? inputSU.getLastUpdate() : timestamp;
         }
 
-        previousSUDoc = docs.get(streamId);
-        if (!previousSUDoc.equals("null")) {
-            try {
-                previousSU = mapper.readValue(previousSUDoc, SensorUpdate.class);
-            } catch (Exception e) {
-                // TODO Log the error
-                e.printStackTrace();
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "error")
-                );
-                collector.ack(input);
-                return;
-            }
-            // There is already a newer update stored
-            if (timestamp <= previousSU.getLastUpdate()) {
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "old")
-                );
-                collector.ack(input);
-                return;
-            }
-        }
         SensorUpdate resultSU;
         String resultSUDoc;
         try {
-            resultSU = sop.getResultSU(streamId, docs, originId, timestamp);
+            resultSU = sop.getResultSU(streamId, sensorUpdates, originId, timestamp);
             if (resultSU == null) {
                 if (dc.benchmark) this.collector.emit("benchmark", input,
                         new Values(suDoc,
