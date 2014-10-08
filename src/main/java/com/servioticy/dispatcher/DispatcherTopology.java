@@ -23,6 +23,7 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
+import com.servioticy.datamodel.Reputation.Reputation;
 import com.servioticy.dispatcher.bolts.*;
 import org.apache.commons.cli.*;
 
@@ -82,7 +83,6 @@ public class DispatcherTopology {
         builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 4)
                 .shuffleGrouping("checkopid", "subscription");
 
-
         builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
                 .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
         builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(dc), 1)
@@ -93,6 +93,11 @@ public class DispatcherTopology {
                 .shuffleGrouping("checkopid", "stream");
         builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 17)
                 .shuffleGrouping("streamdispatcher", "default");
+
+        builder.setBolt("reputation", new ReputationBolt(dc), 2)
+                .shuffleGrouping("streamdispatcher", Reputation.STREAM_WO_SO)
+                .shuffleGrouping("streamprocessor", Reputation.STREAM_SO_SO)
+                .shuffleGrouping("pubsubdispatcher", Reputation.STREAM_SO_PUBSUB);
 
         if (dc.benchmark) {
             builder.setBolt("benchmark", new BenchmarkBolt(dc), 4)
