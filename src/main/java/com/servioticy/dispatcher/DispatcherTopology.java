@@ -23,7 +23,7 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import com.servioticy.datamodel.Reputation.Reputation;
+import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.dispatcher.bolts.*;
 import org.apache.commons.cli.*;
 
