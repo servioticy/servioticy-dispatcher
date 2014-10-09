@@ -27,6 +27,7 @@ import com.servioticy.datamodel.*;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.sensorupdate.SUChannel;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
+import com.servioticy.datamodel.subscription.SOSubscription;
 import com.servioticy.datamodel.subscription.Subscriptions;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.UpdateDescriptorScheme;
@@ -122,15 +123,15 @@ public class Composition020Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new PrepareBolt(dc,restClient), 10)
+                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
-                        .shuffleGrouping("checkopid", "subscription");
+                        .shuffleGrouping("prepare", "subscription");
 
                 builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
-                        .shuffleGrouping("checkopid", "stream");
+                        .shuffleGrouping("prepare", "stream");
                 builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
@@ -154,11 +155,11 @@ public class Composition020Test {
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(opid, so.getId(), "A", suAStr)),
                         Testing.readTuples(result, "dispatcher", "default")));
 
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(null, so.getId(), "A", suAStr)),
-                        Testing.readTuples(result, "checkopid", "stream")));
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values("A", so.getId(), suAStr)),
+                        Testing.readTuples(result, "prepare", "stream")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(), "A", suAStr)),
-                        Testing.readTuples(result, "checkopid", "subscription")));
+                        Testing.readTuples(result, "prepare", "subscription")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(),
                                 "B",
@@ -277,15 +278,15 @@ public class Composition020Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new PrepareBolt(dc, restClient), 10)
+                builder.setBolt("prepare", new PrepareBolt(dc, restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc, restClient), 4)
-                        .shuffleGrouping("checkopid", "subscription");
+                        .shuffleGrouping("prepare", "subscription");
 
                 builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc, restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
-                        .shuffleGrouping("checkopid", "stream");
+                        .shuffleGrouping("prepare", "stream");
                 builder.setBolt("streamprocessor", new StreamProcessorBolt(dc, qc, restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
@@ -309,15 +310,15 @@ public class Composition020Test {
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(opid, "additional_so", "some_stream", suGroupStr)),
                         Testing.readTuples(result, "dispatcher", "default")));
 
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(null, "additional_so", "some_stream", suGroupStr)),
-                        Testing.readTuples(result, "checkopid", "stream")));
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values("some_stream", "additional_so", suGroupStr)),
+                        Testing.readTuples(result, "prepare", "stream")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values("additional_so", "some_stream", suGroupStr)),
-                        Testing.readTuples(result, "checkopid", "subscription")));
+                        Testing.readTuples(result, "prepare", "subscription")));
 
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(mapper.writeValueAsString(subscriptions.getSubscriptions().get(0)),
-                                suGroupStr,
-                                "additional_so", "some_stream")),
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values(((SOSubscription)subscriptions.getSubscriptions().get(0)).getGroupId(),
+                                ((SOSubscription)subscriptions.getSubscriptions().get(0)).getDestination(),
+                                suGroupStr)),
                         Testing.readTuples(result, "subretriever", "internalSub")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values("so",
@@ -423,15 +424,15 @@ public class Composition020Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new PrepareBolt(dc,restClient), 10)
+                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
-                        .shuffleGrouping("checkopid", "subscription");
+                        .shuffleGrouping("prepare", "subscription");
 
                 builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
-                        .shuffleGrouping("checkopid", "stream");
+                        .shuffleGrouping("prepare", "stream");
                 builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
@@ -455,11 +456,11 @@ public class Composition020Test {
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(opid, so.getId(), "A", suAStr)),
                         Testing.readTuples(result, "dispatcher", "default")));
 
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(null, so.getId(), "A", suAStr)),
-                        Testing.readTuples(result, "checkopid", "stream")));
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values("A", so.getId(), suAStr)),
+                        Testing.readTuples(result, "prepare", "stream")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(), "A", suAStr)),
-                        Testing.readTuples(result, "checkopid", "subscription")));
+                        Testing.readTuples(result, "prepare", "subscription")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(),
                                 "B",
@@ -562,15 +563,15 @@ public class Composition020Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new PrepareBolt(dc,restClient), 10)
+                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
-                        .shuffleGrouping("checkopid", "subscription");
+                        .shuffleGrouping("prepare", "subscription");
 
                 builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
-                        .shuffleGrouping("checkopid", "stream");
+                        .shuffleGrouping("prepare", "stream");
                 builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
@@ -594,11 +595,11 @@ public class Composition020Test {
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(opid, so.getId(), "A", suAStr)),
                         Testing.readTuples(result, "dispatcher", "default")));
 
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(null, so.getId(), "A", suAStr)),
-                        Testing.readTuples(result, "checkopid", "stream")));
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values("A", so.getId(), suAStr)),
+                        Testing.readTuples(result, "prepare", "stream")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(), "A", suAStr)),
-                        Testing.readTuples(result, "checkopid", "subscription")));
+                        Testing.readTuples(result, "prepare", "subscription")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(),
                                 "B",
@@ -702,15 +703,15 @@ public class Composition020Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new PrepareBolt(dc,restClient), 10)
+                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
-                        .shuffleGrouping("checkopid", "subscription");
+                        .shuffleGrouping("prepare", "subscription");
 
                 builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
-                        .shuffleGrouping("checkopid", "stream");
+                        .shuffleGrouping("prepare", "stream");
                 builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
@@ -734,11 +735,11 @@ public class Composition020Test {
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(opid, so.getId(), "A", suAStr)),
                         Testing.readTuples(result, "dispatcher", "default")));
 
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(null, so.getId(), "A", suAStr)),
-                        Testing.readTuples(result, "checkopid", "stream")));
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values("A", so.getId(), suAStr)),
+                        Testing.readTuples(result, "prepare", "stream")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(), "A", suAStr)),
-                        Testing.readTuples(result, "checkopid", "subscription")));
+                        Testing.readTuples(result, "prepare", "subscription")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(),
                                 "B",
@@ -829,15 +830,15 @@ public class Composition020Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new PrepareBolt(dc,restClient), 10)
+                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
-                        .shuffleGrouping("checkopid", "subscription");
+                        .shuffleGrouping("prepare", "subscription");
 
                 builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
-                        .shuffleGrouping("checkopid", "stream");
+                        .shuffleGrouping("prepare", "stream");
                 builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
@@ -861,11 +862,11 @@ public class Composition020Test {
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(opid, so.getId(), "A", suAStr)),
                         Testing.readTuples(result, "dispatcher", "default")));
 
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(null, so.getId(), "A", suAStr)),
-                        Testing.readTuples(result, "checkopid", "stream")));
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values("A", so.getId(), suAStr)),
+                        Testing.readTuples(result, "prepare", "stream")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(), "A", suAStr)),
-                        Testing.readTuples(result, "checkopid", "subscription")));
+                        Testing.readTuples(result, "prepare", "subscription")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(),
                                 "B",
@@ -966,15 +967,15 @@ public class Composition020Test {
 
                 builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 
-                builder.setBolt("checkopid", new PrepareBolt(dc,restClient), 10)
+                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
                         .shuffleGrouping("dispatcher");
 
                 builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc,restClient), 4)
-                        .shuffleGrouping("checkopid", "subscription");
+                        .shuffleGrouping("prepare", "subscription");
 
                 builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc,restClient), 13)
                         .shuffleGrouping("subretriever", "internalSub")
-                        .shuffleGrouping("checkopid", "stream");
+                        .shuffleGrouping("prepare", "stream");
                 builder.setBolt("streamprocessor", new StreamProcessorBolt(dc,qc,restClient), 17)
                         .shuffleGrouping("streamdispatcher", "default");
                 StormTopology topology = builder.createTopology();
@@ -998,11 +999,11 @@ public class Composition020Test {
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(opid, so.getId(), "C", suAStr)),
                         Testing.readTuples(result, "dispatcher", "default")));
 
-                Assert.assertTrue(Testing.multiseteq(new Values(new Values(null, so.getId(), "C", suAStr)),
-                        Testing.readTuples(result, "checkopid", "stream")));
+                Assert.assertTrue(Testing.multiseteq(new Values(new Values("C", so.getId(), suAStr)),
+                        Testing.readTuples(result, "prepare", "stream")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(), "C", suAStr)),
-                        Testing.readTuples(result, "checkopid", "subscription")));
+                        Testing.readTuples(result, "prepare", "subscription")));
 
                 Assert.assertTrue(Testing.multiseteq(new Values(new Values(so.getId(),
                                 "B",
