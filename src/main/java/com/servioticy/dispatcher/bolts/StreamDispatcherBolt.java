@@ -88,61 +88,21 @@ public class StreamDispatcherBolt implements IRichBolt {
                             + "private/" + destination, null, RestClient.GET,
                     null);
             soDoc = rr.getResponse();
-        } catch(RestClientErrorCodeException e){
-            // TODO Log the error
-            e.printStackTrace();
-            if(e.getRestResponse().getHttpCode()>= 500){
-                collector.fail(input);
-                return;
-            }
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            e.printStackTrace();
-            collector.ack(input);
-            return;
-        }catch (Exception e) {
-            // TODO Log the error
-            e.printStackTrace();
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            collector.ack(input);
-            return;
-        }
-        try{
             so = mapper.readValue(soDoc,
                     SO.class);
-        } catch (Exception e) {
-            // TODO Log the error
-            e.printStackTrace();
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            collector.ack(input);
-            return;
-        }
 
-        if(input.getSourceStreamId().equals("stream")){
-            if(so.getGroups() != null){
-                for(Entry<String, SOGroup> group: so.getGroups().entrySet()){
-                    // If there is a group called like the stream, then the docname refers to the group.
-                    if(group.getKey().equals(docId)){
-                        collector.ack(input);
-                        return;
+            if(input.getSourceStreamId().equals("stream")){
+                if(so.getGroups() != null){
+                    for(Entry<String, SOGroup> group: so.getGroups().entrySet()){
+                        // If there is a group called like the stream, then the docname refers to the group.
+                        if(group.getKey().equals(docId)){
+                            collector.ack(input);
+                            return;
+                        }
                     }
                 }
             }
-        }
 
-        // TODO Could be useful to delete the unused groups from the SO. Open discussion.
-        try{
             SOProcessor sop = SOProcessor.factory(so);
             if(sop.getClass() == SOProcessor010.class) {
                 soDoc = ((SOProcessor010)sop).replaceAliases();
@@ -177,19 +137,33 @@ public class StreamDispatcherBolt implements IRichBolt {
                                 "no-stream")
                 );
             }
-        } catch (Exception e) {
+        } catch(RestClientErrorCodeException e){
+            // TODO Log the error
+            e.printStackTrace();
+            if(e.getRestResponse().getHttpCode()>= 500){
+                collector.fail(input);
+                return;
+            }
+            if (dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            e.printStackTrace();
+            collector.ack(input);
+            return;
+        }catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
             if (dc.benchmark) this.collector.emit("benchmark", input,
                     new Values(suDoc,
                             System.currentTimeMillis(),
                             "error")
             );
             collector.ack(input);
-            //TODO Log the error
-            e.printStackTrace();
             return;
         }
         collector.ack(input);
-        return;
     }
 
     public void cleanup() {
