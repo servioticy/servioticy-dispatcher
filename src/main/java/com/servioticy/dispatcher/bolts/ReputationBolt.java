@@ -19,7 +19,7 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
+import com.couchbase.client.CouchbaseClient;
 import backtype.storm.tuple.Tuple;
 import com.servioticy.datamodel.reputation.*;
 import com.servioticy.dispatcher.DispatcherContext;
@@ -37,6 +37,7 @@ public class ReputationBolt implements IRichBolt{
     private TopologyContext context;
     private DispatcherContext dc;
     private Map<String, Integer> mapBoltStream;
+    private CouchbaseClient cbClient;
 
     private static final int STREAM_SO_PUBSUB = 0;
     private static final int STREAM_SO_SERVICE = 1;
@@ -59,6 +60,7 @@ public class ReputationBolt implements IRichBolt{
         this.mapBoltStream.put(Reputation.STREAM_SO_SO, ReputationBolt.STREAM_SO_SO);
         this.mapBoltStream.put(Reputation.STREAM_SO_USER, ReputationBolt.STREAM_SO_USER);
         this.mapBoltStream.put(Reputation.STREAM_WO_SO, ReputationBolt.STREAM_WO_SO);
+
     }
 
     @Override
