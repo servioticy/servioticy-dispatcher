@@ -21,8 +21,10 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import com.servioticy.datamodel.reputation.*;
 import com.servioticy.dispatcher.DispatcherContext;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -34,6 +36,13 @@ public class ReputationBolt implements IRichBolt{
     private OutputCollector collector;
     private TopologyContext context;
     private DispatcherContext dc;
+    private Map<String, Integer> mapBoltStream;
+
+    private static final int STREAM_SO_PUBSUB = 0;
+    private static final int STREAM_SO_SERVICE = 1;
+    private static final int STREAM_SO_SO = 2;
+    private static final int STREAM_SO_USER = 3;
+    private static final int STREAM_WO_SO = 4;
 
     public ReputationBolt(DispatcherContext dc) {
         this.dc = dc;
@@ -44,12 +53,86 @@ public class ReputationBolt implements IRichBolt{
                         OutputCollector collector) {
         this.collector = collector;
         this.context = context;
+        this.mapBoltStream = new HashMap<String, Integer>();
+        this.mapBoltStream.put(Reputation.STREAM_SO_PUBSUB, ReputationBolt.STREAM_SO_PUBSUB);
+        this.mapBoltStream.put(Reputation.STREAM_SO_SERVICE, ReputationBolt.STREAM_SO_SERVICE);
+        this.mapBoltStream.put(Reputation.STREAM_SO_SO, ReputationBolt.STREAM_SO_SO);
+        this.mapBoltStream.put(Reputation.STREAM_SO_USER, ReputationBolt.STREAM_SO_USER);
+        this.mapBoltStream.put(Reputation.STREAM_WO_SO, ReputationBolt.STREAM_WO_SO);
     }
 
     @Override
-    public void execute(Tuple tuple) {
-        Object source = null;
-        Object dest = null;
+    public void execute(Tuple input) {
+        Reputation reputation = new Reputation();
+        reputation.setEvent(true);
+        reputation.setUserTimestamp(input.getStringByField("user_timestamp"));
+        reputation.setUserTimestamp(input.getStringByField("date"));
+        ReputationAddressSO soInAddress;
+        ReputationAddressSO soOutAddress;
+        ReputationAddressPubSub psOutAddress;
+        ReputationAddressUser userOutAddress;
+        ReputationAddressService servOutAddress;
+
+        // src
+        switch (this.mapBoltStream.get(input.getSourceStreamId())){
+            case ReputationBolt.STREAM_WO_SO:
+                reputation.setSrc("WEB_OBJECT");
+                break;
+            case ReputationBolt.STREAM_SO_SO:
+            case ReputationBolt.STREAM_SO_PUBSUB:
+            case ReputationBolt.STREAM_SO_USER:
+            case ReputationBolt.STREAM_SO_SERVICE:
+                soInAddress = new ReputationAddressSO();
+                soInAddress.setSoid(input.getStringByField("in-soid"));
+                soInAddress.setStreamid(input.getStringByField("in-streamid"));
+                reputation.setSrc(soInAddress);
+                break;
+            default:
+                break;
+        }
+
+        // dest
+        switch (this.mapBoltStream.get(input.getSourceStreamId())){
+            case ReputationBolt.STREAM_WO_SO:
+            case ReputationBolt.STREAM_SO_SO:
+                soOutAddress = new ReputationAddressSO();
+                soOutAddress.setSoid(input.getStringByField("out-soid"));
+                soOutAddress.setStreamid(input.getStringByField("out-streamid"));
+                reputation.setDest(soOutAddress);
+                break;
+            case ReputationBolt.STREAM_SO_PUBSUB:
+                psOutAddress = new ReputationAddressPubSub();
+                psOutAddress.setPubSubTopic(input.getStringByField("topic"));
+                reputation.setDest(psOutAddress);
+                break;
+            case ReputationBolt.STREAM_SO_USER:
+                userOutAddress = new ReputationAddressUser();
+                userOutAddress.setUserId(input.getStringByField("user_id"));
+                reputation.setDest(userOutAddress);
+                break;
+            case ReputationBolt.STREAM_SO_SERVICE:
+                servOutAddress = new ReputationAddressService();
+                servOutAddress.setOnBehalfOf(input.getStringByField("user_id"));
+                servOutAddress.setServiceId(input.getStringByField("service_id"));
+                reputation.setDest(servOutAddress);
+                break;
+            default:
+                break;
+        }
+
+        // others
+        switch (this.mapBoltStream.get(input.getSourceStreamId())){
+            case ReputationBolt.STREAM_SO_SO:
+                reputation.setEvent(input.getBooleanByField("event"));
+                break;
+            case ReputationBolt.STREAM_SO_USER:
+                reputation.setEvent(false);
+                break;
+            default:
+                break;
+        }
+
+        // TODO Do something with the reputation object
 
     }
 

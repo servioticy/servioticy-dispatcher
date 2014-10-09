@@ -17,7 +17,9 @@ package com.servioticy.dispatcher.bolts;
 
 import java.util.Map;
 
+import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.reputation.Reputation;
 import org.apache.log4j.Logger;
 
 import backtype.storm.task.OutputCollector;
@@ -81,16 +83,17 @@ public class PubSubDispatcherBolt implements IRichBolt {
 	public void execute(Tuple input) {
 		ObjectMapper mapper = new ObjectMapper();
 		PubSubSubscription externalSub;
-		SensorUpdate su;
-		String sourceSOId;
-		String streamId;
+        String suDoc = input.getStringByField("su");
+        String subsDoc = input.getStringByField("subsdoc");
+        String sourceSOId = input.getStringByField("soid");
+        String streamId = input.getStringByField("streamid");
+
+        SensorUpdate su;
 		try{
-			su = mapper.readValue(input.getStringByField("su"),
+			su = mapper.readValue(suDoc,
 					SensorUpdate.class);
-			externalSub = mapper.readValue(input.getStringByField("subsdoc"),
-					PubSubSubscription.class);
-			sourceSOId = input.getStringByField("soid");
-			streamId = input.getStringByField("streamid");
+			externalSub = mapper.readValue(subsDoc,
+                    PubSubSubscription.class);
 			if(suCache.check(externalSub.getId(), su.getLastUpdate())){
 				// This SU or a posterior one has already been sent, do not send this one.
 				collector.ack(input);
@@ -101,16 +104,23 @@ public class PubSubDispatcherBolt implements IRichBolt {
 			collector.fail(input);
 			return;
 		}
-
-		String suStr = input.getStringByField("su");
+        String topic = externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates";
 		try {
-			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
-			LOG.info("PubSub message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates");
+			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suDoc);
+			LOG.info("PubSub message pubished on topic "+topic);
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
 			return;
 		}
+        this.collector.emit(Reputation.STREAM_SO_PUBSUB, input,
+                new Values(sourceSOId,
+                        streamId,
+                        topic,
+                        su.getLastUpdate(),
+                        System.currentTimeMillis()
+                )
+        );
 		suCache.put(externalSub.getId(), su.getLastUpdate());
 		collector.ack(input);
 	}

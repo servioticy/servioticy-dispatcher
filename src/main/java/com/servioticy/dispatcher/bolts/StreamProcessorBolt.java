@@ -281,17 +281,19 @@ public class StreamProcessorBolt implements IRichBolt {
 
         //Reputation
         for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
+            boolean event = entry.getKey() == originId;
             SensorUpdate entrySU = entry.getValue();
             this.collector.emit(Reputation.STREAM_SO_SO, input,
-                    new Values("in-soid",
-                            "in-streamid",
-                            "out-soid",
-                            "out-streamid",
-                            "user_timestamp",
-                            "date",
-                            "event")
+                    new Values("", // in-soid
+                            "", // in-streamid
+                            so.getId(),
+                            streamId,
+                            entrySU.getLastUpdate(),
+                            System.currentTimeMillis(),
+                            event)
             );
         }
+
         // Obtain the highest timestamp from the input docs
         timestamp = su.getLastUpdate();
         for (Map.Entry<String, SensorUpdate> doc : sensorUpdates.entrySet()) {
