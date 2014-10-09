@@ -110,8 +110,7 @@ public class PrepareBolt implements IRichBolt {
                     new Values(soid,
                             streamid,
                             su.getLastUpdate(),
-                            System.currentTimeMillis(),
-                            "error")
+                            System.currentTimeMillis())
             );
         }
 

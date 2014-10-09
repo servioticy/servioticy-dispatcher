@@ -283,6 +283,10 @@ public class StreamProcessorBolt implements IRichBolt {
         for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
             boolean event = entry.getKey() == originId;
             SensorUpdate entrySU = entry.getValue();
+            if(entrySU == null){
+                continue;
+            }
+            // TODO If in-soid && in-streamid are the current ones, continue
             this.collector.emit(Reputation.STREAM_SO_SO, input,
                     new Values("", // in-soid
                             "", // in-streamid
