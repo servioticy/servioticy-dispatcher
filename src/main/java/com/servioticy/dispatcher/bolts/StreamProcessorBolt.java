@@ -227,29 +227,6 @@ public class StreamProcessorBolt implements IRichBolt {
             docIds.remove(originId);
             // Get the last update from the current stream
 
-        //Reputation
-        for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
-            boolean event = entry.getKey() == originId;
-            SensorUpdate entrySU = entry.getValue();
-            if(entrySU == null){
-                continue;
-            }
-            // TODO If in-soid && in-streamid are the current ones, continue
-            this.collector.emit(Reputation.STREAM_SO_SO, input,
-                    new Values("", // in-soid
-                            "", // in-streamid
-                            so.getId(),
-                            streamId,
-                            entrySU.getLastUpdate(),
-                            System.currentTimeMillis(),
-                            event)
-            );
-        }
-
-        // Obtain the highest timestamp from the input docs
-        timestamp = su.getLastUpdate();
-        for (Map.Entry<String, SensorUpdate> doc : sensorUpdates.entrySet()) {
-            SensorUpdate inputSU;
             docIds.add(streamId);
 
             previousSU = this.getStreamSU(streamId, so);
@@ -279,6 +256,25 @@ public class StreamProcessorBolt implements IRichBolt {
                 e.printStackTrace();
                 collector.fail(input);
                 return;
+            }
+
+            //Reputation
+            for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
+                boolean event = entry.getKey() == originId;
+                SensorUpdate entrySU = entry.getValue();
+                if(entrySU == null){
+                    continue;
+                }
+                // TODO If in-soid && in-streamid are the current ones, continue
+                this.collector.emit(Reputation.STREAM_SO_SO, input,
+                        new Values("", // in-soid
+                                "", // in-streamid
+                                so.getId(),
+                                streamId,
+                                entrySU.getLastUpdate(),
+                                System.currentTimeMillis(),
+                                event)
+                );
             }
 
             // Obtain the highest timestamp from the input docs
