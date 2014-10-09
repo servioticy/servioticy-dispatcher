@@ -13,14 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package com.servioticy.dispatcher.jsonprocessors;
+package com.servioticy.dispatcher;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.servioticy.datamodel.*;
+import com.servioticy.datamodel.serviceobject.SO010;
+import com.servioticy.datamodel.serviceobject.SOChannel;
+import com.servioticy.datamodel.serviceobject.SOStream;
+import com.servioticy.datamodel.serviceobject.SOStream010;
+import com.servioticy.datamodel.sensorupdate.SUChannel;
+import com.servioticy.datamodel.sensorupdate.SensorUpdate;
+import com.servioticy.dispatcher.jsonprocessors.AliasReplacer;
+import com.servioticy.dispatcher.jsonprocessors.JsonPathReplacer;
+import org.elasticsearch.common.geo.GeoPoint;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -35,28 +44,24 @@ import org.mozilla.javascript.ProvenanceAPI;
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
-public class SOProcessor {
+public class SOProcessor010 extends SOProcessor{
 
-    String id;
     AliasReplacer aliases;
     LinkedHashMap<String, PSOStream> streams;
     LinkedHashMap<String, Object> queries;
-    SO so;
-    String jso;
+    SO010 so;
     Map<String, HashSet<String>> streamsByDocId;
     Map<String, HashSet<String>> docIdsByStream;
 
-    public SOProcessor(String json, String soid) throws JsonParseException, JsonMappingException, IOException {
-        this.id = soid;
+    public SOProcessor010(SO010 so) throws JsonParseException, JsonMappingException, IOException {
 
         this.streamsByDocId = new HashMap<String, HashSet<String>>();
         this.docIdsByStream = new HashMap<String, HashSet<String>>();
 
-        jso = json;
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        this.so = mapper.readValue(json, SO.class);
+        this.so = so;
         aliases = new AliasReplacer(this.so.getAliases());
 
         // Streams
@@ -76,7 +81,7 @@ public class SOProcessor {
     public String replaceAliases() throws JsonGenerationException, JsonMappingException, IOException {
         ObjectMapper mapper = new ObjectMapper();
         for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()) {
-            SOStream stream = streamEntry.getValue();
+            SOStream010 stream = (SOStream010) streamEntry.getValue();
             for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
                 SOChannel channel = channelEntry.getValue();
 
@@ -94,7 +99,7 @@ public class SOProcessor {
     public void compileJSONPaths() {
         for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()) {
             PSOStream pstream = new PSOStream();
-            SOStream stream = streamEntry.getValue();
+            SOStream010 stream = (SOStream010) streamEntry.getValue();
             String streamId = streamEntry.getKey();
 
             this.docIdsByStream.put(streamId, new HashSet<String>());
@@ -136,7 +141,7 @@ public class SOProcessor {
         }
     }
 
-    public Set<String> getStreamsByDocId(String docId) {
+    public Set<String> getStreamsBySourceId(String docId) {
         Set<String> result = new HashSet<String>();
         if (this.streamsByDocId.get(docId) != null) {
             result.addAll(this.streamsByDocId.get(docId));
@@ -144,7 +149,7 @@ public class SOProcessor {
         return result;
     }
 
-    public Set<String> getDocIdsByStream(String streamid) {
+    public Set<String> getSourceIdsByStream(String streamid) {
         Set<String> result = new HashSet<String>();
         if (this.docIdsByStream.get(streamid) != null) {
             result.addAll(this.docIdsByStream.get(streamid));
@@ -180,6 +185,14 @@ public class SOProcessor {
     }
 
     public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, long timestamp, List<Provelement> provList, Map<String, String> mapVarSU) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, String> inputDocs = new HashMap<String, String>();
+        for(Map.Entry<String,SensorUpdate> inputSUEntry: inputSUs.entrySet()){
+            inputDocs.put(inputSUEntry.getKey(), mapper.writeValueAsString(inputSUEntry.getValue()));
+        }
+        if (!checkPreFilter(streamId, inputDocs)){
+            return null;
+        }
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
 
@@ -198,23 +211,25 @@ public class SOProcessor {
                 nulls++;
             } else {
                 HashMap<String, String> inputVar = new HashMap();
-                String currentValueCode = pchannel.currentValue.replace(inputJsons, inputVar, mapVarSU);
-                String type;
-
-                if (pchannel.type.toLowerCase().equals("number")) {
-                    type = "Number";
-                } else if (pchannel.type.toLowerCase().equals("boolean")) {
-                    type = "Boolean";
-                } else if (pchannel.type.toLowerCase().equals("string")) {
-                    type = "String";
+                String currentValueCode = pchannel.currentValue.replace(inputJsons, inputVar, mapVarSU);                Class type;
+                String typeName;
+                Object result = null;
+                typeName = pchannel.type.toLowerCase();
+                if (typeName.equals("number")) {
+                    type = Double.class;
+                } else if (typeName.equals("boolean")) {
+                    type = Boolean.class;
+                } else if (typeName.equals("string")) {
+                    type = String.class;
                 }
-                // TODO Array type
+                else if (typeName.equals("geo_point")) {
+                    type = GeoPoint.class;
+                }
                 else {
                     return null;
                 }
+                inputVar.put(ProvenanceAPI.COMPUTATION, "JSON.stringify(" + currentValueCode + ")");
 
-                inputVar.put(ProvenanceAPI.COMPUTATION, type + "(" + currentValueCode + ")");
-                //engine.eval("var result = " + type + "(" + currentValueCode + ")");
                 String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
                 List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList);
@@ -222,22 +237,9 @@ public class SOProcessor {
                 provList.clear();
                 provList.addAll(newProvList);
 
-                Object result = null;
-                if (pchannel.type.toLowerCase().equals("number")) {
-                    result = Double.parseDouble((String) ProvenanceAPI.getResultValue(provList));
-                } else if (pchannel.type.toLowerCase().equals("boolean")) {
-                    result = Boolean.parseBoolean((String) ProvenanceAPI.getResultValue(provList));
-                } else if (pchannel.type.toLowerCase().equals("string")) {
-                    result = (String) ProvenanceAPI.getResultValue(provList);
-                }
-                // TODO Array type
-                else {
-                    return null;
-                }
-
+                result = mapper.readValue((String)ProvenanceAPI.getResultValue(provList), type);
                 suChannel.setCurrentValue(result);
 
-                //suChannel.setCurrentValue(engine.get("result"));
             }
             suChannel.setUnit(pchannel.unit);
 
@@ -249,10 +251,19 @@ public class SOProcessor {
             return null;
         }
 
-        su.setStreamsChain(new ArrayList<ArrayList<String>>());
+        su.setTriggerPath(new ArrayList<ArrayList<String>>());
 
-        su.setTimestampChain(new ArrayList<Long>());
+        su.setPathTimestamps(new ArrayList<Long>());
 
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        String resultSUDoc = mapper.writeValueAsString(su);
+        if(!inputDocs.containsKey("result")){
+            inputDocs.put("result", resultSUDoc);
+        }
+
+        if(!checkPostFilter(streamId, inputDocs)){
+            return null;
+        }
         return su;
     }
 
@@ -263,6 +274,7 @@ public class SOProcessor {
         if (pstream.postFilter == null) {
             return true;
         }
+        String postFilterCode = pstream.postFilter.replace(inputJsons);
 
         HashMap<String, String> inputVar = new HashMap();
         String postFilterCode = pstream.postFilter.replace(inputJsons, inputVar, mapVarSU);

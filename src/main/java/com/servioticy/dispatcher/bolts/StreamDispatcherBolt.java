@@ -23,12 +23,13 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.servioticy.datamodel.SO;
-import com.servioticy.datamodel.SOGroup;
-import com.servioticy.datamodel.SOSubscription;
-import com.servioticy.datamodel.SensorUpdate;
+import com.servioticy.datamodel.serviceobject.SO;
+import com.servioticy.datamodel.serviceobject.SOGroup;
+import com.servioticy.datamodel.subscription.SOSubscription;
+import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
-import com.servioticy.dispatcher.jsonprocessors.SOProcessor;
+import com.servioticy.dispatcher.SOProcessor;
+import com.servioticy.dispatcher.SOProcessor010;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestResponse;
@@ -80,34 +81,11 @@ public class StreamDispatcherBolt implements IRichBolt {
         SO so;
         RestResponse rr;
 
-        String subsDoc = input.getStringByField("subsdoc");
         String suDoc = input.getStringByField("su");
-        String soId = input.getStringByField("soid");
-        String streamId = input.getStringByField("streamid");
-        String soDoc;
+        String docId = input.getStringByField("docid");
+        String destination = input.getStringByField("destination");
 
-        String destination;
-        if(subsDoc != null){
-            // This SU comes from a subscription.
-            try {
-                soSub = mapper.readValue(subsDoc,
-                        SOSubscription.class);
-            } catch (Exception e) {
-                // TODO Log the error
-                e.printStackTrace();
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "error")
-                );
-                collector.ack(input);
-                return;
-            }
-            destination = soSub.getDestination();
-        }
-        else{
-            destination = soId;
-        }
+        String soDoc;
 
         try{
             rr = restClient.restRequest(
@@ -115,6 +93,73 @@ public class StreamDispatcherBolt implements IRichBolt {
                             + "private/" + destination, null, RestClient.GET,
                     null);
             soDoc = rr.getResponse();
+            so = mapper.readValue(soDoc,
+                    SO.class);
+
+            if(input.getSourceStreamId().equals("stream")){
+                if(so.getGroups() != null){
+                    for(Entry<String, SOGroup> group: so.getGroups().entrySet()){
+                        // If there is a group called like the stream, then the docname refers to the group.
+                        if(group.getKey().equals(docId)){
+                            collector.ack(input);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            SOProcessor sop = SOProcessor.factory(so);
+            if(sop.getClass() == SOProcessor010.class) {
+                soDoc = ((SOProcessor010)sop).replaceAliases();
+                ((SOProcessor010)sop).compileJSONPaths();
+            }
+
+            SensorUpdate su = mapper.readValue(suDoc, SensorUpdate.class);
+            PDP pdp = new LocalPDP();
+
+            // TODO Fill these fields properly
+            pdp.setIdmHost("");
+            pdp.setIdmPort(0);
+            pdp.setIdmUser("");
+            pdp.setIdmPassword("");
+
+            PermissionCacheObject pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
+                    PDP.operationID.DispatchData);
+            if(!pco.isPermission()){
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "forbidden")
+                );
+                collector.ack(input);
+            }
+            boolean emitted = false;
+            for (String streamIdByDoc : sop.getStreamsBySourceId(docId)) {
+                // If the SU comes from the same stream than it is going, it must be stopped
+//                boolean beenThere = false;
+//                for (ArrayList<String> prevStream : su.getTriggerPath()) {
+//                    beenThere = (destination == prevStream.get(0) && streamIdByDoc == prevStream.get(1));
+//                    if (beenThere) break;
+//                }
+//
+//                if (beenThere) {
+//                    continue;
+//                }
+                this.collector.emit("default", input,
+                        new Values(destination,
+                                streamIdByDoc,
+                                soDoc,
+                                docId,
+                                suDoc));
+                emitted = true;
+            }
+            if (!emitted) {
+                if (dc.benchmark) this.collector.emit("benchmark", input,
+                        new Values(suDoc,
+                                System.currentTimeMillis(),
+                                "no-stream")
+                );
+            }
         } catch(RestClientErrorCodeException e){
             // TODO Log the error
             e.printStackTrace();
@@ -141,103 +186,7 @@ public class StreamDispatcherBolt implements IRichBolt {
             collector.ack(input);
             return;
         }
-        try{
-            so = mapper.readValue(soDoc,
-                    SO.class);
-        } catch (Exception e) {
-            // TODO Log the error
-            e.printStackTrace();
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            collector.ack(input);
-            return;
-        }
-
-        String docId;
-        if(soSub == null){
-            if(so.getGroups() != null){
-                for(Entry<String, SOGroup> group: so.getGroups().entrySet()){
-                    // If there is a group called like the stream, then the docname refers to the group.
-                    if(group.getKey() == streamId){
-                        collector.ack(input);
-                        return;
-                    }
-                }
-            }
-            docId = streamId;
-        }
-        else{
-            docId = soSub.getGroupId();
-        }
-
-        // TODO Could be useful to delete the unused groups from the SO. Open discussion.
-        try{
-            SOProcessor sop = new SOProcessor(soDoc, destination);
-            soDoc = sop.replaceAliases();
-            sop.compileJSONPaths();
-
-            SensorUpdate su = mapper.readValue(suDoc, SensorUpdate.class);
-            PDP pdp = new LocalPDP();
-
-            // TODO Fill these fields properly
-            pdp.setIdmHost("");
-            pdp.setIdmPort(0);
-            pdp.setIdmUser("");
-            pdp.setIdmPassword("");
-
-            PermissionCacheObject pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
-                    PDP.operationID.DispatchData);
-            if(!pco.isPermission()){
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "forbidden")
-                );
-                collector.ack(input);
-            }
-            boolean emitted = false;
-            for (String streamIdByDoc : sop.getStreamsByDocId(docId)) {
-                // If the SU comes from the same stream than it is going, it must be stopped
-//                boolean beenThere = false;
-//                for (ArrayList<String> prevStream : su.getStreamsChain()) {
-//                    beenThere = (destination == prevStream.get(0) && streamIdByDoc == prevStream.get(1));
-//                    if (beenThere) break;
-//                }
-//
-//                if (beenThere) {
-//                    continue;
-//                }
-                this.collector.emit("default", input,
-                        new Values(destination,
-                                streamIdByDoc,
-                                soDoc,
-                                docId,
-                                suDoc));
-                emitted = true;
-            }
-            if (!emitted) {
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "no-stream")
-                );
-            }
-        } catch (Exception e) {
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            collector.ack(input);
-            //TODO Log the error
-            e.printStackTrace();
-            return;
-        }
         collector.ack(input);
-        return;
     }
 
     public void cleanup() {
@@ -245,7 +194,7 @@ public class StreamDispatcherBolt implements IRichBolt {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream("default", new Fields("soid", "streamid", "so", "groupid", "su"));
+        declarer.declareStream("default", new Fields("soid", "streamid", "so", "originid", "su"));
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
     }
 

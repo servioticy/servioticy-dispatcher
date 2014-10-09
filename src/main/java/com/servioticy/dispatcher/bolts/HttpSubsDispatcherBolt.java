@@ -19,8 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.servioticy.datamodel.HttpSubscription;
-import com.servioticy.datamodel.SensorUpdate;
+import com.servioticy.datamodel.subscription.HttpSubscription;
+import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.jsonprocessors.HttpSubProcessor;
 

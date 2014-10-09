@@ -1,0 +1,21 @@
+{
+    "id": "so",
+    "version": "0.2.0",
+    "streams": {
+        "A": {
+            "channels": {
+                "$": {
+                    "type": "number"
+                }
+            }
+        },
+        "B": {
+            "channels": {
+                "$": {
+                    "current-value": "function(A){return B==null}",
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}

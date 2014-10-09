@@ -23,7 +23,8 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.servioticy.datamodel.SensorUpdate;
+import com.servioticy.datamodel.reputation.Reputation;
+import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestResponse;
@@ -37,7 +38,7 @@ import java.util.UUID;
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  *
  */
-public class CheckOpidBolt implements IRichBolt {
+public class PrepareBolt implements IRichBolt {
     /**
      *
      */
@@ -46,12 +47,12 @@ public class CheckOpidBolt implements IRichBolt {
     private RestClient restClient;
     private DispatcherContext dc;
 
-    public CheckOpidBolt(DispatcherContext dc) {
+    public PrepareBolt(DispatcherContext dc) {
         this.dc = dc;
     }
 
     // For testing purposes
-    public CheckOpidBolt(DispatcherContext dc, RestClient restClient) {
+    public PrepareBolt(DispatcherContext dc, RestClient restClient) {
         this.dc = dc;
         this.restClient = restClient;
     }
@@ -71,7 +72,23 @@ public class CheckOpidBolt implements IRichBolt {
         RestResponse rr;
         String opid = input.getStringByField("opid");
         String suDoc = input.getStringByField("su");
+        String soid = input.getStringByField("soid");
+        String streamid = input.getStringByField("streamid");
+        ObjectMapper mapper = new ObjectMapper();
         SensorUpdate su;
+        try {
+            su = mapper.readValue(suDoc, SensorUpdate.class);
+        } catch (Exception e) {
+            if(dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            // TODO Log the error
+            e.printStackTrace();
+            collector.ack(input);
+            return;
+        }
 
         try {
             rr = restClient.restRequest(
@@ -86,31 +103,30 @@ public class CheckOpidBolt implements IRichBolt {
             this.collector.fail(input);
             return;
         }
+
+        // Reputation
+        if (su.getComposed() == null || !su.getComposed()){
+            this.collector.emit(Reputation.STREAM_WO_SO, input,
+                    new Values(soid,
+                            streamid,
+                            su.getLastUpdate(),
+                            System.currentTimeMillis())
+            );
+        }
+
+        // Benchmark
         if(dc.benchmark) {
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-                su = mapper.readValue(suDoc, SensorUpdate.class);
-            } catch (Exception e) {
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "error")
-                );
-                // TODO Log the error
-                e.printStackTrace();
-                collector.ack(input);
-                return;
-            }
-            if (su.getStreamsChain() == null) {
-                su.setStreamsChain(new ArrayList<ArrayList<String>>());
-                String[] chainInit = {input.getStringByField("soid"), input.getStringByField("streamid")};
-                su.getStreamsChain().add(new ArrayList<String>(Arrays.asList(chainInit)));
-                su.setTimestampChain(new ArrayList<Long>());
-                su.getTimestampChain().add(System.currentTimeMillis());
+
+            if (su.getTriggerPath() == null) {
+                su.setTriggerPath(new ArrayList<ArrayList<String>>());
+                String[] chainInit = {soid, streamid};
+                su.getTriggerPath().add(new ArrayList<String>(Arrays.asList(chainInit)));
+                su.setPathTimestamps(new ArrayList<Long>());
+                su.getPathTimestamps().add(System.currentTimeMillis());
                 su.setOriginId(UUID.randomUUID().getMostSignificantBits());
             }
-            /*else if( (System.currentTimeMillis() - su.getTimestampChain().get(su.getTimestampChain().size()-1)) > 2*60*1000 ||
-                     (System.currentTimeMillis() - su.getTimestampChain().get(0)) > 10*60*1000){
+            /*else if( (System.currentTimeMillis() - su.getPathTimestamps().get(su.getPathTimestamps().size()-1)) > 2*60*1000 ||
+                     (System.currentTimeMillis() - su.getPathTimestamps().get(0)) > 10*60*1000){
                 // Timeout
                 this.collector.emit("benchmark", input,
                         new Values(suDoc,
@@ -135,21 +151,22 @@ public class CheckOpidBolt implements IRichBolt {
                 collector.ack(input);
                 return;
             }
+
         }
         this.collector.emit(
                 "stream",
                 input,
-                new Values(null, input
-                        .getStringByField("soid"), input
-                        .getStringByField("streamid"), suDoc)
+                new Values(streamid,
+                        soid,
+                        suDoc)
         );
 
         this.collector.emit(
                 "subscription",
                 input,
-                new Values(input
-                        .getStringByField("soid"), input
-                        .getStringByField("streamid"), suDoc)
+                new Values(soid,
+                        streamid,
+                        suDoc)
         );
         this.collector.ack(input);
     }
@@ -159,7 +176,8 @@ public class CheckOpidBolt implements IRichBolt {
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
-        declarer.declareStream("stream", new Fields("subsdoc","soid", "streamid", "su"));
+        declarer.declareStream("stream", new Fields("docid", "destination", "su"));
+        declarer.declareStream(Reputation.STREAM_WO_SO, new Fields("in-soid", "in-streamid", "user_timestamp", "date"));
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
 
     }
