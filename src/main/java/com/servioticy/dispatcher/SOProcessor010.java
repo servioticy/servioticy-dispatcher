@@ -31,8 +31,6 @@ import com.servioticy.dispatcher.jsonprocessors.AliasReplacer;
 import com.servioticy.dispatcher.jsonprocessors.JsonPathReplacer;
 import org.elasticsearch.common.geo.GeoPoint;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.util.*;
@@ -158,8 +156,6 @@ public class SOProcessor010 extends SOProcessor{
     }
 
     public boolean checkPreFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU) throws ScriptException {
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
         PSOStream pstream = this.streams.get(streamId);
         if (pstream.preFilter == null) {
             return true;
@@ -184,17 +180,17 @@ public class SOProcessor010 extends SOProcessor{
 
     }
 
-    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, long timestamp, List<Provelement> provList, Map<String, String> mapVarSU) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+        List<Provelement> provList = new LinkedList<Provelement>();
+        Map<String, String> mapVarSU = new HashMap<String, String>();
         ObjectMapper mapper = new ObjectMapper();
         Map<String, String> inputDocs = new HashMap<String, String>();
         for(Map.Entry<String,SensorUpdate> inputSUEntry: inputSUs.entrySet()){
             inputDocs.put(inputSUEntry.getKey(), mapper.writeValueAsString(inputSUEntry.getValue()));
         }
-        if (!checkPreFilter(streamId, inputDocs)){
+        if (!checkPreFilter(streamId, inputDocs, provList, mapVarSU)){
             return null;
         }
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
 
         SensorUpdate su = new SensorUpdate();
 
@@ -261,15 +257,13 @@ public class SOProcessor010 extends SOProcessor{
             inputDocs.put("result", resultSUDoc);
         }
 
-        if(!checkPostFilter(streamId, inputDocs)){
+        if(!checkPostFilter(streamId, inputDocs, provList, mapVarSU)){
             return null;
         }
         return su;
     }
 
     public boolean checkPostFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU) throws ScriptException {
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
         PSOStream pstream = this.streams.get(streamId);
         if (pstream.postFilter == null) {
             return true;
