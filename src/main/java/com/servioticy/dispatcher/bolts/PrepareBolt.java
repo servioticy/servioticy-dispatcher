@@ -105,7 +105,7 @@ public class PrepareBolt implements IRichBolt {
         }
 
         // Reputation
-        if (!su.getComposed()){
+        if (su.getComposed() == null || !su.getComposed()){
             this.collector.emit(Reputation.STREAM_WO_SO, input,
                     new Values(soid,
                             streamid,
