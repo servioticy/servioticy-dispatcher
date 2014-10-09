@@ -71,7 +71,23 @@ public class PrepareBolt implements IRichBolt {
         RestResponse rr;
         String opid = input.getStringByField("opid");
         String suDoc = input.getStringByField("su");
+        String soid = input.getStringByField("soid");
+        String streamid = input.getStringByField("streamid");
+        ObjectMapper mapper = new ObjectMapper();
         SensorUpdate su;
+        try {
+            su = mapper.readValue(suDoc, SensorUpdate.class);
+        } catch (Exception e) {
+            if(dc.benchmark) this.collector.emit("benchmark", input,
+                    new Values(suDoc,
+                            System.currentTimeMillis(),
+                            "error")
+            );
+            // TODO Log the error
+            e.printStackTrace();
+            collector.ack(input);
+            return;
+        }
 
         try {
             rr = restClient.restRequest(
@@ -87,25 +103,12 @@ public class PrepareBolt implements IRichBolt {
             return;
         }
 
+        // Benchmark
         if(dc.benchmark) {
 
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-                su = mapper.readValue(suDoc, SensorUpdate.class);
-            } catch (Exception e) {
-                this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "error")
-                );
-                // TODO Log the error
-                e.printStackTrace();
-                collector.ack(input);
-                return;
-            }
             if (su.getTriggerPath() == null) {
                 su.setTriggerPath(new ArrayList<ArrayList<String>>());
-                String[] chainInit = {input.getStringByField("soid"), input.getStringByField("streamid")};
+                String[] chainInit = {soid, streamid};
                 su.getTriggerPath().add(new ArrayList<String>(Arrays.asList(chainInit)));
                 su.setPathTimestamps(new ArrayList<Long>());
                 su.getPathTimestamps().add(System.currentTimeMillis());
@@ -142,17 +145,17 @@ public class PrepareBolt implements IRichBolt {
         this.collector.emit(
                 "stream",
                 input,
-                new Values(null, input
-                        .getStringByField("soid"), input
-                        .getStringByField("streamid"), suDoc)
+                new Values(streamid,
+                        soid,
+                        suDoc)
         );
 
         this.collector.emit(
                 "subscription",
                 input,
-                new Values(input
-                        .getStringByField("soid"), input
-                        .getStringByField("streamid"), suDoc)
+                new Values(soid,
+                        streamid,
+                        suDoc)
         );
         this.collector.ack(input);
     }
@@ -162,7 +165,7 @@ public class PrepareBolt implements IRichBolt {
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
-        declarer.declareStream("stream", new Fields("subsdoc","soid", "streamid", "su"));
+        declarer.declareStream("stream", new Fields("docid", "destination", "su"));
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
 
     }

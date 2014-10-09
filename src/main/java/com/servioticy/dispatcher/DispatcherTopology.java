@@ -73,14 +73,14 @@ public class DispatcherTopology {
         builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
         builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()), 4);
 
-        builder.setBolt("checkopid", new PrepareBolt(dc), 10)
+        builder.setBolt("prepare", new PrepareBolt(dc), 10)
                 .shuffleGrouping("dispatcher");
 
         builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 2)
         		.shuffleGrouping("actions");
 
         builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 4)
-                .shuffleGrouping("checkopid", "subscription");
+                .shuffleGrouping("prepare", "subscription");
 
         builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
                 .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
@@ -89,7 +89,7 @@ public class DispatcherTopology {
 
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 13)
                 .shuffleGrouping("subretriever", "internalSub")
-                .shuffleGrouping("checkopid", "stream");
+                .shuffleGrouping("prepare", "stream");
         builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 17)
                 .shuffleGrouping("streamdispatcher", "default");
 
@@ -98,7 +98,7 @@ public class DispatcherTopology {
                     .shuffleGrouping("streamdispatcher", "benchmark")
                     .shuffleGrouping("subretriever", "benchmark")
                     .shuffleGrouping("streamprocessor", "benchmark")
-                    .shuffleGrouping("checkopid", "benchmark");
+                    .shuffleGrouping("prepare", "benchmark");
         }
 
         Config conf = new Config();

@@ -76,34 +76,11 @@ public class StreamDispatcherBolt implements IRichBolt {
         SO so;
         RestResponse rr;
 
-        String subsDoc = input.getStringByField("subsdoc");
         String suDoc = input.getStringByField("su");
-        String soId = input.getStringByField("soid");
-        String streamId = input.getStringByField("streamid");
-        String soDoc;
+        String docId = input.getStringByField("docid");
+        String destination = input.getStringByField("destination");
 
-        String destination;
-        if(subsDoc != null){
-            // This SU comes from a subscription.
-            try {
-                soSub = mapper.readValue(subsDoc,
-                        SOSubscription.class);
-            } catch (Exception e) {
-                // TODO Log the error
-                e.printStackTrace();
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "error")
-                );
-                collector.ack(input);
-                return;
-            }
-            destination = soSub.getDestination();
-        }
-        else{
-            destination = soId;
-        }
+        String soDoc;
 
         try{
             rr = restClient.restRequest(
@@ -152,21 +129,16 @@ public class StreamDispatcherBolt implements IRichBolt {
             return;
         }
 
-        String docId;
-        if(soSub == null){
+        if(input.getSourceStreamId().equals("stream")){
             if(so.getGroups() != null){
                 for(Entry<String, SOGroup> group: so.getGroups().entrySet()){
                     // If there is a group called like the stream, then the docname refers to the group.
-                    if(group.getKey() == streamId){
+                    if(group.getKey().equals(docId)){
                         collector.ack(input);
                         return;
                     }
                 }
             }
-            docId = streamId;
-        }
-        else{
-            docId = soSub.getGroupId();
         }
 
         // TODO Could be useful to delete the unused groups from the SO. Open discussion.
