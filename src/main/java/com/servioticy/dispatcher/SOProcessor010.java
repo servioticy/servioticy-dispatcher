@@ -266,8 +266,6 @@ public class SOProcessor010 extends SOProcessor{
         if (pstream.postFilter == null) {
             return true;
         }
-        String postFilterCode = pstream.postFilter.replace(inputJsons);
-
         HashMap<String, String> inputVar = new HashMap();
         String postFilterCode = pstream.postFilter.replace(inputJsons, inputVar, mapVarSU);
 
