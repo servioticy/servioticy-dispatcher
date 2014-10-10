@@ -42,10 +42,7 @@ import com.servioticy.restclient.RestResponse;
 import de.passau.uni.sec.compose.pdp.servioticy.LocalPDP;
 import de.passau.uni.sec.compose.pdp.servioticy.PDP;
 import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
-
 import de.passau.uni.sec.compose.pdp.servioticy.exception.PDPServioticyException;
-import org.mozilla.javascript.Provelement;
-import org.mozilla.javascript.ProvenanceAPI;
 
 import javax.script.ScriptException;
 import java.io.IOException;
@@ -109,7 +106,7 @@ public class StreamProcessorBolt implements IRichBolt {
 		}
 	}
 
-    private Map<String, SensorUpdate> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
+    private Map<String, SensorUpdate> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException, PDPServioticyException {
         RestResponse rr;
 		Map<String, SensorUpdate> groupDocs = new HashMap<String, SensorUpdate>();
 		ObjectMapper mapper = new ObjectMapper();
@@ -147,8 +144,6 @@ public class StreamProcessorBolt implements IRichBolt {
 				groupDocs.put(docId, null);
 				continue;
 			}
-
-			groupDocs.put(docId, mapper.readValue(rr.getResponse(), SensorUpdate.class));
             PDP pdp = new LocalPDP();
 
             // TODO Fill these fields properly
@@ -158,10 +153,11 @@ public class StreamProcessorBolt implements IRichBolt {
             pdp.setIdmPassword("");
 
             PermissionCacheObject pco = null;
-            pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(mapper.readValue(lastSU, SensorUpdate.class).getSecurity())), null,
+            SensorUpdate lastSU = mapper.readValue(rr.getResponse(), SensorUpdate.class);
+            pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(lastSU.getSecurity())), null,
                     PDP.operationID.DispatchData);
             if(!pco.isPermission()){
-                groupDocs.put(docId, "null");
+                groupDocs.put(docId, null);
             }else {
                 groupDocs.put(docId, lastSU);
             }

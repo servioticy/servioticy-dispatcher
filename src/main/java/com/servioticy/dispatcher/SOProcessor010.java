@@ -36,8 +36,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 
-import org.mozilla.javascript.Provelement;
-import org.mozilla.javascript.ProvenanceAPI;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -179,9 +177,8 @@ public class SOProcessor010 extends SOProcessor{
         //return (Boolean) engine.get("result");
 
     }
-
-    public SensorUpdate getResultSU(String streamId, Map<String, String> inputJsons, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
-        List<Provelement> provList = new LinkedList<Provelement>();
+    @Override
+    public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {        List<Provelement> provList = new LinkedList<Provelement>();
         Map<String, String> mapVarSU = new HashMap<String, String>();
         ObjectMapper mapper = new ObjectMapper();
         Map<String, String> inputDocs = new HashMap<String, String>();

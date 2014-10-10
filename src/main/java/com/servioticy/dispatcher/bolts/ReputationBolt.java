@@ -24,6 +24,8 @@ import backtype.storm.tuple.Tuple;
 import com.servioticy.datamodel.reputation.*;
 import com.servioticy.dispatcher.DispatcherContext;
 
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,6 +62,10 @@ public class ReputationBolt implements IRichBolt{
         this.mapBoltStream.put(Reputation.STREAM_SO_SO, ReputationBolt.STREAM_SO_SO);
         this.mapBoltStream.put(Reputation.STREAM_SO_USER, ReputationBolt.STREAM_SO_USER);
         this.mapBoltStream.put(Reputation.STREAM_WO_SO, ReputationBolt.STREAM_WO_SO);
+        ArrayList<URI> nodes = new ArrayList<URI>();
+        nodes.add(URI.create("http://localhost:8091/pools"));
+
+        cbClient = new CouchBaseClient(nodes, "reputation", "");
 
     }
 
