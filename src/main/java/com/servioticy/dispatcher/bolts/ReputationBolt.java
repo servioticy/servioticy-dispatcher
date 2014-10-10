@@ -21,13 +21,17 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import com.couchbase.client.CouchbaseClient;
 import backtype.storm.tuple.Tuple;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.reputation.*;
 import com.servioticy.dispatcher.DispatcherContext;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -40,6 +44,7 @@ public class ReputationBolt implements IRichBolt{
     private DispatcherContext dc;
     private Map<String, Integer> mapBoltStream;
     private CouchbaseClient cbClient;
+    ObjectMapper mapper;
 
     private static final int STREAM_SO_PUBSUB = 0;
     private static final int STREAM_SO_SERVICE = 1;
@@ -54,6 +59,7 @@ public class ReputationBolt implements IRichBolt{
     @Override
     public void prepare(Map stormConf, TopologyContext context,
                         OutputCollector collector) {
+        mapper = new ObjectMapper();
         this.collector = collector;
         this.context = context;
         this.mapBoltStream = new HashMap<String, Integer>();
@@ -65,7 +71,11 @@ public class ReputationBolt implements IRichBolt{
         ArrayList<URI> nodes = new ArrayList<URI>();
         nodes.add(URI.create("http://localhost:8091/pools"));
 
-        cbClient = new CouchBaseClient(nodes, "reputation", "");
+        try {
+            cbClient = new CouchbaseClient(nodes, "reputation", "");
+        } catch (IOException e) {
+            throw new RuntimeException();
+        }
 
     }
 
@@ -139,9 +149,16 @@ public class ReputationBolt implements IRichBolt{
             default:
                 break;
         }
-
-        // TODO Do something with the reputation object
-
+        try {
+            cbClient.set(
+                    Long.toHexString(UUID.randomUUID().getMostSignificantBits()) + "-" + reputation.getDate(),
+                    mapper.writeValueAsString(reputation)
+            ).get();
+        } catch (Exception e) {
+            // TODO log the error
+            e.printStackTrace();
+        }
+        collector.ack(input);
     }
 
     @Override
