@@ -25,11 +25,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.mozilla</groupId>
-            <artifactId>rhino</artifactId>
-            <version>1.7R4-mod</version>
-        </dependency>
-        <dependency>
             <groupId>org.eclipse.paho</groupId>
             <artifactId>mqtt-client</artifactId>
             <version>0.4.0</version>

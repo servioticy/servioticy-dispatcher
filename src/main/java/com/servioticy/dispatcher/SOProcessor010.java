@@ -30,12 +30,13 @@ import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.jsonprocessors.AliasReplacer;
 import com.servioticy.dispatcher.jsonprocessors.JsonPathReplacer;
 import org.elasticsearch.common.geo.GeoPoint;
+import org.mozilla.javascript.Provelement;
+import org.mozilla.javascript.ProvenanceAPI;
 
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
-
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -204,7 +205,7 @@ public class SOProcessor010 extends SOProcessor{
                 nulls++;
             } else {
                 HashMap<String, String> inputVar = new HashMap();
-                String currentValueCode = pchannel.currentValue.replace(inputJsons, inputVar, mapVarSU);                Class type;
+                String currentValueCode = pchannel.currentValue.replace(inputDocs, inputVar, mapVarSU);                Class type;
                 String typeName;
                 Object result = null;
                 typeName = pchannel.type.toLowerCase();
