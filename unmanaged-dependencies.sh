@@ -20,7 +20,7 @@ mkdir -p $LOCAL_REPO
 
 for (( i=0; i<${#GIT_REPOS[@]}; i++ ));
 do
-    if ! mvn dependency:get -Dartifact=${GROUPIDS[$i]}:${ARTIFACTIDS[$i]}:${VERSIONS[$i]} -o -DrepoUrl=file://$LOCAL_REPO ; then
+    if ! mvn -q dependency:get -Dartifact=${GROUPIDS[$i]}:${ARTIFACTIDS[$i]}:${VERSIONS[$i]} -o -DrepoUrl=file://$LOCAL_REPO > /dev/null 2>&1 ; then
         git clone ${GIT_REPOS[$i]} $SOURCES/${ARTIFACTIDS[$i]}
         cd $SOURCES/${ARTIFACTIDS[$i]}
         git checkout ${REVISIONS[$i]} .
