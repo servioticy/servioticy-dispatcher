@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>org.mozilla</groupId>
+  <artifactId>rhino</artifactId>
+  <versioning>
+    <release>1.7R4-mod</release>
+    <versions>
+      <version>1.7R4-mod</version>
+    </versions>
+    <lastUpdated>20141013100927</lastUpdated>
+  </versioning>
+</metadata>

@@ -15,6 +15,11 @@
         	<name>Paho</name>
         	<url>https://repo.eclipse.org/content/repositories/paho-releases</url>
         </repository>
+        <repository>
+            <id>project.local</id>
+            <name>project</name>
+            <url>file:${project.basedir}/repo</url>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
@@ -95,6 +100,16 @@
             <groupId>com.couchbase.client</groupId>
             <artifactId>couchbase-client</artifactId>
             <version>1.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mozilla</groupId>
+            <artifactId>rhino</artifactId>
+            <version>1.7R4-mod</version>
+        </dependency>
+        <dependency>
+            <groupId>de.passau.uni</groupId>
+            <artifactId>servioticy-pdp</artifactId>
+            <version>0.1.0</version>
         </dependency>
     </dependencies>
     <build>
