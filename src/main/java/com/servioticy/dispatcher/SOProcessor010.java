@@ -18,6 +18,7 @@ package com.servioticy.dispatcher;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -154,18 +155,19 @@ public class SOProcessor010 extends SOProcessor{
         return result;
     }
 
-    public boolean checkPreFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU) throws ScriptException {
+    public boolean checkPreFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU) throws ScriptException, JsonProcessingException {
         PSOStream pstream = this.streams.get(streamId);
         if (pstream.preFilter == null) {
             return true;
         }
+        ObjectMapper mapper = new ObjectMapper();
         HashMap<String, String> inputVar = new HashMap();
         String preFilterCode = pstream.preFilter.replace(inputJsons, inputVar, mapVarSU);
 
         inputVar.put(ProvenanceAPI.COMPUTATION, "Boolean(" + preFilterCode + ")");
         String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
-        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList);
+        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList, mapper.writeValueAsString(this.so.getSecurity()));
 
         provList.clear();
         provList.addAll(newProvList);
@@ -205,7 +207,8 @@ public class SOProcessor010 extends SOProcessor{
                 nulls++;
             } else {
                 HashMap<String, String> inputVar = new HashMap();
-                String currentValueCode = pchannel.currentValue.replace(inputDocs, inputVar, mapVarSU);                Class type;
+                String currentValueCode = pchannel.currentValue.replace(inputDocs, inputVar, mapVarSU);
+                Class type;
                 String typeName;
                 Object result = null;
                 typeName = pchannel.type.toLowerCase();
@@ -226,7 +229,7 @@ public class SOProcessor010 extends SOProcessor{
 
                 String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
-                List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList);
+                List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList, mapper.writeValueAsString(this.so.getSecurity()));
 
                 provList.clear();
                 provList.addAll(newProvList);
@@ -261,8 +264,9 @@ public class SOProcessor010 extends SOProcessor{
         return su;
     }
 
-    public boolean checkPostFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU) throws ScriptException {
+    public boolean checkPostFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU) throws ScriptException, JsonProcessingException {
         PSOStream pstream = this.streams.get(streamId);
+        ObjectMapper mapper = new ObjectMapper();
         if (pstream.postFilter == null) {
             return true;
         }
@@ -272,7 +276,7 @@ public class SOProcessor010 extends SOProcessor{
         inputVar.put(ProvenanceAPI.COMPUTATION, "Boolean(" + postFilterCode + ")");
         String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
-        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList);
+        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList, mapper.writeValueAsString(this.so.getSecurity()));
 
         provList.clear();
         provList.addAll(newProvList);
