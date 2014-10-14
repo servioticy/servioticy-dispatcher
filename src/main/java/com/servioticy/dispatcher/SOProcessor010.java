@@ -181,7 +181,8 @@ public class SOProcessor010 extends SOProcessor{
 
     }
     @Override
-    public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {        List<Provelement> provList = new LinkedList<Provelement>();
+    public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+        List<Provelement> provList = new LinkedList<Provelement>();
         Map<String, String> mapVarSU = new HashMap<String, String>();
         ObjectMapper mapper = new ObjectMapper();
         Map<String, String> inputDocs = new HashMap<String, String>();
@@ -261,6 +262,9 @@ public class SOProcessor010 extends SOProcessor{
         if(!checkPostFilter(streamId, inputDocs, provList, mapVarSU)){
             return null;
         }
+
+        String provJson = ProvenanceAPI.buildProvenanceJSON("", provList, mapVarSU);
+        su.setSecurity(mapper.readValue(provJson, Object.class));
         return su;
     }
 
