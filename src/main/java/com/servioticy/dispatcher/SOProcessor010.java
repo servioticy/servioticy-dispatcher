@@ -167,7 +167,7 @@ public class SOProcessor010 extends SOProcessor{
         inputVar.put(ProvenanceAPI.COMPUTATION, "Boolean(" + preFilterCode + ")");
         String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
-        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList, soSecurityDoc);
+        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeSOcode(fullComputationString, provList, soSecurityDoc);
 
         provList.clear();
         provList.addAll(newProvList);
@@ -183,9 +183,9 @@ public class SOProcessor010 extends SOProcessor{
     @Override
     public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
         List<Provelement> provList = new LinkedList<Provelement>();
-        String soSecurityDoc = mapper.writeValueAsString(this.so.getSecurity());
         Map<String, String> mapVarSU = new HashMap<String, String>();
         ObjectMapper mapper = new ObjectMapper();
+        String soSecurityDoc = mapper.writeValueAsString(this.so.getSecurity());
         Map<String, String> inputDocs = new HashMap<String, String>();
         for(Map.Entry<String,SensorUpdate> inputSUEntry: inputSUs.entrySet()){
             inputDocs.put(inputSUEntry.getKey(), mapper.writeValueAsString(inputSUEntry.getValue()));
@@ -231,7 +231,7 @@ public class SOProcessor010 extends SOProcessor{
 
                 String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
-                List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList, soSecurityDoc);
+                List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeSOcode(fullComputationString, provList, soSecurityDoc);
 
                 provList.clear();
                 provList.addAll(newProvList);
@@ -281,7 +281,7 @@ public class SOProcessor010 extends SOProcessor{
         inputVar.put(ProvenanceAPI.COMPUTATION, "Boolean(" + postFilterCode + ")");
         String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
-        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeWithProv(fullComputationString, provList, soSecurityDoc);
+        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeSOcode(fullComputationString, provList, soSecurityDoc);
 
         provList.clear();
         provList.addAll(newProvList);
