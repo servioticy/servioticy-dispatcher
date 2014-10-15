@@ -259,6 +259,18 @@ public class StreamProcessorBolt implements IRichBolt {
                                     "old")
                     );
                     collector.ack(input);
+                    //Reputation
+                    // TODO If in-soid && in-streamid are the current ones, continue
+                    this.collector.emit(Reputation.STREAM_SO_SO, input,
+                            new Values("", // in-soid
+                                    "", // in-streamid
+                                    so.getId(),
+                                    streamId,
+                                    su.getLastUpdate(),
+                                    System.currentTimeMillis(),
+                                    true,
+                                    Reputation.DISCARD_TIMESTAMP)
+                    );
                     return;
                 }
             }
@@ -275,25 +287,6 @@ public class StreamProcessorBolt implements IRichBolt {
                 e.printStackTrace();
                 collector.fail(input);
                 return;
-            }
-
-            //Reputation
-            for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
-                boolean event = entry.getKey() == originId;
-                SensorUpdate entrySU = entry.getValue();
-                if(entrySU == null){
-                    continue;
-                }
-                // TODO If in-soid && in-streamid are the current ones, continue
-                this.collector.emit(Reputation.STREAM_SO_SO, input,
-                        new Values("", // in-soid
-                                "", // in-streamid
-                                so.getId(),
-                                streamId,
-                                entrySU.getLastUpdate(),
-                                System.currentTimeMillis(),
-                                event)
-                );
             }
 
             // Obtain the highest timestamp from the input docs
@@ -318,6 +311,25 @@ public class StreamProcessorBolt implements IRichBolt {
                                     "filtered")
                     );
                     collector.ack(input);
+                    //Reputation
+                    for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
+                        boolean event = entry.getKey() == originId;
+                        SensorUpdate entrySU = entry.getValue();
+                        if(entrySU == null){
+                            continue;
+                        }
+                        // TODO If in-soid && in-streamid are the current ones, continue
+                        this.collector.emit(Reputation.STREAM_SO_SO, input,
+                                new Values("", // in-soid
+                                        "", // in-streamid
+                                        so.getId(),
+                                        streamId,
+                                        entrySU.getLastUpdate(),
+                                        System.currentTimeMillis(),
+                                        event,
+                                        Reputation.DISCARD_FILTER)
+                        );
+                    }
                     return;
                 }
                 mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -332,6 +344,25 @@ public class StreamProcessorBolt implements IRichBolt {
                                 "script-error")
                 );
                 collector.ack(input);
+                //Reputation
+                for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
+                    boolean event = entry.getKey() == originId;
+                    SensorUpdate entrySU = entry.getValue();
+                    if(entrySU == null){
+                        continue;
+                    }
+                    // TODO If in-soid && in-streamid are the current ones, continue
+                    this.collector.emit(Reputation.STREAM_SO_SO, input,
+                            new Values("", // in-soid
+                                    "", // in-streamid
+                                    so.getId(),
+                                    streamId,
+                                    entrySU.getLastUpdate(),
+                                    System.currentTimeMillis(),
+                                    event,
+                                    Reputation.DISCARD_ERROR)
+                    );
+                }
                 return;
             }
             if(dc.benchmark) {
@@ -421,7 +452,26 @@ public class StreamProcessorBolt implements IRichBolt {
         }
 
         //suCache.put(soId+";"+streamId, su.getLastUpdate());
+        //Reputation
         collector.ack(input);
+        for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
+            boolean event = entry.getKey() == originId;
+            SensorUpdate entrySU = entry.getValue();
+            if(entrySU == null){
+                continue;
+            }
+            // TODO If in-soid && in-streamid are the current ones, continue
+            this.collector.emit(Reputation.STREAM_SO_SO, input,
+                    new Values("", // in-soid
+                            "", // in-streamid
+                            so.getId(),
+                            streamId,
+                            entrySU.getLastUpdate(),
+                            System.currentTimeMillis(),
+                            event,
+                            Reputation.DISCARD_NONE)
+            );
+        }
         return;
     }
 
@@ -431,7 +481,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
-        declarer.declareStream(Reputation.STREAM_SO_SO, new Fields("in-soid", "in-streamid", "out-soid", "out-streamid", "user_timestamp", "date", "event"));
+        declarer.declareStream(Reputation.STREAM_SO_SO, new Fields("in-soid", "in-streamid", "out-soid", "out-streamid", "user_timestamp", "date", "event", "discard"));
 
     }
 

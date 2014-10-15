@@ -264,7 +264,7 @@ public class SOProcessor010 extends SOProcessor{
             return null;
         }
 
-        String provJson = ProvenanceAPI.buildProvenanceJSON(soSecurityDoc, provList, mapVarSU);
+        String provJson = ProvenanceAPI.buildProvenanceJSON(soSecurityDoc, provList, mapVarSU, streamId);
         su.setSecurity(mapper.readValue(provJson, Object.class));
         return su;
     }

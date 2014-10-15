@@ -110,7 +110,8 @@ public class PrepareBolt implements IRichBolt {
                     new Values(soid,
                             streamid,
                             su.getLastUpdate(),
-                            System.currentTimeMillis())
+                            System.currentTimeMillis(),
+                            true) // TODO this needs to come from the API
             );
         }
 
@@ -177,7 +178,7 @@ public class PrepareBolt implements IRichBolt {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
         declarer.declareStream("stream", new Fields("docid", "destination", "su"));
-        declarer.declareStream(Reputation.STREAM_WO_SO, new Fields("in-soid", "in-streamid", "user_timestamp", "date"));
+        declarer.declareStream(Reputation.STREAM_WO_SO, new Fields("in-soid", "in-streamid", "user_timestamp", "date", "fresh"));
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
 
     }
