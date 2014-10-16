@@ -218,11 +218,11 @@ public class StreamProcessorBolt implements IRichBolt {
             if(entrySU == null){
                 continue;
             }
-            sendToReputation(input, entrySU, so, streamId, reason);
+            sendToReputation(input, entrySU, so, streamId, reason, event);
         }
     }
 
-    public void sendToReputation(Tuple input, SensorUpdate su, SO so, String streamId, String reason) throws IOException, PDPServioticyException {
+    public void sendToReputation(Tuple input, SensorUpdate su, SO so, String streamId, String reason, Boolean event) throws IOException, PDPServioticyException {
         ObjectMapper mapper = new ObjectMapper();
         ServioticyProvenance prov = new ServioticyProvenance();
         ReputationAddressSO src = mapper.readValue(
@@ -238,7 +238,7 @@ public class StreamProcessorBolt implements IRichBolt {
                         streamId,
                         su.getLastUpdate(),
                         System.currentTimeMillis(),
-                        true,
+                        event,
                         reason)
         );
     }
@@ -290,7 +290,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
                     BenchmarkBolt.send(collector, input, dc, suDoc, "old");
                     collector.ack(input);
-                    sendToReputation(input, su, so, streamId, Reputation.DISCARD_TIMESTAMP);
+                    sendToReputation(input, su, so, streamId, Reputation.DISCARD_TIMESTAMP, true);
                     return;
                 }
             }
