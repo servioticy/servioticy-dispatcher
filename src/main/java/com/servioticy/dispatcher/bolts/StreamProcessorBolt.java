@@ -23,9 +23,12 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.datamodel.UpdateDescriptor;
+import com.servioticy.datamodel.reputation.ReputationAddress;
+import com.servioticy.datamodel.reputation.ReputationAddressSO;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.serviceobject.SOGroup;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
@@ -43,6 +46,7 @@ import de.passau.uni.sec.compose.pdp.servioticy.LocalPDP;
 import de.passau.uni.sec.compose.pdp.servioticy.PDP;
 import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
 import de.passau.uni.sec.compose.pdp.servioticy.exception.PDPServioticyException;
+import de.passau.uni.sec.compose.pdp.servioticy.provenance.ServioticyProvenance;
 
 import javax.script.ScriptException;
 import java.io.IOException;
@@ -207,6 +211,37 @@ public class StreamProcessorBolt implements IRichBolt {
         return mapper.readValue(rr.getResponse(), SensorUpdate.class);
     }
 
+    public void sendAllToReputation(Tuple input, Map<String, SensorUpdate> sensorUpdates, String originId, SO so, String streamId, String reason) throws IOException, PDPServioticyException {
+        for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
+            boolean event = entry.getKey() == originId;
+            SensorUpdate entrySU = entry.getValue();
+            if(entrySU == null){
+                continue;
+            }
+            sendToReputation(input, entrySU, so, streamId, reason);
+        }
+    }
+
+    public void sendToReputation(Tuple input, SensorUpdate su, SO so, String streamId, String reason) throws IOException, PDPServioticyException {
+        ObjectMapper mapper = new ObjectMapper();
+        ServioticyProvenance prov = new ServioticyProvenance();
+        ReputationAddressSO src = mapper.readValue(
+                prov.getSourceFromSecurityMetaDataAsString(
+                        mapper.writeValueAsString(
+                                su.getSecurity()
+                        )
+                ), ReputationAddressSO.class);
+        this.collector.emit(Reputation.STREAM_SO_SO, input,
+                new Values(src.getSoid(), // in-soid
+                        src.getStreamid(), // in-streamid
+                        so.getId(),
+                        streamId,
+                        su.getLastUpdate(),
+                        System.currentTimeMillis(),
+                        true,
+                        reason)
+        );
+    }
     public void execute(Tuple input) {
         RestResponse rr;
         SensorUpdate su;
@@ -255,18 +290,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
                     BenchmarkBolt.send(collector, input, dc, suDoc, "old");
                     collector.ack(input);
-                    //Reputation
-                    // TODO If in-soid && in-streamid are the current ones, continue
-                    this.collector.emit(Reputation.STREAM_SO_SO, input,
-                            new Values("", // in-soid
-                                    "", // in-streamid
-                                    so.getId(),
-                                    streamId,
-                                    su.getLastUpdate(),
-                                    System.currentTimeMillis(),
-                                    true,
-                                    Reputation.DISCARD_TIMESTAMP)
-                    );
+                    sendToReputation(input, su, so, streamId, Reputation.DISCARD_TIMESTAMP);
                     return;
                 }
             }
@@ -303,25 +327,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 if (resultSU == null) {
                     BenchmarkBolt.send(collector, input, dc, suDoc, "filtered");
                     collector.ack(input);
-                    //Reputation
-                    for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
-                        boolean event = entry.getKey() == originId;
-                        SensorUpdate entrySU = entry.getValue();
-                        if(entrySU == null){
-                            continue;
-                        }
-                        // TODO If in-soid && in-streamid are the current ones, continue
-                        this.collector.emit(Reputation.STREAM_SO_SO, input,
-                                new Values("", // in-soid
-                                        "", // in-streamid
-                                        so.getId(),
-                                        streamId,
-                                        entrySU.getLastUpdate(),
-                                        System.currentTimeMillis(),
-                                        event,
-                                        Reputation.DISCARD_FILTER)
-                        );
-                    }
+                    sendAllToReputation(input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_FILTER);
                     return;
                 }
                 mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -333,24 +339,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
                 collector.ack(input);
                 //Reputation
-                for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
-                    boolean event = entry.getKey() == originId;
-                    SensorUpdate entrySU = entry.getValue();
-                    if(entrySU == null){
-                        continue;
-                    }
-                    // TODO If in-soid && in-streamid are the current ones, continue
-                    this.collector.emit(Reputation.STREAM_SO_SO, input,
-                            new Values("", // in-soid
-                                    "", // in-streamid
-                                    so.getId(),
-                                    streamId,
-                                    entrySU.getLastUpdate(),
-                                    System.currentTimeMillis(),
-                                    event,
-                                    Reputation.DISCARD_ERROR)
-                    );
-                }
+                sendAllToReputation(input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_ERROR);
                 return;
             }
             if(dc.benchmark) {
@@ -413,6 +402,7 @@ public class StreamProcessorBolt implements IRichBolt {
                             + streamId + "/" + opid, resultSUDoc,
                     RestClient.PUT,
                     null);
+            sendAllToReputation(input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_NONE);
         } catch(RestClientErrorCodeException e){
             // TODO Log the error
             e.printStackTrace();
@@ -431,26 +421,7 @@ public class StreamProcessorBolt implements IRichBolt {
         }
 
         //suCache.put(soId+";"+streamId, su.getLastUpdate());
-        //Reputation
         collector.ack(input);
-        for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
-            boolean event = entry.getKey() == originId;
-            SensorUpdate entrySU = entry.getValue();
-            if(entrySU == null){
-                continue;
-            }
-            // TODO If in-soid && in-streamid are the current ones, continue
-            this.collector.emit(Reputation.STREAM_SO_SO, input,
-                    new Values("", // in-soid
-                            "", // in-streamid
-                            so.getId(),
-                            streamId,
-                            entrySU.getLastUpdate(),
-                            System.currentTimeMillis(),
-                            event,
-                            Reputation.DISCARD_NONE)
-            );
-        }
         return;
     }
 

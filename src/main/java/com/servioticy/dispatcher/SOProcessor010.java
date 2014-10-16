@@ -160,7 +160,6 @@ public class SOProcessor010 extends SOProcessor{
         if (pstream.preFilter == null) {
             return true;
         }
-        ObjectMapper mapper = new ObjectMapper();
         HashMap<String, String> inputVar = new HashMap();
         String preFilterCode = pstream.preFilter.replace(inputJsons, inputVar, mapVarSU);
 
@@ -176,9 +175,6 @@ public class SOProcessor010 extends SOProcessor{
 
 
         return Boolean.parseBoolean(result);
-        //engine.eval("var result = Boolean(" + preFilterCode + ")");
-        //return (Boolean) engine.get("result");
-
     }
     @Override
     public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
@@ -271,7 +267,6 @@ public class SOProcessor010 extends SOProcessor{
 
     public boolean checkPostFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU, String soSecurityDoc) throws ScriptException, JsonProcessingException {
         PSOStream pstream = this.streams.get(streamId);
-        ObjectMapper mapper = new ObjectMapper();
         if (pstream.postFilter == null) {
             return true;
         }
