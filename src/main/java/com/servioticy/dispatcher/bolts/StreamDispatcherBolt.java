@@ -131,11 +131,7 @@ public class StreamDispatcherBolt implements IRichBolt {
                 emitted = true;
             }
             if (!emitted) {
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "no-stream")
-                );
+                BenchmarkBolt.send(collector, input, dc, suDoc, "no-stream");
             }
         } catch(RestClientErrorCodeException e){
             // TODO Log the error
@@ -144,22 +140,13 @@ public class StreamDispatcherBolt implements IRichBolt {
                 collector.fail(input);
                 return;
             }
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            e.printStackTrace();
+            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         }catch (Exception e) {
             // TODO Log the error
             e.printStackTrace();
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
+            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         }

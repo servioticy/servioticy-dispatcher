@@ -20,6 +20,7 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
@@ -42,6 +43,14 @@ public class BenchmarkBolt implements IRichBolt {
 
     public BenchmarkBolt(DispatcherContext dc) {
         this.dc = dc;
+    }
+
+    public static void send(OutputCollector collector, Tuple input, DispatcherContext dc, String suDoc, String reason){
+        if (dc.benchmark) collector.emit("benchmark", input,
+                new Values(suDoc,
+                        System.currentTimeMillis(),
+                        reason)
+        );
     }
 
     @Override
