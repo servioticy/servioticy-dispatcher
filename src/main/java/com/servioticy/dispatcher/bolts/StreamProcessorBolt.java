@@ -253,11 +253,7 @@ public class StreamProcessorBolt implements IRichBolt {
             // There is already a newer generated update than the one received
             if (previousSU != null) {
                 if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
-                    if (dc.benchmark) this.collector.emit("benchmark", input,
-                            new Values(suDoc,
-                                    System.currentTimeMillis(),
-                                    "old")
-                    );
+                    BenchmarkBolt.send(collector, input, dc, suDoc, "old");
                     collector.ack(input);
                     //Reputation
                     // TODO If in-soid && in-streamid are the current ones, continue
@@ -305,11 +301,7 @@ public class StreamProcessorBolt implements IRichBolt {
             try {
                 resultSU = sop.getResultSU(streamId, sensorUpdates, originId, timestamp);
                 if (resultSU == null) {
-                    if (dc.benchmark) this.collector.emit("benchmark", input,
-                            new Values(suDoc,
-                                    System.currentTimeMillis(),
-                                    "filtered")
-                    );
+                    BenchmarkBolt.send(collector, input, dc, suDoc, "filtered");
                     collector.ack(input);
                     //Reputation
                     for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
@@ -338,11 +330,7 @@ public class StreamProcessorBolt implements IRichBolt {
             } catch (ScriptException e) {
                 // TODO Log the error
                 e.printStackTrace();
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "script-error")
-                );
+                BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
                 collector.ack(input);
                 //Reputation
                 for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
@@ -432,21 +420,12 @@ public class StreamProcessorBolt implements IRichBolt {
                 collector.fail(input);
                 return;
             }
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
+            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         }catch (Exception e) {
             // TODO Log the error
-
-            if (dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
+            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         }

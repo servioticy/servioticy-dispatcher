@@ -77,82 +77,66 @@ public class PrepareBolt implements IRichBolt {
         ObjectMapper mapper = new ObjectMapper();
         SensorUpdate su;
         try {
-            su = mapper.readValue(suDoc, SensorUpdate.class);
+                su = mapper.readValue(suDoc, SensorUpdate.class);
+
+
+            try {
+                rr = restClient.restRequest(
+                        dc.restBaseURL
+                                + "private/opid/" + opid, null,
+                        RestClient.GET, null
+                );
+
+            } catch (Exception e) {
+                // TODO Log the error
+                // Retry until timeout
+                this.collector.fail(input);
+                return;
+            }
+
+            // Reputation
+            if (su.getComposed() == null || !su.getComposed()){
+                this.collector.emit(Reputation.STREAM_WO_SO, input,
+                        new Values(soid,
+                                streamid,
+                                su.getLastUpdate(),
+                                System.currentTimeMillis(),
+                                true) // TODO this needs to come from the API
+                );
+            }
+            
+            // Benchmark
+            if(dc.benchmark) {
+
+                if (su.getTriggerPath() == null) {
+                    su.setTriggerPath(new ArrayList<ArrayList<String>>());
+                    String[] chainInit = {soid, streamid};
+                    su.getTriggerPath().add(new ArrayList<String>(Arrays.asList(chainInit)));
+                    su.setPathTimestamps(new ArrayList<Long>());
+                    su.getPathTimestamps().add(System.currentTimeMillis());
+                    su.setOriginId(UUID.randomUUID().getMostSignificantBits());
+                }
+                /*else if( (System.currentTimeMillis() - su.getPathTimestamps().get(su.getPathTimestamps().size()-1)) > 2*60*1000 ||
+                         (System.currentTimeMillis() - su.getPathTimestamps().get(0)) > 10*60*1000){
+                    // Timeout
+                    this.collector.emit("benchmark", input,
+                            new Values(suDoc,
+                                    System.currentTimeMillis(),
+                                    "timeout")
+                    );
+                    collector.ack(input);
+                    //TODO Log the error
+                    return;
+                }*/
+
+                suDoc = mapper.writeValueAsString(su);
+            }
         } catch (Exception e) {
-            if(dc.benchmark) this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
+            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             // TODO Log the error
             e.printStackTrace();
             collector.ack(input);
             return;
-        }
-
-        try {
-            rr = restClient.restRequest(
-                    dc.restBaseURL
-                            + "private/opid/" + opid, null,
-                    RestClient.GET, null
-            );
-
-        } catch (Exception e) {
-            // TODO Log the error
-            // Retry until timeout
-            this.collector.fail(input);
-            return;
-        }
-
-        // Reputation
-        if (su.getComposed() == null || !su.getComposed()){
-            this.collector.emit(Reputation.STREAM_WO_SO, input,
-                    new Values(soid,
-                            streamid,
-                            su.getLastUpdate(),
-                            System.currentTimeMillis(),
-                            true) // TODO this needs to come from the API
-            );
-        }
-
-        // Benchmark
-        if(dc.benchmark) {
-
-            if (su.getTriggerPath() == null) {
-                su.setTriggerPath(new ArrayList<ArrayList<String>>());
-                String[] chainInit = {soid, streamid};
-                su.getTriggerPath().add(new ArrayList<String>(Arrays.asList(chainInit)));
-                su.setPathTimestamps(new ArrayList<Long>());
-                su.getPathTimestamps().add(System.currentTimeMillis());
-                su.setOriginId(UUID.randomUUID().getMostSignificantBits());
-            }
-            /*else if( (System.currentTimeMillis() - su.getPathTimestamps().get(su.getPathTimestamps().size()-1)) > 2*60*1000 ||
-                     (System.currentTimeMillis() - su.getPathTimestamps().get(0)) > 10*60*1000){
-                // Timeout
-                this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "timeout")
-                );
-                collector.ack(input);
-                //TODO Log the error
-                return;
-            }*/
-
-            try {
-                suDoc = mapper.writeValueAsString(su);
-            } catch (Exception e) {
-                this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "error")
-                );
-                // TODO Log the error
-                e.printStackTrace();
-                collector.ack(input);
-                return;
-            }
-
         }
         this.collector.emit(
                 "stream",

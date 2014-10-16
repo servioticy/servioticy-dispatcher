@@ -80,72 +80,28 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                             + "/subscriptions/", null, RestClient.GET,
                     null
             );
-        } catch (RestClientErrorCodeException e) {
-            // TODO Log the error
-            e.printStackTrace();
-            if (e.getRestResponse().getHttpCode() >= 500) {
-                collector.fail(input);
+
+            // In case there are no subscriptions.
+            int hCode = subscriptionsRR.getHttpCode();
+            if (hCode == 204) {
+                BenchmarkBolt.send(collector, input, dc, suDoc, "no-group");
+                this.collector.ack(input);
                 return;
             }
-            this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            collector.ack(input);
-            return;
-        } catch (Exception e) {
-            // TODO Log the error
-            e.printStackTrace();
-            this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            collector.ack(input);
-            return;
-        }
-        // In case there are no subscriptions.
-        int hCode = subscriptionsRR.getHttpCode();
-        if (hCode == 204) {
-            this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "no-group")
-            );
-            this.collector.ack(input);
-            return;
-        }
-        try {
+
             String substr = subscriptionsRR.getResponse();
             subscriptions = mapper.readValue(substr,
                     Subscriptions.class);
-        } catch (Exception e) {
-            // TODO Log the error
-            e.printStackTrace();
-            this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "error")
-            );
-            collector.ack(input);
-            return;
-        }
 
-        // No subscriptions
-        if (subscriptions.getSubscriptions() == null || subscriptions.getSubscriptions().isEmpty()) {
-            this.collector.emit("benchmark", input,
-                    new Values(suDoc,
-                            System.currentTimeMillis(),
-                            "no-group")
-            );
-            collector.ack(input);
-            return;
-        }
+            // No subscriptions
+            if (subscriptions.getSubscriptions() == null || subscriptions.getSubscriptions().isEmpty()) {
+                BenchmarkBolt.send(collector, input, dc, suDoc, "no-group");
+                collector.ack(input);
+                return;
+            }
 
-        for (Subscription subscription : subscriptions
-                .getSubscriptions()) {
-            try {
+            for (Subscription subscription : subscriptions
+                    .getSubscriptions()) {
                 if (subscription.getClass().equals(SOSubscription.class)) {
                     SOSubscription soSub = (SOSubscription) subscription;
                     this.collector.emit("internalSub", input,
@@ -168,17 +124,23 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                                     streamid)
                     );
                 }
-
-            } catch (Exception e) {
-                // TODO Log the error
-                e.printStackTrace();
-                this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "error")
-                );
-                collector.ack(input);
             }
+        } catch (RestClientErrorCodeException e) {
+            // TODO Log the error
+            e.printStackTrace();
+            if (e.getRestResponse().getHttpCode() >= 500) {
+                collector.fail(input);
+                return;
+            }
+            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            collector.ack(input);
+            return;
+        } catch (Exception e) {
+            // TODO Log the error
+            e.printStackTrace();
+            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            collector.ack(input);
+            return;
         }
         collector.ack(input);
         return;
