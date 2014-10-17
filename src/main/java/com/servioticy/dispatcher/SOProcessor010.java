@@ -208,6 +208,8 @@ public class SOProcessor010 extends SOProcessor{
 
                 engine.eval("var result = JSON.stringify(" + currentValueCode + ")");
                 result = mapper.readValue((String)engine.get("result"), type);
+                if(type == GeoPoint.class)
+                    result = ((GeoPoint)result).getLat()+","+((GeoPoint)result).getLon();
                 suChannel.setCurrentValue(result);
 
             }
