@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <context>
-	<servioticyAPI>http://localhost:8011/</servioticyAPI>
+    <servioticyAPI>http://localhost:8080/</servioticyAPI>
     <benchmark>false</benchmark>
     <benchResultsDir>~</benchResultsDir>
     <kestrels>
