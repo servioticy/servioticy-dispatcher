@@ -154,16 +154,15 @@ public class SOProcessor010 extends SOProcessor{
         return result;
     }
 
-    public boolean checkPreFilter(String streamId, Map<String, String> inputJsons) throws ScriptException {
+    public boolean checkFilter(JsonPathReplacer filterField, Map<String, String> inputJsons) throws ScriptException {
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
-        PSOStream pstream = this.streams.get(streamId);
-        if (pstream.preFilter == null) {
+        if (filterField == null) {
             return true;
         }
-        String preFilterCode = pstream.preFilter.replace(inputJsons);
+        String filterCode = filterField.replace(inputJsons);
 
-        engine.eval("var result = Boolean(" + preFilterCode + ")");
+        engine.eval("var result = Boolean(" + filterCode + ")");
         return (Boolean) engine.get("result");
 
     }
@@ -174,7 +173,8 @@ public class SOProcessor010 extends SOProcessor{
         for(Map.Entry<String,SensorUpdate> inputSUEntry: inputSUs.entrySet()){
             inputDocs.put(inputSUEntry.getKey(), mapper.writeValueAsString(inputSUEntry.getValue()));
         }
-        if (!checkPreFilter(streamId, inputDocs)){
+        PSOStream pstream = this.streams.get(streamId);
+        if (!checkFilter(pstream.preFilter, inputDocs)){
             return null;
         }
         ScriptEngineManager factory = new ScriptEngineManager();
@@ -185,7 +185,6 @@ public class SOProcessor010 extends SOProcessor{
         su.setLastUpdate(timestamp);
         su.setChannels(new LinkedHashMap<String, SUChannel>());
 
-        PSOStream pstream = this.streams.get(streamId);
         int nulls = 0;
         for (Entry<String, PSOChannel> channelEntry : pstream.channels.entrySet()) {
             PSOChannel pchannel = channelEntry.getValue();
@@ -241,23 +240,10 @@ public class SOProcessor010 extends SOProcessor{
             inputDocs.put("result", resultSUDoc);
         }
 
-        if(!checkPostFilter(streamId, inputDocs)){
+        if (!checkFilter(pstream.postFilter, inputDocs)){
             return null;
         }
         return su;
-    }
-
-    public boolean checkPostFilter(String streamId, Map<String, String> inputJsons) throws ScriptException {
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
-        PSOStream pstream = this.streams.get(streamId);
-        if (pstream.postFilter == null) {
-            return true;
-        }
-        String postFilterCode = pstream.postFilter.replace(inputJsons);
-
-        engine.eval("var result = Boolean(" + postFilterCode + ")");
-        return (Boolean) engine.get("result");
     }
 
     private class PSOStream {

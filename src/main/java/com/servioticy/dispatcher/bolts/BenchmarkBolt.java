@@ -69,24 +69,16 @@ public class BenchmarkBolt implements IRichBolt {
         SensorUpdate su;
         try {
             su = mapper.readValue(suDoc, SensorUpdate.class);
-        } catch (Exception e) {
-            // TODO Log the error
-            e.printStackTrace();
-            collector.ack(input);
-            return;
-        }
 
+            int chainSize = su.getPathTimestamps() == null ? 0 : su.getPathTimestamps().size();
 
-        int chainSize = su.getPathTimestamps() == null ? 0 : su.getPathTimestamps().size();
+            String csvLine = Long.toHexString(su.getOriginId()) + "," + su.getLastUpdate() + "," + stopTS + "," + reason + "," + chainSize;
+            for (int i = 0; i < chainSize; i++) {
+                csvLine += ",";
+                csvLine += su.getPathTimestamps().get(i) + ",";
+                csvLine += su.getTriggerPath().get(i).get(0) + "," + su.getTriggerPath().get(i).get(1);
+            }
 
-        String csvLine = Long.toHexString(su.getOriginId()) + "," + su.getLastUpdate() + "," + stopTS + "," + reason + "," + chainSize;
-        for (int i = 0; i < chainSize; i++) {
-            csvLine += ",";
-            csvLine += su.getPathTimestamps().get(i) + ",";
-            csvLine += su.getTriggerPath().get(i).get(0) + "," + su.getTriggerPath().get(i).get(1);
-        }
-
-        try {
             File file = new File(dc.benchResultsDir + "/" + context.getThisTaskId() + ".csv");
             file.createNewFile();
             FileWriter writer = new FileWriter(file, true);
