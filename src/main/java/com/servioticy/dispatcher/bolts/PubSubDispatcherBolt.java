@@ -106,7 +106,7 @@ public class PubSubDispatcherBolt implements IRichBolt {
 		}
         String topic = externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates";
 		try {
-			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suDoc);
+			publisher.publishMessage(topic, suDoc);
 			LOG.info("PubSub message pubished on topic "+topic);
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
