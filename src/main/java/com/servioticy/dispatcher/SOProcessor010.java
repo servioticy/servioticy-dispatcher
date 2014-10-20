@@ -18,7 +18,6 @@ package com.servioticy.dispatcher;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,8 +30,6 @@ import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.jsonprocessors.AliasReplacer;
 import com.servioticy.dispatcher.jsonprocessors.JsonPathReplacer;
 import org.elasticsearch.common.geo.GeoPoint;
-import org.mozilla.javascript.Provelement;
-import org.mozilla.javascript.ProvenanceAPI;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -157,13 +154,14 @@ public class SOProcessor010 extends SOProcessor{
         return result;
     }
 
-    public boolean checkPreFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU, String soSecurityDoc) throws ScriptException, JsonProcessingException {
-        PSOStream pstream = this.streams.get(streamId);
-        if (pstream.preFilter == null) {
+    public boolean checkFilter(JsonPathReplacer filterField, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU, String soSecurityDoc) throws ScriptException {
+        ScriptEngineManager factory = new ScriptEngineManager();
+        ScriptEngine engine = factory.getEngineByName("JavaScript");
+        if (filterField == null) {
             return true;
         }
+        String filterCode = filterField.replace(inputJsons);
         HashMap<String, String> inputVar = new HashMap();
-        String preFilterCode = pstream.preFilter.replace(inputJsons, inputVar, mapVarSU);
 
         inputVar.put(ProvenanceAPI.COMPUTATION, "Boolean(" + preFilterCode + ")");
         String fullComputationString = ProvenanceAPI.buildString(inputVar);
@@ -188,7 +186,8 @@ public class SOProcessor010 extends SOProcessor{
         for(Map.Entry<String,SensorUpdate> inputSUEntry: inputSUs.entrySet()){
             inputDocs.put(inputSUEntry.getKey(), mapper.writeValueAsString(inputSUEntry.getValue()));
         }
-        if (!checkPreFilter(streamId, inputDocs)){
+        PSOStream pstream = this.streams.get(streamId);
+        if (!checkFilter(pstream.preFilter, inputDocs, provList, mapVarSU, soSecurityDoc)){
             return null;
         }
 
@@ -197,7 +196,6 @@ public class SOProcessor010 extends SOProcessor{
         su.setLastUpdate(timestamp);
         su.setChannels(new LinkedHashMap<String, SUChannel>());
 
-        PSOStream pstream = this.streams.get(streamId);
         int nulls = 0;
         for (Entry<String, PSOChannel> channelEntry : pstream.channels.entrySet()) {
             PSOChannel pchannel = channelEntry.getValue();
@@ -260,34 +258,13 @@ public class SOProcessor010 extends SOProcessor{
             inputDocs.put("result", resultSUDoc);
         }
 
-        if(!checkPostFilter(streamId, inputDocs, provList, mapVarSU, soSecurityDoc)){
+        if (!checkFilter(pstream.postFilter, inputDocs, provList, mapVarSU, soSecurityDoc)){
             return null;
         }
 
         String provJson = ProvenanceAPI.buildProvenanceJSON(soSecurityDoc, provList, mapVarSU, streamId);
         su.setSecurity(mapper.readValue(provJson, Object.class));
         return su;
-    }
-
-    public boolean checkPostFilter(String streamId, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU, String soSecurityDoc) throws ScriptException, JsonProcessingException {
-        PSOStream pstream = this.streams.get(streamId);
-        if (pstream.postFilter == null) {
-            return true;
-        }
-        HashMap<String, String> inputVar = new HashMap();
-        String postFilterCode = pstream.postFilter.replace(inputJsons, inputVar, mapVarSU);
-
-        inputVar.put(ProvenanceAPI.COMPUTATION, "Boolean(" + postFilterCode + ")");
-        String fullComputationString = ProvenanceAPI.buildString(inputVar);
-
-        List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeSOcode(fullComputationString, provList, soSecurityDoc);
-
-        provList.clear();
-        provList.addAll(newProvList);
-
-        String result = (String) ProvenanceAPI.getResultValue(provList);
-
-        return Boolean.parseBoolean(result);
     }
 
     private class PSOStream {
