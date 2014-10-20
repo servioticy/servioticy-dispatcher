@@ -30,6 +30,8 @@ import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.jsonprocessors.AliasReplacer;
 import com.servioticy.dispatcher.jsonprocessors.JsonPathReplacer;
 import org.elasticsearch.common.geo.GeoPoint;
+import org.mozilla.javascript.ProvenanceAPI;
+import org.mozilla.javascript.Provelement;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -155,15 +157,15 @@ public class SOProcessor010 extends SOProcessor{
     }
 
     public boolean checkFilter(JsonPathReplacer filterField, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU, String soSecurityDoc) throws ScriptException {
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
         if (filterField == null) {
             return true;
         }
-        String filterCode = filterField.replace(inputJsons);
+
         HashMap<String, String> inputVar = new HashMap();
 
-        inputVar.put(ProvenanceAPI.COMPUTATION, "Boolean(" + preFilterCode + ")");
+        String filterCode = filterField.replace(inputJsons, inputVar, mapVarSU);
+
+        inputVar.put(ProvenanceAPI.COMPUTATION, "Boolean(" + filterCode + ")");
         String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
         List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeSOcode(fullComputationString, provList, soSecurityDoc);
@@ -176,6 +178,7 @@ public class SOProcessor010 extends SOProcessor{
 
         return Boolean.parseBoolean(result);
     }
+
     @Override
     public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
         List<Provelement> provList = new LinkedList<Provelement>();
