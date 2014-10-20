@@ -34,6 +34,8 @@ import org.elasticsearch.common.geo.GeoPoint;
 import org.mozilla.javascript.Provelement;
 import org.mozilla.javascript.ProvenanceAPI;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.util.*;
@@ -186,7 +188,7 @@ public class SOProcessor010 extends SOProcessor{
         for(Map.Entry<String,SensorUpdate> inputSUEntry: inputSUs.entrySet()){
             inputDocs.put(inputSUEntry.getKey(), mapper.writeValueAsString(inputSUEntry.getValue()));
         }
-        if (!checkPreFilter(streamId, inputDocs, provList, mapVarSU, soSecurityDoc)){
+        if (!checkPreFilter(streamId, inputDocs)){
             return null;
         }
 
@@ -233,6 +235,8 @@ public class SOProcessor010 extends SOProcessor{
                 provList.addAll(newProvList);
 
                 result = mapper.readValue((String)ProvenanceAPI.getResultValue(provList), type);
+                if(type == GeoPoint.class)
+                    result = ((GeoPoint)result).getLat()+","+((GeoPoint)result).getLon();
                 suChannel.setCurrentValue(result);
 
             }

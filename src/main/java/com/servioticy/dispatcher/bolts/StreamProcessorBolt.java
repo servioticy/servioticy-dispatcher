@@ -38,6 +38,7 @@ import com.servioticy.dispatcher.SOProcessor010;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.queueclient.KestrelThriftClient;
 import com.servioticy.queueclient.QueueClient;
+import com.servioticy.queueclient.QueueClientException;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestClientException;
@@ -99,16 +100,26 @@ public class StreamProcessorBolt implements IRichBolt {
     public StreamProcessorBolt(DispatcherContext dc){
         this(dc, (RestClient) null);
     }
+	
+	public void prepare(Map stormConf, TopologyContext context,
+			OutputCollector collector) {
+		this.collector = collector;
+		this.context = context;
+		this.suCache = new SUCache(25);
+        try {
+            if (this.qc == null) {
+                qc = QueueClient.factory();
 
-    public void prepare(Map stormConf, TopologyContext context,
-            OutputCollector collector) {
-        this.collector = collector;
-        this.context = context;
-        this.suCache = new SUCache(25);
-        if(restClient == null){
-            restClient = new RestClient();
+            }
+            qc.connect();
+        } catch(Exception e){
+            // TODO log error
+            e.printStackTrace();
         }
-    }
+		if(restClient == null){
+			restClient = new RestClient();
+		}
+	}
 
     private Map<String, SensorUpdate> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException, PDPServioticyException {
         RestResponse rr;
@@ -366,14 +377,13 @@ public class StreamProcessorBolt implements IRichBolt {
             ud.setOpid(opid);
             ud.setSu(resultSU);
             String upDescriptorDoc = mapper.writeValueAsString(ud);
-
-            // Put to the queue
-            if(this.qc == null){
-                qc = QueueClient.factory();
-
-            }
+		
+		    // Put to the queue
             try{
-                qc.connect();
+                if(!qc.isConnected()) {
+                    qc.connect();
+                }
+
                 if(!qc.put(upDescriptorDoc)){
                     // TODO Log the error
                     System.err.println("Error trying to queue a SU");
@@ -425,8 +435,13 @@ public class StreamProcessorBolt implements IRichBolt {
         return;
     }
 
-    public void cleanup() {
-
+	public void cleanup() {
+        try {
+            this.qc.disconnect();
+        } catch (QueueClientException e) {
+            // TODO log error
+            e.printStackTrace();
+        }
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
