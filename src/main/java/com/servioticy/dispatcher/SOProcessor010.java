@@ -32,9 +32,6 @@ import com.servioticy.dispatcher.jsonprocessors.JsonPathReplacer;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.mozilla.javascript.ProvenanceAPI;
 import org.mozilla.javascript.Provelement;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.IOException;
 import java.util.*;
