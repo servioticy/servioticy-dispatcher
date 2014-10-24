@@ -30,4 +30,4 @@ do
     fi
 done
 
-rm -R $SOURCES
+rm -Rf $SOURCES
