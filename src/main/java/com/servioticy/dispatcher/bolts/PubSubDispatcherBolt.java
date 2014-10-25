@@ -17,6 +17,7 @@ package com.servioticy.dispatcher.bolts;
 
 import java.util.Map;
 
+import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.reputation.Reputation;
@@ -129,7 +130,9 @@ public class PubSubDispatcherBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-	}
+        declarer.declareStream(Reputation.STREAM_SO_PUBSUB, new Fields("in-soid", "in-streamid", "topic", "user_timestamp", "date"));
+
+    }
 
 	public Map<String, Object> getComponentConfiguration() {
 		return null;
