@@ -69,7 +69,7 @@ public class ReputationBolt implements IRichBolt{
         this.mapBoltStream.put(Reputation.STREAM_SO_USER, ReputationBolt.STREAM_SO_USER);
         this.mapBoltStream.put(Reputation.STREAM_WO_SO, ReputationBolt.STREAM_WO_SO);
         ArrayList<URI> nodes = new ArrayList<URI>();
-        nodes.add(URI.create("http://localhost:8091/pools"));
+        nodes.add(URI.create("http://192.168.56.101:8091/pools"));
 
         try {
             cbClient = new CouchbaseClient(nodes, "reputation", "");
@@ -85,8 +85,8 @@ public class ReputationBolt implements IRichBolt{
         reputation.setEvent(true);
         reputation.setFresh(true);
         reputation.setDiscard(Reputation.DISCARD_NONE);
-        reputation.setUserTimestamp(input.getStringByField("user_timestamp"));
-        reputation.setUserTimestamp(input.getStringByField("date"));
+        reputation.setUserTimestamp(input.getLongByField("user_timestamp"));
+        reputation.setUserTimestamp(input.getLongByField("date"));
         ReputationAddressSO soInAddress;
         ReputationAddressSO soOutAddress;
         ReputationAddressPubSub psOutAddress;
