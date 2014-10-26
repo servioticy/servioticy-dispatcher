@@ -123,7 +123,9 @@ public class StreamDispatcherBolt implements IRichBolt {
             pdp.setIdmUser("");
             pdp.setIdmPassword("");
 
-            PermissionCacheObject pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
+            String soSecurityMetadata = mapper.writeValueAsString(so.getSecurity());
+            String suSecurityMetadata = mapper.writeValueAsString(su.getSecurity());
+            PermissionCacheObject pco = pdp.checkAuthorization(null, mapper.readTree(soSecurityMetadata), mapper.readTree(suSecurityMetadata), null,
                     PDP.operationID.DispatchData);
             if(!pco.isPermission()){
                 if (dc.benchmark) this.collector.emit("benchmark", input,
@@ -132,6 +134,7 @@ public class StreamDispatcherBolt implements IRichBolt {
                                 "forbidden")
                 );
                 collector.ack(input);
+                return;
             }
             boolean emitted = false;
             for (String streamIdByDoc : sop.getStreamsBySourceId(docId)) {

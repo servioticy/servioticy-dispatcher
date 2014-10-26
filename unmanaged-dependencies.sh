@@ -10,7 +10,7 @@ VERSIONS=( "1.7R4-mod" )
 GROUPIDS=( "org.mozilla" )
 BUILD_CMDS=( "ant jar" )
 JAR_FILE=( "build/rhino1_7R5pre/js.jar" )
-REVISIONS=( "master")
+REVISIONS=( "master" )
 
 echo $PROJECT_DIR
 echo $LOCAL_REPO
