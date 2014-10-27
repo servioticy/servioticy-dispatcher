@@ -86,7 +86,7 @@ public class ReputationBolt implements IRichBolt{
         reputation.setFresh(true);
         reputation.setDiscard(Reputation.DISCARD_NONE);
         reputation.setUserTimestamp(input.getLongByField("user_timestamp"));
-        reputation.setUserTimestamp(input.getLongByField("date"));
+        reputation.setDate(input.getLongByField("date"));
         ReputationAddressSO soInAddress;
         ReputationAddressSO soOutAddress;
         ReputationAddressPubSub psOutAddress;
@@ -155,9 +155,10 @@ public class ReputationBolt implements IRichBolt{
                 break;
         }
         try {
+            String repString = mapper.writeValueAsString(reputation);
             cbClient.set(
                     Long.toHexString(UUID.randomUUID().getMostSignificantBits()) + "-" + reputation.getDate(),
-                    mapper.writeValueAsString(reputation)
+                    repString
             ).get();
         } catch (Exception e) {
             // TODO log the error

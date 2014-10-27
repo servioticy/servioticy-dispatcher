@@ -123,9 +123,7 @@ public class StreamDispatcherBolt implements IRichBolt {
             pdp.setIdmUser("");
             pdp.setIdmPassword("");
 
-            String soSecurityMetadata = mapper.writeValueAsString(so.getSecurity());
-            String suSecurityMetadata = mapper.writeValueAsString(su.getSecurity());
-            PermissionCacheObject pco = pdp.checkAuthorization(null, mapper.readTree(soSecurityMetadata), mapper.readTree(suSecurityMetadata), null,
+            PermissionCacheObject pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
                     PDP.operationID.DispatchData);
             if(!pco.isPermission()){
                 if (dc.benchmark) this.collector.emit("benchmark", input,

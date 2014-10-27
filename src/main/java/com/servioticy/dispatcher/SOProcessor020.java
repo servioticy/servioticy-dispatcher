@@ -285,7 +285,7 @@ public class SOProcessor020 extends SOProcessor{
         su.setTriggerPath(new ArrayList<ArrayList<String>>());
 
         su.setPathTimestamps(new ArrayList<Long>());
-
+        su.setComposed(true);
         return su;
     }
 }

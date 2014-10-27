@@ -172,7 +172,7 @@ public class StreamProcessorBolt implements IRichBolt {
             pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(lastSU.getSecurity())), null,
                     PDP.operationID.DispatchData);
             if(!pco.isPermission()){
-                groupDocs.put(docId, null);
+                return null;
             }else {
                 groupDocs.put(docId, lastSU);
             }
@@ -311,6 +311,11 @@ public class StreamProcessorBolt implements IRichBolt {
             try {
                 sensorUpdates.putAll(this.getStreamSUs(docIds, so));
                 sensorUpdates.put(streamId, previousSU);
+                Map<String, SensorUpdate> groupLastSus = this.getGroupSUs(docIds, so);
+                if(groupLastSus == null){
+                    collector.ack(input);
+                    return;
+                }
                 sensorUpdates.putAll(this.getGroupSUs(docIds, so));
                 sensorUpdates.put(originId, su);
             } catch (Exception e) {

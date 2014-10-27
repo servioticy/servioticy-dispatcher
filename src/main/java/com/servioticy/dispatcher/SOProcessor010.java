@@ -228,7 +228,9 @@ public class SOProcessor010 extends SOProcessor{
                 String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
                 List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeSOcode(fullComputationString, provList, soSecurityDoc);
-
+                if(newProvList == null){
+                    throw new ScriptException("Something went wrong");
+                }
                 provList.clear();
                 provList.addAll(newProvList);
 
@@ -264,6 +266,7 @@ public class SOProcessor010 extends SOProcessor{
 
         String provJson = ProvenanceAPI.buildProvenanceJSON(soSecurityDoc, provList, mapVarSU, streamId);
         su.setSecurity(mapper.readValue(provJson, Object.class));
+        su.setComposed(true);
         return su;
     }
 
