@@ -13,29 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/ 
-package com.servioticy.dispatcher;
-
-import java.util.List;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.servioticy.datamodel.UpdateDescriptor;
+package com.servioticy.dispatcher.schemes;
 
 import backtype.storm.spout.Scheme;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.UpdateDescriptor;
+import com.servioticy.datamodel.reputation.ReputationSOUserDescriptor;
+
+import java.util.List;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
-public class UpdateDescriptorScheme implements Scheme {
+public class ReputationScheme implements Scheme {
 
 	public List<Object> deserialize(byte[] bytes) {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			String inputDoc = new String(bytes, "UTF-8");
-			UpdateDescriptor ud = mapper.readValue(inputDoc, UpdateDescriptor.class);
-			return new Values(ud.getOpid(), ud.getSoid(), ud.getStreamid(), mapper.writeValueAsString(ud.getSu()));
+			ReputationSOUserDescriptor rd = mapper.readValue(inputDoc, ReputationSOUserDescriptor.class);
+			return new Values(rd.getSrc().getSoid(), rd.getSrc().getStreamid(), rd.getDest().getUserId(), rd.getSu().getLastUpdate());
 		} catch(Exception e){
 			// TODO Log the error
 			throw new RuntimeException(e);
@@ -43,7 +43,7 @@ public class UpdateDescriptorScheme implements Scheme {
 	}
 
 	public Fields getOutputFields() {
-		return new Fields("opid", "soid", "streamid", "su");
+		return new Fields("in-soid", "in-streamid", "out-user_id", "user_timestamp");
 	}
 
 }

@@ -32,7 +32,9 @@ public class DispatcherContext implements Serializable{
     public String[] kestrelAddresses = new String[]{"localhost"};
     public int kestrelPort = 2229;
     public String kestrelQueue = "services";
+    // TODO Not in the configuration file!
     public String kestrelQueueActions = "actions";
+    public String kestrelQueueReputation = "reputation";
     
     public String mqttUri;
     public String mqttUser;

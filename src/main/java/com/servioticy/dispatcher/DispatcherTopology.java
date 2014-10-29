@@ -25,6 +25,9 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.dispatcher.bolts.*;
+import com.servioticy.dispatcher.schemes.ActuationScheme;
+import com.servioticy.dispatcher.schemes.ReputationScheme;
+import com.servioticy.dispatcher.schemes.UpdateDescriptorScheme;
 import org.apache.commons.cli.*;
 
 import java.util.Arrays;
@@ -73,6 +76,7 @@ public class DispatcherTopology {
         // TODO Auto-assign workers to the spout in function of the number of Kestrel IPs
         builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
         builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()), 4);
+        builder.setSpout("so-user", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueReputation, new ReputationScheme()), 4);
 
         builder.setBolt("prepare", new PrepareBolt(dc), 10)
                 .shuffleGrouping("dispatcher");
@@ -97,7 +101,8 @@ public class DispatcherTopology {
         builder.setBolt("reputation", new ReputationBolt(dc), 2)
                 .shuffleGrouping("prepare", Reputation.STREAM_WO_SO)
                 .shuffleGrouping("streamprocessor", Reputation.STREAM_SO_SO)
-                .shuffleGrouping("pubsubdispatcher", Reputation.STREAM_SO_PUBSUB);
+                .shuffleGrouping("pubsubdispatcher", Reputation.STREAM_SO_PUBSUB)
+                .shuffleGrouping("so-user", Reputation.STREAM_SO_USER);
 
         if (dc.benchmark) {
             builder.setBolt("benchmark", new BenchmarkBolt(dc), 4)

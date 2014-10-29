@@ -13,29 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/ 
-package com.servioticy.dispatcher;
+package com.servioticy.dispatcher.schemes;
 
 import java.util.List;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.UpdateDescriptor;
 
 import backtype.storm.spout.Scheme;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.servioticy.datamodel.actuation.ActuationDescriptor;
-
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
-public class ActuationScheme implements Scheme {
+public class UpdateDescriptorScheme implements Scheme {
 
 	public List<Object> deserialize(byte[] bytes) {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			String inputDoc = new String(bytes, "UTF-8");
-			ActuationDescriptor ad = mapper.readValue(inputDoc, ActuationDescriptor.class);
-			return new Values(ad.getSoid(), ad.getId(), ad.getName(), mapper.writeValueAsString(ad.getAction()));
+			UpdateDescriptor ud = mapper.readValue(inputDoc, UpdateDescriptor.class);
+			return new Values(ud.getOpid(), ud.getSoid(), ud.getStreamid(), mapper.writeValueAsString(ud.getSu()));
 		} catch(Exception e){
 			// TODO Log the error
 			throw new RuntimeException(e);
@@ -43,7 +43,7 @@ public class ActuationScheme implements Scheme {
 	}
 
 	public Fields getOutputFields() {
-		return new Fields("soid", "id", "name", "action");
+		return new Fields("opid", "soid", "streamid", "su");
 	}
 
 }

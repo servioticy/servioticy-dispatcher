@@ -130,7 +130,7 @@ public class PubSubDispatcherBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream(Reputation.STREAM_SO_PUBSUB, new Fields("in-soid", "in-streamid", "topic", "user_timestamp", "date"));
+        declarer.declareStream(Reputation.STREAM_SO_PUBSUB, new Fields("in-soid", "in-streamid", "out-topic", "user_timestamp", "date"));
 
     }
 

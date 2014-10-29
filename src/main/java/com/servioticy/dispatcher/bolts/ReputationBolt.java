@@ -122,18 +122,18 @@ public class ReputationBolt implements IRichBolt{
                 break;
             case ReputationBolt.STREAM_SO_PUBSUB:
                 psOutAddress = new ReputationAddressPubSub();
-                psOutAddress.setPubSubTopic(input.getStringByField("topic"));
+                psOutAddress.setPubSubTopic(input.getStringByField("out-topic"));
                 reputation.setDest(psOutAddress);
                 break;
             case ReputationBolt.STREAM_SO_USER:
                 userOutAddress = new ReputationAddressUser();
-                userOutAddress.setUserId(input.getStringByField("user_id"));
+                userOutAddress.setUserId(input.getStringByField("out-user_id"));
                 reputation.setDest(userOutAddress);
                 break;
             case ReputationBolt.STREAM_SO_SERVICE:
                 servOutAddress = new ReputationAddressService();
-                servOutAddress.setOnBehalfOf(input.getStringByField("user_id"));
-                servOutAddress.setServiceId(input.getStringByField("service_id"));
+                servOutAddress.setOnBehalfOf(input.getStringByField("out-user_id"));
+                servOutAddress.setServiceId(input.getStringByField("out-service_id"));
                 reputation.setDest(servOutAddress);
                 break;
             default:

@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.servioticy</groupId>
     <artifactId>dispatcher</artifactId>
-    <version>0.4.2-security</version>
+    <version>0.4.2-security-SNAPSHOT</version>
     <name>dispatcher</name>
     <repositories>
         <repository>
@@ -79,7 +79,7 @@
         <dependency>
             <groupId>com.servioticy</groupId>
             <artifactId>datamodel</artifactId>
-            <version>0.4.1-security</version>
+            <version>0.4.1-security-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.servioticy</groupId>
