@@ -66,7 +66,7 @@ public class ReputationBolt implements IRichBolt{
         this.mapBoltStream.put(Reputation.STREAM_SO_PUBSUB, ReputationBolt.STREAM_SO_PUBSUB);
         this.mapBoltStream.put(Reputation.STREAM_SO_SERVICE, ReputationBolt.STREAM_SO_SERVICE);
         this.mapBoltStream.put(Reputation.STREAM_SO_SO, ReputationBolt.STREAM_SO_SO);
-        this.mapBoltStream.put(Reputation.STREAM_SO_USER, ReputationBolt.STREAM_SO_USER);
+        this.mapBoltStream.put("default", ReputationBolt.STREAM_SO_USER);
         this.mapBoltStream.put(Reputation.STREAM_WO_SO, ReputationBolt.STREAM_WO_SO);
         ArrayList<URI> nodes = new ArrayList<URI>();
         nodes.add(URI.create("http://192.168.56.101:8091/pools"));
@@ -94,7 +94,8 @@ public class ReputationBolt implements IRichBolt{
         ReputationAddressService servOutAddress;
 
         // src
-        switch (this.mapBoltStream.get(input.getSourceStreamId())){
+        String stormStream = input.getSourceStreamId();
+        switch (this.mapBoltStream.get(stormStream)){
             case ReputationBolt.STREAM_WO_SO:
                 reputation.setSrc("WEB_OBJECT");
                 break;
@@ -125,16 +126,16 @@ public class ReputationBolt implements IRichBolt{
                 psOutAddress.setPubSubTopic(input.getStringByField("out-topic"));
                 reputation.setDest(psOutAddress);
                 break;
-            case ReputationBolt.STREAM_SO_USER:
-                userOutAddress = new ReputationAddressUser();
-                userOutAddress.setUserId(input.getStringByField("out-user_id"));
-                reputation.setDest(userOutAddress);
-                break;
             case ReputationBolt.STREAM_SO_SERVICE:
                 servOutAddress = new ReputationAddressService();
                 servOutAddress.setOnBehalfOf(input.getStringByField("out-user_id"));
                 servOutAddress.setServiceId(input.getStringByField("out-service_id"));
                 reputation.setDest(servOutAddress);
+                break;
+            case ReputationBolt.STREAM_SO_USER:
+                userOutAddress = new ReputationAddressUser();
+                userOutAddress.setUserId(input.getStringByField("out-user_id"));
+                reputation.setDest(userOutAddress);
                 break;
             default:
                 break;
@@ -146,11 +147,11 @@ public class ReputationBolt implements IRichBolt{
                 reputation.setEvent(input.getBooleanByField("event"));
                 reputation.setDiscard(input.getStringByField("discard"));
                 break;
+            case ReputationBolt.STREAM_WO_SO:
+                reputation.setFresh(input.getBooleanByField("fresh"));
             case ReputationBolt.STREAM_SO_USER:
                 reputation.setEvent(false);
                 break;
-            case ReputationBolt.STREAM_WO_SO:
-                reputation.setFresh(input.getBooleanByField("fresh"));
             default:
                 break;
         }

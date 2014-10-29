@@ -102,7 +102,7 @@ public class DispatcherTopology {
                 .shuffleGrouping("prepare", Reputation.STREAM_WO_SO)
                 .shuffleGrouping("streamprocessor", Reputation.STREAM_SO_SO)
                 .shuffleGrouping("pubsubdispatcher", Reputation.STREAM_SO_PUBSUB)
-                .shuffleGrouping("so-user", Reputation.STREAM_SO_USER);
+                .shuffleGrouping("so-user");
 
         if (dc.benchmark) {
             builder.setBolt("benchmark", new BenchmarkBolt(dc), 4)
