@@ -104,7 +104,7 @@
         <dependency>
             <groupId>org.mozilla</groupId>
             <artifactId>rhino</artifactId>
-            <version>1.7R4-mod</version>
+            <version>1.7R4-mod-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>de.passau.uni</groupId>
