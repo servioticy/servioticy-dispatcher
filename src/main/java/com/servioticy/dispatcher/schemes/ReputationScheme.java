@@ -35,7 +35,7 @@ public class ReputationScheme implements Scheme {
 			ObjectMapper mapper = new ObjectMapper();
 			String inputDoc = new String(bytes, "UTF-8");
 			ReputationSOUserDescriptor rd = mapper.readValue(inputDoc, ReputationSOUserDescriptor.class);
-			return new Values(rd.getSrc().getSoid(), rd.getSrc().getStreamid(), rd.getDest().getUserId(), rd.getSu().getLastUpdate(), System.currentTimeMillis());
+			return new Values(rd.getSrc().getSoid(), rd.getSrc().getStreamid(), rd.getDest().getUserId(), rd.getSu(), System.currentTimeMillis());
 		} catch(Exception e){
 			// TODO Log the error
 			throw new RuntimeException(e);
