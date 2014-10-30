@@ -83,7 +83,7 @@ public class ReputationBolt implements IRichBolt{
     public void execute(Tuple input) {
         Reputation reputation = new Reputation();
         reputation.setEvent(true);
-        reputation.setFresh(true);
+//        reputation.setFresh(true);
         reputation.setDiscard(Reputation.DISCARD_NONE);
         reputation.setUserTimestamp(input.getLongByField("user_timestamp"));
         reputation.setDate(input.getLongByField("date"));
@@ -148,7 +148,8 @@ public class ReputationBolt implements IRichBolt{
                 reputation.setDiscard(input.getStringByField("discard"));
                 break;
             case ReputationBolt.STREAM_WO_SO:
-                reputation.setFresh(input.getBooleanByField("fresh"));
+//                reputation.setFresh(input.getBooleanByField("fresh"));
+                break;
             case ReputationBolt.STREAM_SO_USER:
                 reputation.setEvent(false);
                 break;
