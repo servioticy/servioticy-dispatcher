@@ -25,6 +25,7 @@ import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.subscription.*;
 import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.restclient.FutureRestResponse;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestResponse;
@@ -67,19 +68,22 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
         ObjectMapper mapper = new ObjectMapper();
         Subscriptions subscriptions;
         RestResponse subscriptionsRR;
+        FutureRestResponse frr;
 
         String soid = input.getStringByField("soid");
         String streamid = input.getStringByField("streamid");
         String suDoc = input.getStringByField("su");
 
         try {
-            subscriptionsRR = restClient.restRequest(
+            frr = restClient.restRequest(
                     dc.restBaseURL
                             + "private/" + soid + "/streams/"
                             + streamid
                             + "/subscriptions/", null, RestClient.GET,
                     null
             );
+
+            subscriptionsRR = frr.get();
 
             // In case there are no subscriptions.
             int hCode = subscriptionsRR.getHttpCode();

@@ -25,6 +25,7 @@ import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.restclient.FutureRestResponse;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestResponse;
 
@@ -66,9 +67,8 @@ public class PrepareBolt implements IRichBolt {
     }
 
     public void execute(Tuple input) {
-
-
         RestResponse rr;
+        FutureRestResponse frr;
         String opid = input.getStringByField("opid");
         String suDoc = input.getStringByField("su");
         String soid = input.getStringByField("soid");
@@ -80,12 +80,12 @@ public class PrepareBolt implements IRichBolt {
 
 
             try {
-                rr = restClient.restRequest(
+                frr = restClient.restRequest(
                         dc.restBaseURL
                                 + "private/opid/" + opid, null,
                         RestClient.GET, null
                 );
-
+                rr = frr.get();
             } catch (Exception e) {
                 // TODO Log the error
                 // Retry until timeout

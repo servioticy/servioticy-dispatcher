@@ -30,6 +30,7 @@ import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SOProcessor;
 import com.servioticy.dispatcher.SOProcessor010;
+import com.servioticy.restclient.FutureRestResponse;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestResponse;
@@ -75,6 +76,7 @@ public class StreamDispatcherBolt implements IRichBolt {
         SOSubscription soSub = null;
         SO so;
         RestResponse rr;
+        FutureRestResponse frr;
 
         String suDoc = input.getStringByField("su");
         String docId = input.getStringByField("docid");
@@ -83,10 +85,11 @@ public class StreamDispatcherBolt implements IRichBolt {
         String soDoc;
 
         try{
-            rr = restClient.restRequest(
+            frr = restClient.restRequest(
                     dc.restBaseURL
                             + "private/" + destination, null, RestClient.GET,
                     null);
+            rr = frr.get();
             soDoc = rr.getResponse();
             so = mapper.readValue(soDoc,
                     SO.class);

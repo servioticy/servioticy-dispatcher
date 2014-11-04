@@ -110,7 +110,7 @@ public class StreamProcessorBolt implements IRichBolt {
 		}
 	}
 
-    private Map<String, SensorUpdate> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException {
+    private Map<String, SensorUpdate> getGroupSUs(Set<String> docIds, SO so) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException {
         Map<String, FutureRestResponse> rrs = new HashMap();
 		Map<String, SensorUpdate> groupDocs = new HashMap<String, SensorUpdate>();
 		ObjectMapper mapper = new ObjectMapper();
@@ -199,7 +199,7 @@ public class StreamProcessorBolt implements IRichBolt {
 		return streamDocs;
 	}
     
-    private SensorUpdate getStreamSU(String streamId, SO so) throws RestClientErrorCodeException, IOException, RestClientException {
+    private SensorUpdate getStreamSU(String streamId, SO so) throws RestClientErrorCodeException, IOException, RestClientException, ExecutionException, InterruptedException {
         FutureRestResponse frr;
         RestResponse rr;
         ObjectMapper mapper = new ObjectMapper();
@@ -221,7 +221,7 @@ public class StreamProcessorBolt implements IRichBolt {
         return mapper.readValue(rr.getResponse(), SensorUpdate.class);
     }
 	
-    private FutureRestResponse getStreamSUAsyncResponse(String streamId, SO so){
+    private FutureRestResponse getStreamSUAsyncResponse(String streamId, SO so) throws RestClientException, RestClientErrorCodeException {
         FutureRestResponse frr;
         frr = restClient.restRequest(
                 dc.restBaseURL

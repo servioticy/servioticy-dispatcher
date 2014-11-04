@@ -24,7 +24,7 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
-@SuiteClasses({Composition010Test.class, Composition020Test.class})
+//@SuiteClasses({Composition010Test.class, Composition020Test.class})
 public class AllTests {
 
 }
