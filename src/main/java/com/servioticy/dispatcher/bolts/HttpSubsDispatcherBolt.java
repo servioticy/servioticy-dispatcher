@@ -15,10 +15,16 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher.bolts;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.log4j.Logger;
+import com.servioticy.datamodel.subscription.HttpSubscription;
+import com.servioticy.datamodel.sensorupdate.SensorUpdate;
+import com.servioticy.dispatcher.SUCache;
+import com.servioticy.dispatcher.jsonprocessors.HttpSubProcessor;
+
+import com.servioticy.restclient.RestClient;
 
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -26,92 +32,76 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 
-import com.servioticy.datamodel.subscription.PubSubSubscription;
-import com.servioticy.datamodel.sensorupdate.SensorUpdate;
-import com.servioticy.dispatcher.DispatcherContext;
-import com.servioticy.dispatcher.SUCache;
-import com.servioticy.dispatcher.pubsub.PubSubPublisherFactory;
-import com.servioticy.dispatcher.pubsub.PublisherInterface;
-
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
-public class PubSubDispatcherBolt implements IRichBolt {
+public class HttpSubsDispatcherBolt implements IRichBolt {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	private OutputCollector collector;
 	private TopologyContext context;
-	private PublisherInterface publisher;
 	private SUCache suCache;
-	private DispatcherContext dc;
-	private static Logger LOG = org.apache.log4j.Logger.getLogger(PubSubDispatcherBolt.class);
+	private RestClient restClient;
 	
-	
-	public PubSubDispatcherBolt(DispatcherContext dc){
-        this.dc = dc;
+	public HttpSubsDispatcherBolt(){
 	}
 	
+	// For testing purposes
+	public HttpSubsDispatcherBolt(RestClient restClient){
+		this.restClient = restClient;
+	}
 	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
-		
 		this.collector = collector;
 		this.context = context;
-		this.publisher = null;
 		this.suCache = new SUCache(25);
-		
-		LOG.debug("MQTT server: " + dc.mqttUri);
-		LOG.debug("MQTT user/pass: " + dc.mqttUser+ " / "+dc.mqttPassword);
-		
-		
-		try {
-			publisher = PubSubPublisherFactory.getPublisher(dc.mqttUri, String.valueOf(context.getThisTaskId()));
-		} catch (Exception e) {
-			LOG.error("Prepare: ", e);
+		if(restClient == null){
+			restClient = new RestClient();
 		}
-
-		publisher.connect(dc.mqttUri, 
-				dc.mqttUser, 
-				dc.mqttPassword);	
 	}
 
 	public void execute(Tuple input) {
 		ObjectMapper mapper = new ObjectMapper();
-		PubSubSubscription externalSub;
+		HttpSubscription httpSub;
 		SensorUpdate su;
-		String sourceSOId;
-		String streamId;
+		
 		try{
 			su = mapper.readValue(input.getStringByField("su"),
 					SensorUpdate.class);
-			externalSub = mapper.readValue(input.getStringByField("subsdoc"),
-					PubSubSubscription.class);
-			sourceSOId = input.getStringByField("soid");
-			streamId = input.getStringByField("streamid");
-			if(suCache.check(externalSub.getId(), su.getLastUpdate())){
+			httpSub = mapper.readValue(input.getStringByField("subsdoc"),
+					HttpSubscription.class);
+			if(suCache.check(httpSub.getId(), su.getLastUpdate())){
 				// This SU or a posterior one has already been sent, do not send this one.
 				collector.ack(input);
 				return;
 			}
+			
 		}catch (Exception e) {
-			LOG.error("FAIL", e);
-			collector.fail(input);
+			// TODO Log the error
+			collector.ack(input);
 			return;
 		}
-
+		HttpSubProcessor hsp = new HttpSubProcessor(httpSub);
+		hsp.replaceAliases();
+		hsp.compileJSONPaths();
 		String suStr = input.getStringByField("su");
+		String url = hsp.getUrl(suStr);
+		String body = hsp.getBody(suStr);
+		int method = hsp.getMethod();
+		HashMap<String, String> headers = hsp.getHeaders(suStr);
 		try {
-			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
-			LOG.info("PubSub message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates");
+			restClient.restRequest(url
+					, body, method,
+					headers);
 		} catch (Exception e) {
-			LOG.error("FAIL", e);
-			collector.fail(input);
-			return;
-		}
-		suCache.put(externalSub.getId(), su.getLastUpdate());
+			// The problem is probably out of our boundaries.
+			// TODO Log the error
+		} 
+		suCache.put(httpSub.getId(), su.getLastUpdate());
 		collector.ack(input);
 	}
 
