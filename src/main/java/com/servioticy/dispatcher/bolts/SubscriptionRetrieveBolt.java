@@ -99,7 +99,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 
             // No subscriptions
             if (subscriptions.getSubscriptions() == null || subscriptions.getSubscriptions().isEmpty()) {
-                BenchmarkBolt.send(collector, input, dc, suDoc, "no-supbscription");
+                BenchmarkBolt.send(collector, input, dc, suDoc, "no-subscription");
                 collector.ack(input);
                 return;
             }

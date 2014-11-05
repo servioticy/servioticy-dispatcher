@@ -145,17 +145,15 @@ public class StreamProcessorBolt implements IRichBolt {
 
     private Map<String, FutureRestResponse> getGroupSUAsyncResponses(Set<String>  groupIds, SO so) throws RestClientException, RestClientErrorCodeException, JsonProcessingException {
         Map<String, FutureRestResponse> rrs = new HashMap();
-        Map<String, SensorUpdate> streamDocs = new HashMap<String, SensorUpdate>();
-        ObjectMapper mapper = new ObjectMapper();
         if(so.getGroups() == null){
             return rrs;
         }
-        for(String streamId: groupIds){
-            if(!so.getStreams().containsKey(streamId)){
+        for(String groupId: groupIds){
+            if(!so.getGroups().containsKey(groupId)){
                 continue;
             }
 
-            rrs.put(streamId, getGroupSUAsyncResponse(streamId, so));
+            rrs.put(groupId, getGroupSUAsyncResponse(groupId, so));
         }
         return rrs;
     }
