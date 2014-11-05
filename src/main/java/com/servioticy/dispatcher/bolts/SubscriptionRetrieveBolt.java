@@ -88,7 +88,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
             // In case there are no subscriptions.
             int hCode = subscriptionsRR.getHttpCode();
             if (hCode == 204) {
-                BenchmarkBolt.send(collector, input, dc, suDoc, "no-group");
+                BenchmarkBolt.send(collector, input, dc, suDoc, "no-subscription");
                 this.collector.ack(input);
                 return;
             }
@@ -99,7 +99,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 
             // No subscriptions
             if (subscriptions.getSubscriptions() == null || subscriptions.getSubscriptions().isEmpty()) {
-                BenchmarkBolt.send(collector, input, dc, suDoc, "no-group");
+                BenchmarkBolt.send(collector, input, dc, suDoc, "no-supbscription");
                 collector.ack(input);
                 return;
             }

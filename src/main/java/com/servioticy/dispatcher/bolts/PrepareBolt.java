@@ -76,8 +76,6 @@ public class PrepareBolt implements IRichBolt {
         ObjectMapper mapper = new ObjectMapper();
         SensorUpdate su;
         try {
-                su = mapper.readValue(suDoc, SensorUpdate.class);
-
 
             try {
                 frr = restClient.restRequest(
@@ -85,13 +83,13 @@ public class PrepareBolt implements IRichBolt {
                                 + "private/opid/" + opid, null,
                         RestClient.GET, null
                 );
-                rr = frr.get();
             } catch (Exception e) {
                 // TODO Log the error
                 // Retry until timeout
                 this.collector.fail(input);
                 return;
             }
+            su = mapper.readValue(suDoc, SensorUpdate.class);
 
             // Benchmark
             if(dc.benchmark) {
@@ -118,6 +116,14 @@ public class PrepareBolt implements IRichBolt {
                 }*/
 
                 suDoc = mapper.writeValueAsString(su);
+                try {
+                    rr = frr.get();
+                } catch (Exception e) {
+                    // TODO Log the error
+                    // Retry until timeout
+                    this.collector.fail(input);
+                    return;
+                }
             }
         } catch (Exception e) {
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
