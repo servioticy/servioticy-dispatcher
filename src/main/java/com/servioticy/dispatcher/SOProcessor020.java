@@ -264,7 +264,6 @@ public class SOProcessor020 extends SOProcessor{
                 }
 
                 String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
-                String finalCode;
 
                 engine.eval(initializationCode(inputSUs, origin) +
                         "var " + resultVar + " = JSON.stringify(" + currentValueCode + "(" + functionArgsString(currentValueCode) + ")" + ")");
