@@ -345,8 +345,8 @@ public class StreamProcessorBolt implements IRichBolt {
                 resultSU.setPathTimestamps(su.getPathTimestamps());
                 resultSU.setOriginId(su.getOriginId());
 
-                resultSU.getTriggerPath().add(new ArrayList<String>(Arrays.asList(fromStr)));
-                resultSU.getPathTimestamps().add(System.currentTimeMillis());
+//                resultSU.getTriggerPath().add(new ArrayList<String>(Arrays.asList(fromStr)));
+//                resultSU.getPathTimestamps().add(System.currentTimeMillis());
             }
 
 

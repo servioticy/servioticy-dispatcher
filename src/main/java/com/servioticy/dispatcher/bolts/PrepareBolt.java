@@ -77,18 +77,18 @@ public class PrepareBolt implements IRichBolt {
         SensorUpdate su;
         try {
 
-            try {
-                frr = restClient.restRequest(
-                        dc.restBaseURL
-                                + "private/opid/" + opid, null,
-                        RestClient.GET, null
-                );
-            } catch (Exception e) {
-                // TODO Log the error
-                // Retry until timeout
-                this.collector.fail(input);
-                return;
-            }
+//            try {
+//                frr = restClient.restRequest(
+//                        dc.restBaseURL
+//                                + "private/opid/" + opid, null,
+//                        RestClient.GET, null
+//                );
+//            } catch (Exception e) {
+//                // TODO Log the error
+//                // Retry until timeout
+//                this.collector.fail(input);
+//                return;
+//            }
             su = mapper.readValue(suDoc, SensorUpdate.class);
 
             // Benchmark
@@ -96,12 +96,12 @@ public class PrepareBolt implements IRichBolt {
 
                 if (su.getTriggerPath() == null) {
                     su.setTriggerPath(new ArrayList<ArrayList<String>>());
-                    String[] chainInit = {soid, streamid};
-                    su.getTriggerPath().add(new ArrayList<String>(Arrays.asList(chainInit)));
                     su.setPathTimestamps(new ArrayList<Long>());
-                    su.getPathTimestamps().add(System.currentTimeMillis());
                     su.setOriginId(UUID.randomUUID().getMostSignificantBits());
                 }
+                String[] chainInit = {soid, streamid};
+                su.getTriggerPath().add(new ArrayList<String>(Arrays.asList(chainInit)));
+                su.getPathTimestamps().add(System.currentTimeMillis());
                 /*else if( (System.currentTimeMillis() - su.getPathTimestamps().get(su.getPathTimestamps().size()-1)) > 2*60*1000 ||
                          (System.currentTimeMillis() - su.getPathTimestamps().get(0)) > 10*60*1000){
                     // Timeout
@@ -116,14 +116,14 @@ public class PrepareBolt implements IRichBolt {
                 }*/
 
                 suDoc = mapper.writeValueAsString(su);
-                try {
-                    rr = frr.get();
-                } catch (Exception e) {
-                    // TODO Log the error
-                    // Retry until timeout
-                    this.collector.fail(input);
-                    return;
-                }
+//                try {
+//                    rr = frr.get();
+//                } catch (Exception e) {
+//                    // TODO Log the error
+//                    // Retry until timeout
+//                    this.collector.fail(input);
+//                    return;
+//                }
             }
         } catch (Exception e) {
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
