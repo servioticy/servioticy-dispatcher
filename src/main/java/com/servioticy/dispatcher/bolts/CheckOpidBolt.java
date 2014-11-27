@@ -73,19 +73,19 @@ public class CheckOpidBolt implements IRichBolt {
         String suDoc = input.getStringByField("su");
         SensorUpdate su;
 
-        try {
-            rr = restClient.restRequest(
-                    dc.restBaseURL
-                            + "private/opid/" + opid, null,
-                    RestClient.GET, null
-            );
-
-        } catch (Exception e) {
-            // TODO Log the error
-            // Retry until timeout
-            this.collector.fail(input);
-            return;
-        }
+//        try {
+//            rr = restClient.restRequest(
+//                    dc.restBaseURL
+//                            + "private/opid/" + opid, null,
+//                    RestClient.GET, null
+//            );
+//
+//        } catch (Exception e) {
+//            // TODO Log the error
+//            // Retry until timeout
+//            this.collector.fail(input);
+//            return;
+//        }
         if(dc.benchmark) {
             ObjectMapper mapper = new ObjectMapper();
             try {
@@ -103,12 +103,12 @@ public class CheckOpidBolt implements IRichBolt {
             }
             if (su.getStreamsChain() == null) {
                 su.setStreamsChain(new ArrayList<ArrayList<String>>());
-                String[] chainInit = {input.getStringByField("soid"), input.getStringByField("streamid")};
-                su.getStreamsChain().add(new ArrayList<String>(Arrays.asList(chainInit)));
                 su.setTimestampChain(new ArrayList<Long>());
-                su.getTimestampChain().add(System.currentTimeMillis());
                 su.setOriginId(UUID.randomUUID().getMostSignificantBits());
             }
+            String[] chainInit = {input.getStringByField("soid"), input.getStringByField("streamid")};
+            su.getStreamsChain().add(new ArrayList<String>(Arrays.asList(chainInit)));
+            su.getTimestampChain().add(System.currentTimeMillis());
             /*else if( (System.currentTimeMillis() - su.getTimestampChain().get(su.getTimestampChain().size()-1)) > 2*60*1000 ||
                      (System.currentTimeMillis() - su.getTimestampChain().get(0)) > 10*60*1000){
                 // Timeout

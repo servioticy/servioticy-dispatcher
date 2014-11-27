@@ -111,7 +111,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
             this.collector.emit("benchmark", input,
                     new Values(suDoc,
                             System.currentTimeMillis(),
-                            "no-group")
+                            "no-subscription")
             );
             this.collector.ack(input);
             return;
@@ -137,7 +137,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
             this.collector.emit("benchmark", input,
                     new Values(suDoc,
                             System.currentTimeMillis(),
-                            "no-group")
+                            "no-subscription")
             );
             collector.ack(input);
             return;
