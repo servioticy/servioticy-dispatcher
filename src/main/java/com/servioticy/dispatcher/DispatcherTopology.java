@@ -70,8 +70,8 @@ public class DispatcherTopology {
         TopologyBuilder builder = new TopologyBuilder();
 
         // TODO Auto-assign workers to the spout in function of the number of Kestrel IPs
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
-        builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()), 4);
+        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()));
+        builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()));
 
         builder.setBolt("prepare", new PrepareBolt(dc))
                 .shuffleGrouping("dispatcher");
@@ -84,7 +84,7 @@ public class DispatcherTopology {
 
         builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt())
                 .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
-        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(dc), 1)
+        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(dc))
                 .fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
 
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc))
@@ -104,7 +104,6 @@ public class DispatcherTopology {
         Config conf = new Config();
         conf.setDebug(cmd.hasOption("d"));
         if (cmd.hasOption("t")) {
-            conf.setNumWorkers(8);
             StormSubmitter.submitTopology(cmd.getOptionValue("t"), conf, builder.createTopology());
         } else {
             conf.setMaxTaskParallelism(4);
