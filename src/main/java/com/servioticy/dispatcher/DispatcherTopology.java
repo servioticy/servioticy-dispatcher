@@ -73,28 +73,28 @@ public class DispatcherTopology {
         builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
         builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()), 4);
 
-        builder.setBolt("prepare", new PrepareBolt(dc), 10)
+        builder.setBolt("prepare", new PrepareBolt(dc))
                 .shuffleGrouping("dispatcher");
 
-        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 2)
+        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc))
         		.shuffleGrouping("actions");
 
-        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 4)
+        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc))
                 .shuffleGrouping("prepare", "subscription");
 
-        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
+        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt())
                 .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
         builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(dc), 1)
                 .fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
 
-        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 13)
+        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc))
                 .shuffleGrouping("subretriever", "internalSub")
                 .shuffleGrouping("prepare", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 17)
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc))
                 .shuffleGrouping("streamdispatcher", "default");
 
         if (dc.benchmark) {
-            builder.setBolt("benchmark", new BenchmarkBolt(dc), 4)
+            builder.setBolt("benchmark", new BenchmarkBolt(dc))
                     .shuffleGrouping("streamdispatcher", "benchmark")
                     .shuffleGrouping("subretriever", "benchmark")
                     .shuffleGrouping("streamprocessor", "benchmark")
