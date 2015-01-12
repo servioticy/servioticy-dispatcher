@@ -48,8 +48,8 @@ public class PubSubDispatcherBolt implements IRichBolt {
 	private SUCache suCache;
 	private DispatcherContext dc;
 	private static Logger LOG = org.apache.log4j.Logger.getLogger(PubSubDispatcherBolt.class);
-	
-	
+	private ObjectMapper mapper;
+
 	public PubSubDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
 	}
@@ -57,7 +57,7 @@ public class PubSubDispatcherBolt implements IRichBolt {
 	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
-		
+		this.mapper = new ObjectMapper();
 		this.collector = collector;
 		this.context = context;
 		this.publisher = null;
@@ -79,7 +79,6 @@ public class PubSubDispatcherBolt implements IRichBolt {
 	}
 
 	public void execute(Tuple input) {
-		ObjectMapper mapper = new ObjectMapper();
 		PubSubSubscription externalSub;
 		SensorUpdate su;
 		String sourceSOId;

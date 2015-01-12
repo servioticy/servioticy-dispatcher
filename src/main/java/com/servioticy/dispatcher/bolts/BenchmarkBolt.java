@@ -40,6 +40,7 @@ public class BenchmarkBolt implements IRichBolt {
     private OutputCollector collector;
     private TopologyContext context;
     private DispatcherContext dc;
+    private ObjectMapper mapper;
 
     public BenchmarkBolt(DispatcherContext dc) {
         this.dc = dc;
@@ -57,18 +58,19 @@ public class BenchmarkBolt implements IRichBolt {
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         this.collector = outputCollector;
         this.context = topologyContext;
+        this.mapper = new ObjectMapper();
+
     }
 
     @Override
     public void execute(Tuple input) {
-        ObjectMapper mapper = new ObjectMapper();
         String suDoc = input.getStringByField("su");
         Long stopTS = input.getLongByField("stopts") == null ? System.currentTimeMillis() : input.getLongByField("stopts");
         String reason = input.getStringByField("reason") == null ? "timeout" : input.getStringByField("reason");
 
         SensorUpdate su;
         try {
-            su = mapper.readValue(suDoc, SensorUpdate.class);
+            su = this.mapper.readValue(suDoc, SensorUpdate.class);
 
             int chainSize = su.getPathTimestamps() == null ? 0 : su.getPathTimestamps().size();
 

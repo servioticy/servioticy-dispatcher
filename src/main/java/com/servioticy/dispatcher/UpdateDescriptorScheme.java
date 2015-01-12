@@ -29,13 +29,15 @@ import backtype.storm.tuple.Values;
  * 
  */
 public class UpdateDescriptorScheme implements Scheme {
-
+	private ObjectMapper mapper;
+	public UpdateDescriptorScheme(){
+		this.mapper = new ObjectMapper();
+	}
 	public List<Object> deserialize(byte[] bytes) {
 		try {
-			ObjectMapper mapper = new ObjectMapper();
 			String inputDoc = new String(bytes, "UTF-8");
-			UpdateDescriptor ud = mapper.readValue(inputDoc, UpdateDescriptor.class);
-			return new Values(ud.getOpid(), ud.getSoid(), ud.getStreamid(), mapper.writeValueAsString(ud.getSu()));
+			UpdateDescriptor ud = this.mapper.readValue(inputDoc, UpdateDescriptor.class);
+			return new Values(ud.getOpid(), ud.getSoid(), ud.getStreamid(), this.mapper.writeValueAsString(ud.getSu()));
 		} catch(Exception e){
 			// TODO Log the error
 			throw new RuntimeException(e);

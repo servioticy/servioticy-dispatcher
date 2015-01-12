@@ -51,6 +51,8 @@ public class StreamDispatcherBolt implements IRichBolt {
     private TopologyContext context;
     private RestClient restClient;
     private DispatcherContext dc;
+    private ObjectMapper mapper;
+
 
     public StreamDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
@@ -64,6 +66,7 @@ public class StreamDispatcherBolt implements IRichBolt {
 
     public void prepare(Map stormConf, TopologyContext context,
                         OutputCollector collector) {
+        this.mapper = new ObjectMapper();
         this.collector = collector;
         this.context = context;
         if(restClient == null){
@@ -72,7 +75,6 @@ public class StreamDispatcherBolt implements IRichBolt {
     }
 
     public void execute(Tuple input) {
-        ObjectMapper mapper = new ObjectMapper();
         SOSubscription soSub = null;
         SO so;
         RestResponse rr;
@@ -91,7 +93,7 @@ public class StreamDispatcherBolt implements IRichBolt {
                     null);
             rr = frr.get();
             soDoc = rr.getResponse();
-            so = mapper.readValue(soDoc,
+            so = this.mapper.readValue(soDoc,
                     SO.class);
 
             if(input.getSourceStreamId().equals("stream")){
@@ -112,7 +114,7 @@ public class StreamDispatcherBolt implements IRichBolt {
                 ((SOProcessor010)sop).compileJSONPaths();
             }
 
-            SensorUpdate su = mapper.readValue(suDoc, SensorUpdate.class);
+            SensorUpdate su = this.mapper.readValue(suDoc, SensorUpdate.class);
             boolean emitted = false;
             for (String streamIdByDoc : sop.getStreamsBySourceId(docId)) {
                 // If the SU comes from the same stream than it is going, it must be stopped

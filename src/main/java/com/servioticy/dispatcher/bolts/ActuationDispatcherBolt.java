@@ -46,7 +46,7 @@ public class ActuationDispatcherBolt implements IRichBolt {
 	private PublisherInterface publisher;
 	private DispatcherContext dc;
 	private static Logger LOG = org.apache.log4j.Logger.getLogger(ActuationDispatcherBolt.class);
-	
+	private ObjectMapper mapper;
 	
 	public ActuationDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
@@ -55,6 +55,7 @@ public class ActuationDispatcherBolt implements IRichBolt {
 	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
+		this.mapper = new ObjectMapper();
 		this.collector = collector;
 		this.context = context;
 		this.publisher = null;
@@ -79,12 +80,11 @@ public class ActuationDispatcherBolt implements IRichBolt {
 	public void execute(Tuple input) {
 		
 		try {
-			ObjectMapper mapper = new ObjectMapper();
 			String sourceSOId;
 			String actionId;
 			String actionName;
 			
-			JsonNode actuation = mapper.readTree(input.getStringByField("action"));
+			JsonNode actuation = this.mapper.readTree(input.getStringByField("action"));
 			sourceSOId = input.getStringByField("soid");
 			actionId = input.getStringByField("id");
 			actionName = input.getStringByField("name");

@@ -43,6 +43,7 @@ import java.util.Map.Entry;
  */
 public class SOProcessor010 extends SOProcessor{
 
+    private ObjectMapper mapper;
     AliasReplacer aliases;
     LinkedHashMap<String, PSOStream> streams;
     LinkedHashMap<String, Object> queries;
@@ -50,13 +51,13 @@ public class SOProcessor010 extends SOProcessor{
     Map<String, HashSet<String>> streamsByDocId;
     Map<String, HashSet<String>> docIdsByStream;
 
-    public SOProcessor010(SO010 so) throws JsonParseException, JsonMappingException, IOException {
+    public SOProcessor010(SO010 so, ObjectMapper mapper) throws JsonParseException, JsonMappingException, IOException {
 
+        this.mapper = mapper;
         this.streamsByDocId = new HashMap<String, HashSet<String>>();
         this.docIdsByStream = new HashMap<String, HashSet<String>>();
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         this.so = so;
         aliases = new AliasReplacer(this.so.getAliases());
@@ -76,7 +77,6 @@ public class SOProcessor010 extends SOProcessor{
     }
 
     public String replaceAliases() throws JsonGenerationException, JsonMappingException, IOException {
-        ObjectMapper mapper = new ObjectMapper();
         for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()) {
             SOStream010 stream = (SOStream010) streamEntry.getValue();
             for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
@@ -90,7 +90,7 @@ public class SOProcessor010 extends SOProcessor{
             stream.setPreFilter(stream.getPreFilter() == null ? "true" : (aliases.replace(stream.getPreFilter())));
             stream.setPostFilter(stream.getPostFilter() == null ? "true" : aliases.replace(stream.getPostFilter()));
         }
-        return mapper.writeValueAsString(this.so);
+        return this.mapper.writeValueAsString(this.so);
     }
 
     public void compileJSONPaths() {
@@ -108,7 +108,7 @@ public class SOProcessor010 extends SOProcessor{
                 SOChannel channel = channelEntry.getValue();
                 pchannel.currentValue = null;
                 if (channel.getCurrentValue() != null) {
-                    pchannel.currentValue = new JsonPathReplacer(channel.getCurrentValue());
+                    pchannel.currentValue = new JsonPathReplacer(channel.getCurrentValue(), mapper);
                     // Set the objective streams for each group of SUs
                     Set<String> docIds = pchannel.currentValue.getJsonPathIds();
                     addStreamByDocIds(streamEntry.getKey(), docIds);
@@ -121,7 +121,7 @@ public class SOProcessor010 extends SOProcessor{
             }
             pstream.preFilter = null;
             if (stream.getPreFilter() != null) {
-                pstream.preFilter = new JsonPathReplacer(stream.getPreFilter());
+                pstream.preFilter = new JsonPathReplacer(stream.getPreFilter(), mapper);
                 this.docIdsByStream.get(streamId).addAll(pstream.preFilter.getJsonPathIds());
                 addStreamByDocIds(streamId, pstream.preFilter.getJsonPathIds());
             }
@@ -129,7 +129,7 @@ public class SOProcessor010 extends SOProcessor{
 
             pstream.postFilter = null;
             if (stream.getPreFilter() != null) {
-                pstream.postFilter = new JsonPathReplacer(stream.getPostFilter());
+                pstream.postFilter = new JsonPathReplacer(stream.getPostFilter(), mapper);
                 this.docIdsByStream.get(streamId).addAll(pstream.postFilter.getJsonPathIds());
                 addStreamByDocIds(streamId, pstream.postFilter.getJsonPathIds());
             }
@@ -168,10 +168,10 @@ public class SOProcessor010 extends SOProcessor{
     }
 
     public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
-        ObjectMapper mapper = new ObjectMapper();
+
         Map<String, String> inputDocs = new HashMap<String, String>();
         for(Map.Entry<String,SensorUpdate> inputSUEntry: inputSUs.entrySet()){
-            inputDocs.put(inputSUEntry.getKey(), mapper.writeValueAsString(inputSUEntry.getValue()));
+            inputDocs.put(inputSUEntry.getKey(), this.mapper.writeValueAsString(inputSUEntry.getValue()));
         }
         PSOStream pstream = this.streams.get(streamId);
         if (!checkFilter(pstream.preFilter, inputDocs)){
@@ -214,7 +214,7 @@ public class SOProcessor010 extends SOProcessor{
                 }
 
                 engine.eval("var result = JSON.stringify(" + currentValueCode + ")");
-                result = mapper.readValue((String)engine.get("result"), type);
+                result = this.mapper.readValue((String)engine.get("result"), type);
                 if(type == GeoPoint.class)
                     result = ((GeoPoint)result).getLat()+","+((GeoPoint)result).getLon();
                 suChannel.setCurrentValue(result);
@@ -234,8 +234,8 @@ public class SOProcessor010 extends SOProcessor{
 
         su.setPathTimestamps(new ArrayList<Long>());
 
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        String resultSUDoc = mapper.writeValueAsString(su);
+        this.mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        String resultSUDoc = this.mapper.writeValueAsString(su);
         if(!inputDocs.containsKey("result")){
             inputDocs.put("result", resultSUDoc);
         }

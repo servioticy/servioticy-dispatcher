@@ -44,6 +44,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
     private TopologyContext context;
     private RestClient restClient;
     private DispatcherContext dc;
+    private ObjectMapper mapper;
 
     public SubscriptionRetrieveBolt(DispatcherContext dc) {
         this.dc = dc;
@@ -59,13 +60,13 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                         OutputCollector collector) {
         this.collector = collector;
         this.context = context;
+        this.mapper = new ObjectMapper();
         if (restClient == null) {
             restClient = new RestClient();
         }
     }
 
     public void execute(Tuple input) {
-        ObjectMapper mapper = new ObjectMapper();
         Subscriptions subscriptions;
         RestResponse subscriptionsRR;
         FutureRestResponse frr;
@@ -94,7 +95,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
             }
 
             String substr = subscriptionsRR.getResponse();
-            subscriptions = mapper.readValue(substr,
+            subscriptions = this.mapper.readValue(substr,
                     Subscriptions.class);
 
             // No subscriptions
@@ -116,14 +117,14 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                 } else if (subscription.getClass().equals(HttpSubscription.class)) {
                     this.collector.emit("httpSub", input,
                             new Values(subscription.getId(),
-                                    mapper.writeValueAsString(subscription),
+                                    this.mapper.writeValueAsString(subscription),
                                     suDoc)
                     );
                 } else if (subscription.getClass().equals(PubSubSubscription.class)) {
                     this.collector.emit("pubsubSub", input,
                             new Values(subscription.getId(),
                                     soid,
-                                    mapper.writeValueAsString(subscription),
+                                    this.mapper.writeValueAsString(subscription),
                                     suDoc,
                                     streamid)
                     );

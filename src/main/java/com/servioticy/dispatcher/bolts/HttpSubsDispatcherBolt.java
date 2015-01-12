@@ -45,7 +45,8 @@ public class HttpSubsDispatcherBolt implements IRichBolt {
 	private TopologyContext context;
 	private SUCache suCache;
 	private RestClient restClient;
-	
+	private ObjectMapper mapper;
+
 	public HttpSubsDispatcherBolt(){
 	}
 	
@@ -56,6 +57,7 @@ public class HttpSubsDispatcherBolt implements IRichBolt {
 	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
+		this.mapper =  new ObjectMapper();
 		this.collector = collector;
 		this.context = context;
 		this.suCache = new SUCache(25);
@@ -65,14 +67,13 @@ public class HttpSubsDispatcherBolt implements IRichBolt {
 	}
 
 	public void execute(Tuple input) {
-		ObjectMapper mapper = new ObjectMapper();
 		HttpSubscription httpSub;
 		SensorUpdate su;
 		
 		try{
-			su = mapper.readValue(input.getStringByField("su"),
+			su = this.mapper.readValue(input.getStringByField("su"),
 					SensorUpdate.class);
-			httpSub = mapper.readValue(input.getStringByField("subsdoc"),
+			httpSub = this.mapper.readValue(input.getStringByField("subsdoc"),
 					HttpSubscription.class);
 			if(suCache.check(httpSub.getId(), su.getLastUpdate())){
 				// This SU or a posterior one has already been sent, do not send this one.

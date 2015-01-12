@@ -46,6 +46,8 @@ public class PrepareBolt implements IRichBolt {
     private OutputCollector collector;
     private RestClient restClient;
     private DispatcherContext dc;
+    private ObjectMapper mapper;
+
 
     public PrepareBolt(DispatcherContext dc) {
         this.dc = dc;
@@ -60,6 +62,8 @@ public class PrepareBolt implements IRichBolt {
     public void prepare(Map stormConf, TopologyContext context,
                         OutputCollector collector) {
         this.collector = collector;
+        this.mapper = new ObjectMapper();
+
         if (restClient == null) {
             restClient = new RestClient();
         }
@@ -73,7 +77,6 @@ public class PrepareBolt implements IRichBolt {
         String suDoc = input.getStringByField("su");
         String soid = input.getStringByField("soid");
         String streamid = input.getStringByField("streamid");
-        ObjectMapper mapper = new ObjectMapper();
         SensorUpdate su;
         try {
 
@@ -89,7 +92,7 @@ public class PrepareBolt implements IRichBolt {
                 this.collector.fail(input);
                 return;
             }
-            su = mapper.readValue(suDoc, SensorUpdate.class);
+            su = this.mapper.readValue(suDoc, SensorUpdate.class);
 
             // Benchmark
             if(dc.benchmark) {
@@ -115,7 +118,7 @@ public class PrepareBolt implements IRichBolt {
                     return;
                 }*/
 
-                suDoc = mapper.writeValueAsString(su);
+                suDoc = this.mapper.writeValueAsString(su);
                 try {
                     rr = frr.get();
                 } catch (Exception e) {

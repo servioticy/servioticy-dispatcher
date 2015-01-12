@@ -58,8 +58,9 @@ public class StreamProcessorBolt implements IRichBolt {
 	private QueueClient qc;
 	private RestClient restClient;
     private DispatcherContext dc;
-	
-	public StreamProcessorBolt(){
+    private ObjectMapper mapper;
+
+    public StreamProcessorBolt(){
 		
 	}
 	
@@ -93,6 +94,7 @@ public class StreamProcessorBolt implements IRichBolt {
 	
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
+        this.mapper = new ObjectMapper();
 		this.collector = collector;
 		this.context = context;
 		this.suCache = new SUCache(25);
@@ -113,7 +115,6 @@ public class StreamProcessorBolt implements IRichBolt {
 
     private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException {
 		Map<String, SensorUpdate> groupDocs = new HashMap<String, SensorUpdate>();
-		ObjectMapper mapper = new ObjectMapper();
 
         for(Map.Entry<String, FutureRestResponse> frrEntry: rrs.entrySet()){
             FutureRestResponse frr = frrEntry.getValue();
@@ -136,7 +137,7 @@ public class StreamProcessorBolt implements IRichBolt {
 				continue;
 			}
 
-			groupDocs.put(docId, mapper.readValue(rr.getResponse(), SensorUpdate.class));
+			groupDocs.put(docId, this.mapper.readValue(rr.getResponse(), SensorUpdate.class));
 			
 		}
 		
@@ -160,11 +161,10 @@ public class StreamProcessorBolt implements IRichBolt {
 
     private FutureRestResponse getGroupSUAsyncResponse(String groupId, SO so) throws RestClientException, RestClientErrorCodeException, JsonProcessingException {
         FutureRestResponse frr;
-        ObjectMapper mapper = new ObjectMapper();
 
         SOGroup group = so.getGroups().get(groupId);
         // TODO Resolve dynsets
-        String glurstr = mapper.writeValueAsString(group);
+        String glurstr = this.mapper.writeValueAsString(group);
 
         frr = restClient.restRequest(
                 dc.restBaseURL + "private/groups/lastUpdate",
@@ -177,7 +177,6 @@ public class StreamProcessorBolt implements IRichBolt {
 
     private Map<String, SensorUpdate> getStreamSUs(Map<String, FutureRestResponse> frrs) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException {
         Map<String, SensorUpdate> streamDocs = new HashMap<String, SensorUpdate>();
-		ObjectMapper mapper = new ObjectMapper();
 
         for(Map.Entry<String, FutureRestResponse> frrEntry: frrs.entrySet()) {
             FutureRestResponse frr = frrEntry.getValue();
@@ -191,7 +190,6 @@ public class StreamProcessorBolt implements IRichBolt {
     private Map<String, FutureRestResponse> getStreamSUAsyncResponses(Set<String> streamIds, SO so) throws RestClientException, RestClientErrorCodeException {
         Map<String, FutureRestResponse> rrs = new HashMap();
         Map<String, SensorUpdate> streamDocs = new HashMap<String, SensorUpdate>();
-        ObjectMapper mapper = new ObjectMapper();
         for(String streamId: streamIds){
             if(!so.getStreams().containsKey(streamId)){
                 continue;
@@ -203,7 +201,6 @@ public class StreamProcessorBolt implements IRichBolt {
     }
     
     private SensorUpdate getStreamSU(FutureRestResponse frr) throws RestClientErrorCodeException, IOException, RestClientException, ExecutionException, InterruptedException {
-        ObjectMapper mapper = new ObjectMapper();
         RestResponse rr;
         try {
             rr = frr.get();
@@ -219,7 +216,7 @@ public class StreamProcessorBolt implements IRichBolt {
         if(rr.getHttpCode() == 204){
             return null;
         }
-        return mapper.readValue(rr.getResponse(), SensorUpdate.class);
+        return this.mapper.readValue(rr.getResponse(), SensorUpdate.class);
     }
 	
     private FutureRestResponse getStreamSUAsyncResponse(String streamId, SO so) throws RestClientException, RestClientErrorCodeException {
@@ -239,7 +236,6 @@ public class StreamProcessorBolt implements IRichBolt {
         FutureRestResponse previousSURR;
         SensorUpdate previousSU;
         SO so;
-        ObjectMapper mapper = new ObjectMapper();
         String soId = input.getStringByField("soid");
         String streamId = input.getStringByField("streamid");
         String suDoc = input.getStringByField("su");
@@ -251,8 +247,8 @@ public class StreamProcessorBolt implements IRichBolt {
         Map<String, FutureRestResponse> streamSURRs;
         Map<String, FutureRestResponse> groupSURRs;
         try {
-            su = mapper.readValue(suDoc, SensorUpdate.class);
-            so = mapper.readValue(soDoc, SO.class);
+            su = this.mapper.readValue(suDoc, SensorUpdate.class);
+            so = this.mapper.readValue(soDoc, SO.class);
             sop = SOProcessor.factory(so);
 
             // Begin all HTTP requests
@@ -329,8 +325,7 @@ public class StreamProcessorBolt implements IRichBolt {
                     collector.ack(input);
                     return;
                 }
-                mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-                resultSUDoc = mapper.writeValueAsString(resultSU);
+                resultSUDoc = this.mapper.writeValueAsString(resultSU);
 
             } catch (ScriptException e) {
                 // TODO Log the error
@@ -350,7 +345,7 @@ public class StreamProcessorBolt implements IRichBolt {
             }
 
 
-            resultSUDoc = mapper.writeValueAsString(resultSU);
+            resultSUDoc = this.mapper.writeValueAsString(resultSU);
 
 
             // generate opid
@@ -362,7 +357,7 @@ public class StreamProcessorBolt implements IRichBolt {
             ud.setStreamid(streamId);
             ud.setOpid(opid);
             ud.setSu(resultSU);
-            String upDescriptorDoc = mapper.writeValueAsString(ud);
+            String upDescriptorDoc = this.mapper.writeValueAsString(ud);
 		
 		    // Put to the queue
             try{
@@ -389,7 +384,7 @@ public class StreamProcessorBolt implements IRichBolt {
             resultSU.setPathTimestamps(null);
             resultSU.setOriginId(null);
 
-            resultSUDoc = mapper.writeValueAsString(resultSU);
+            resultSUDoc = this.mapper.writeValueAsString(resultSU);
 
             // Send to the API
             restClient.restRequest(
