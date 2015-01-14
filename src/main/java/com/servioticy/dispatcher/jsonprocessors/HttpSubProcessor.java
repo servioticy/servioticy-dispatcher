@@ -15,6 +15,7 @@
  ******************************************************************************/
 package com.servioticy.dispatcher.jsonprocessors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.subscription.HttpSubscription;
 import com.servioticy.restclient.RestClient;
 
@@ -32,12 +33,14 @@ public class HttpSubProcessor {
     private JsonPathReplacer body;
     private int method;
     private HttpSubscription httpSubs;
+    private ObjectMapper mapper;
 
     private AliasReplacer aliases;
 
-    public HttpSubProcessor(HttpSubscription httpSubs) {
+    public HttpSubProcessor(HttpSubscription httpSubs, ObjectMapper mapper) {
         this.aliases = new AliasReplacer(httpSubs.getAliases());
         this.httpSubs = httpSubs;
+        this.mapper = mapper;
 
         String subsMethod = httpSubs.getMethod().toUpperCase();
         if (subsMethod.equals("GET")) {
@@ -66,17 +69,17 @@ public class HttpSubProcessor {
     }
 
     public void compileJSONPaths() {
-        this.url = new JsonPathReplacer(httpSubs.getDestination());
+        this.url = new JsonPathReplacer(httpSubs.getDestination(), this.mapper);
         this.body = null;
         if (httpSubs.getBody() != null) {
-            this.body = new JsonPathReplacer(httpSubs.getBody());
+            this.body = new JsonPathReplacer(httpSubs.getBody(), this.mapper);
         }
 
 
         this.headers = new HashMap<JsonPathReplacer, JsonPathReplacer>();
         if (httpSubs.getHeaders() != null) {
             for (Entry<String, String> ppheader : httpSubs.getHeaders().entrySet()) {
-                this.headers.put(new JsonPathReplacer(ppheader.getKey()), new JsonPathReplacer(ppheader.getValue()));
+                this.headers.put(new JsonPathReplacer(ppheader.getKey(), this.mapper), new JsonPathReplacer(ppheader.getValue(), this.mapper));
             }
         }
 

@@ -108,7 +108,7 @@ public class StreamDispatcherBolt implements IRichBolt {
                 }
             }
 
-            SOProcessor sop = SOProcessor.factory(so);
+            SOProcessor sop = SOProcessor.factory(so, this.mapper);
             if(sop.getClass() == SOProcessor010.class) {
                 soDoc = ((SOProcessor010)sop).replaceAliases();
                 ((SOProcessor010)sop).compileJSONPaths();

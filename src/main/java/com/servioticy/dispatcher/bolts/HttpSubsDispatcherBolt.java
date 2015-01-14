@@ -86,7 +86,7 @@ public class HttpSubsDispatcherBolt implements IRichBolt {
 			collector.ack(input);
 			return;
 		}
-		HttpSubProcessor hsp = new HttpSubProcessor(httpSub);
+		HttpSubProcessor hsp = new HttpSubProcessor(httpSub, this.mapper);
 		hsp.replaceAliases();
 		hsp.compileJSONPaths();
 		String suStr = input.getStringByField("su");

@@ -249,7 +249,7 @@ public class StreamProcessorBolt implements IRichBolt {
         try {
             su = this.mapper.readValue(suDoc, SensorUpdate.class);
             so = this.mapper.readValue(soDoc, SO.class);
-            sop = SOProcessor.factory(so);
+            sop = SOProcessor.factory(so, this.mapper);
 
             // Begin all HTTP requests
             previousSURR = this.getStreamSUAsyncResponse(streamId, so);
