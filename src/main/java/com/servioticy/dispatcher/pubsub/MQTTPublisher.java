@@ -36,9 +36,9 @@ public class MQTTPublisher implements PublisherInterface {
 	private static Logger LOG = org.apache.log4j.Logger.getLogger(MQTTPublisher.class);
 	
 	//private IMqttToken token;
-	private IMqttAsyncClient asyncClient = null; 
+	private IMqttAsyncClient asyncClient = null;
 
-	
+
 	public MQTTPublisher(String uri, String pubId){  
 		
 		
@@ -56,7 +56,8 @@ public class MQTTPublisher implements PublisherInterface {
 		}
 	     
 	}
-	
+
+	@Override
 	public void connect(String uri, String username, String password) {
 	
 		MqttConnectOptions options = new MqttConnectOptions();
@@ -76,7 +77,8 @@ public class MQTTPublisher implements PublisherInterface {
 			LOG.error("FAIL in connect:", e);
 		}	
 	}
-	
+
+	@Override
 	public void close() {
 		try {
 			asyncClient.disconnect().waitForCompletion();
@@ -84,7 +86,12 @@ public class MQTTPublisher implements PublisherInterface {
 			LOG.error("FAIL", e);
 		}
 	}
-	
+
+	@Override
+	public boolean isConnected() {
+		return asyncClient.isConnected();
+	}
+
 	public void publishMessage(String topic, String msg) {
 		int attempts = 0;
 		if(asyncClient != null) {

@@ -103,6 +103,11 @@ public class PubSubDispatcherBolt implements IRichBolt {
 
 		String suStr = input.getStringByField("su");
 		try {
+			if(!publisher.isConnected()){
+				publisher.connect(dc.mqttUri,
+						dc.mqttUser,
+						dc.mqttPassword);
+			}
 			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
 			LOG.info("PubSub message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates");
 		} catch (Exception e) {

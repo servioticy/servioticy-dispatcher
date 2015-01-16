@@ -93,10 +93,13 @@ public class ActuationDispatcherBolt implements IRichBolt {
 					 "soid: "+sourceSOId+"\n\t\t"+
 					 "name: "+actionName+"\n\t\t"+
 					 "id: "+actionId);
-			
-	
-		
-						
+
+
+			if(!publisher.isConnected()){
+				publisher.connect(dc.mqttUri,
+						dc.mqttUser,
+						dc.mqttPassword);
+			}
 			publisher.publishMessage(sourceSOId+"/actions", actuation.toString());
 			LOG.info("Actuation request pubished on topic "+sourceSOId+"/actions");
 			LOG.info("Actuation message contents: "+actuation.toString());
