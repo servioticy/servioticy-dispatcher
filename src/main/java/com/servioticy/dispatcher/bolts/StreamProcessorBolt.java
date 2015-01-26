@@ -191,7 +191,7 @@ public class StreamProcessorBolt implements IRichBolt {
         Map<String, FutureRestResponse> rrs = new HashMap();
         Map<String, SensorUpdate> streamDocs = new HashMap<String, SensorUpdate>();
         for(String streamId: streamIds){
-            if(!so.getStreams().containsKey(streamId)){
+            if(!so.getStreams(this.mapper).containsKey(streamId)){
                 continue;
             }
 

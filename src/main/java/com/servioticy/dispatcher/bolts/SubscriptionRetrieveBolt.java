@@ -128,6 +128,14 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                                     suDoc,
                                     streamid)
                     );
+                } else if (subscription.getClass().equals(ServiceSubscription.class)) {
+                    this.collector.emit("serviceSub", input,
+                            new Values(subscription.getId(),
+                                    soid,
+                                    this.mapper.writeValueAsString(subscription),
+                                    suDoc,
+                                    streamid)
+                    );
                 }
             }
         } catch (RestClientErrorCodeException e) {
