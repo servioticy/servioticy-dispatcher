@@ -82,8 +82,6 @@ public class DispatcherTopology {
         builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc))
                 .shuffleGrouping("prepare", "subscription");
 
-        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt())
-                .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
         builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc))
                 .fieldsGrouping("subretriever", "externalSub", new Fields("subid"));
         builder.setBolt("servicedispatcher", new ServiceDispatcherBolt(dc))
