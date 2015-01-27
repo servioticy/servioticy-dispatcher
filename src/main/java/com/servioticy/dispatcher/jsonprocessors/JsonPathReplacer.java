@@ -22,6 +22,9 @@ import com.jayway.jsonpath.JsonPath;
 import java.util.*;
 import java.util.Map.Entry;
 
+/**
+ * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
+ */
 public class JsonPathReplacer {
     ObjectMapper mapper;
     private String str;

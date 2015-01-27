@@ -39,7 +39,7 @@ public class MQTTPublisher implements PublisherInterface {
 	private IMqttAsyncClient asyncClient = null;
 
 
-	public MQTTPublisher(String uri, String pubId){  
+	protected MQTTPublisher(String uri, String pubId){
 		
 		
 		try {
