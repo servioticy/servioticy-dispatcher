@@ -26,31 +26,25 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 
-import com.servioticy.datamodel.subscription.PubSubSubscription;
+import com.servioticy.datamodel.subscription.ExternalSubscription;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SUCache;
-import com.servioticy.dispatcher.pubsub.PubSubPublisherFactory;
-import com.servioticy.dispatcher.pubsub.PublisherInterface;
+import com.servioticy.dispatcher.publishers.Publisher;
 
-/**
- * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
- * 
- */
-public class PubSubDispatcherBolt implements IRichBolt {
-	/**
-	 * 
-	 */
+
+public class ExternalDispatcherBolt implements IRichBolt {
+
 	private static final long serialVersionUID = 1L;
 	private OutputCollector collector;
 	private TopologyContext context;
-	private PublisherInterface publisher;
+	private Publisher publisher;
 	private SUCache suCache;
 	private DispatcherContext dc;
-	private static Logger LOG = org.apache.log4j.Logger.getLogger(PubSubDispatcherBolt.class);
+	private static Logger LOG = org.apache.log4j.Logger.getLogger(ExternalDispatcherBolt.class);
 	private ObjectMapper mapper;
 
-	public PubSubDispatcherBolt(DispatcherContext dc){
+	public ExternalDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
 	}
 	
@@ -63,23 +57,25 @@ public class PubSubDispatcherBolt implements IRichBolt {
 		this.publisher = null;
 		this.suCache = new SUCache(25);
 		
-		LOG.debug("MQTT server: " + dc.mqttUri);
-		LOG.debug("MQTT user/pass: " + dc.mqttUser+ " / "+dc.mqttPassword);
-		
+		LOG.debug("External publisher server: " + dc.extPubAddress + ":" + dc.extPubPort);
+		LOG.debug("External publisher user/pass: " + dc.extPubUser + " / "+dc.extPubPassword);
+
 		
 		try {
-			publisher = PubSubPublisherFactory.getPublisher(dc.mqttUri, String.valueOf(context.getThisTaskId()));
+			publisher = Publisher.factory(dc.extPubClassName, dc.extPubAddress, dc.extPubPort, String.valueOf(context.getThisTaskId()));
 		} catch (Exception e) {
 			LOG.error("Prepare: ", e);
 		}
 
-		publisher.connect(dc.mqttUri, 
-				dc.mqttUser, 
-				dc.mqttPassword);	
+		try {
+			publisher.connect(dc.extPubUser, dc.extPubPassword);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void execute(Tuple input) {
-		PubSubSubscription externalSub;
+		ExternalSubscription externalSub;
 		SensorUpdate su;
 		String sourceSOId;
 		String streamId;
@@ -87,7 +83,7 @@ public class PubSubDispatcherBolt implements IRichBolt {
 			su = mapper.readValue(input.getStringByField("su"),
 					SensorUpdate.class);
 			externalSub = mapper.readValue(input.getStringByField("subsdoc"),
-					PubSubSubscription.class);
+					ExternalSubscription.class);
 			sourceSOId = input.getStringByField("soid");
 			streamId = input.getStringByField("streamid");
 			if(suCache.check(externalSub.getId(), su.getLastUpdate())){
@@ -104,12 +100,11 @@ public class PubSubDispatcherBolt implements IRichBolt {
 		String suStr = input.getStringByField("su");
 		try {
 			if(!publisher.isConnected()){
-				publisher.connect(dc.mqttUri,
-						dc.mqttUser,
-						dc.mqttPassword);
+				publisher.connect(dc.extPubUser,
+						dc.extPubPassword);
 			}
 			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
-			LOG.info("PubSub message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates");
+			LOG.info("Message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates");
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);

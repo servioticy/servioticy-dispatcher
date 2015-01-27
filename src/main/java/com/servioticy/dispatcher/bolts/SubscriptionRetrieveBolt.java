@@ -120,8 +120,8 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                                     this.mapper.writeValueAsString(subscription),
                                     suDoc)
                     );
-                } else if (subscription.getClass().equals(PubSubSubscription.class)) {
-                    this.collector.emit("pubsubSub", input,
+                } else if (subscription.getClass().equals(ExternalSubscription.class)) {
+                    this.collector.emit("externalSub", input,
                             new Values(subscription.getId(),
                                     soid,
                                     this.mapper.writeValueAsString(subscription),

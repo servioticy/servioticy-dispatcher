@@ -34,9 +34,17 @@ public class DispatcherContext implements Serializable{
     public String kestrelQueue = "services";
     public String kestrelQueueActions = "actions";
     
-    public String mqttUri;
-    public String mqttUser;
-    public String mqttPassword;
+    public String extPubAddress = "localhost";
+    public int extPubPort = 1883;
+    public String extPubUser = null;
+    public String extPubPassword = null;
+    public String extPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
+
+    public String servicesPubAddress = "localhost";
+    public int servicesPubPort = 1883;
+    public String servicesPubUser = null;
+    public String servicesPubPassword = null;
+    public String servicesPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
 
     public boolean benchmark = false;
     public String benchResultsDir = ".";
@@ -68,9 +76,17 @@ public class DispatcherContext implements Serializable{
 
             this.benchmark = config.getBoolean("benchmark", this.benchmark);
 
-            mqttUri = config.getString("pubsub/mqtt/uri", this.mqttUri);
-            mqttUser = config.getString("pubsub/mqtt/username", this.mqttUser);
-            mqttPassword = config.getString("pubsub/mqtt/password", this.mqttPassword);
+            extPubAddress = config.getString("publishers/external/address", this.extPubAddress);
+            extPubPort = config.getInt("publishers/external/port", this.extPubPort);
+            extPubUser = config.getString("publishers/external/username", this.extPubUser);
+            extPubPassword = config.getString("publishers/external/password", this.extPubPassword);
+            extPubClassName = config.getString("publishers/external/class", this.extPubClassName);
+
+            servicesPubAddress = config.getString("publishers/services/address", this.servicesPubAddress);
+            servicesPubPort = config.getInt("publishers/services/port", this.servicesPubPort);
+            servicesPubAddress = config.getString("publishers/services/username", this.servicesPubUser);
+            servicesPubPassword = config.getString("publishers/services/password", this.servicesPubPassword);
+            servicesPubClassName = config.getString("publishers/services/class", this.servicesPubClassName);
 
             this.benchResultsDir = config.getString("benchResultsDir", this.benchResultsDir);
 

@@ -10,13 +10,23 @@
 		<port>2229</port>
         <queue>services</queue>
 	</kestrels>
-	<pubsub>
-		<mqtt>
+	<publishers>
+		<external>
 			<name>servioticy</name>
-			<uri>tcp://localhost:1833</uri>
+			<address>tcp://localhost</address>
+			<port>1833</port>
 			<username>compose</username>
 			<password>shines</password>
-		</mqtt>
-	</pubsub>
+			<class>com.servioticy.dispatcher.publishers.MQTTPublisher</class>
+		</external>
+		<services>
+			<name>servioticy</name>
+			<address>tcp://localhost</address>
+			<port>1833</port>
+			<username>compose</username>
+			<password>shines</password>
+			<class>com.servioticy.dispatcher.publishers.MQTTPublisher</class>
+		</services>
+	</publishers>
 	
 </context>

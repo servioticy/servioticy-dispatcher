@@ -15,33 +15,34 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher.bolts;
 
-import java.util.Map;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.log4j.Logger;
-
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
-
-import com.esotericsoftware.minlog.Log;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.sensorupdate.SensorUpdate;
+import com.servioticy.datamodel.subscription.ExternalSubscription;
 import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.publishers.Publisher;
+import org.apache.log4j.Logger;
 
-public class ActuationDispatcherBolt implements IRichBolt {
+import java.util.Map;
+
+
+public class ServiceDispatcherBolt implements IRichBolt {
 
 	private static final long serialVersionUID = 1L;
 	private OutputCollector collector;
 	private TopologyContext context;
 	private Publisher publisher;
+	private SUCache suCache;
 	private DispatcherContext dc;
-	private static Logger LOG = org.apache.log4j.Logger.getLogger(ActuationDispatcherBolt.class);
+	private static Logger LOG = Logger.getLogger(ServiceDispatcherBolt.class);
 	private ObjectMapper mapper;
-	
-	public ActuationDispatcherBolt(DispatcherContext dc){
+
+	public ServiceDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
 	}
 	
@@ -52,56 +53,61 @@ public class ActuationDispatcherBolt implements IRichBolt {
 		this.collector = collector;
 		this.context = context;
 		this.publisher = null;
+		this.suCache = new SUCache(25);
 		
-		LOG.debug("MQTT server: " + dc.extPubAddress + ":" + dc.extPubPort);
-		LOG.debug("MQTT user/pass: " + dc.extPubUser + " / "+dc.extPubPassword);
-		
-		
+		LOG.debug("Service publisher server: " + dc.extPubAddress + ":" + dc.extPubPort);
+		LOG.debug("Service publisher user/pass: " + dc.extPubUser + " / "+dc.extPubPassword);
 
+		
 		try {
-			publisher = Publisher.factory(dc.extPubClassName,
-					dc.extPubAddress,
-					dc.extPubPort,
-					String.valueOf(context.getThisTaskId()));
-			publisher.connect(dc.extPubUser,
-					dc.extPubPassword);
+			publisher = Publisher.factory(dc.extPubClassName, dc.extPubAddress, dc.extPubPort, String.valueOf(context.getThisTaskId()));
 		} catch (Exception e) {
 			LOG.error("Prepare: ", e);
 		}
 
+		try {
+			publisher.connect(dc.extPubUser, dc.extPubPassword);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void execute(Tuple input) {
-		
-		try {
-			String sourceSOId;
-			String actionId;
-			String actionName;
-			
-			JsonNode actuation = this.mapper.readTree(input.getStringByField("action"));
+		ExternalSubscription externalSub;
+		SensorUpdate su;
+		String sourceSOId;
+		String streamId;
+		try{
+			su = mapper.readValue(input.getStringByField("su"),
+					SensorUpdate.class);
+			externalSub = mapper.readValue(input.getStringByField("subsdoc"),
+					ExternalSubscription.class);
 			sourceSOId = input.getStringByField("soid");
-			actionId = input.getStringByField("id");
-			actionName = input.getStringByField("name");
-			Log.info("received actuation\n\t\t" +
-					 "action: "+actuation.toString()+"\n\t\t"+
-					 "soid: "+sourceSOId+"\n\t\t"+
-					 "name: "+actionName+"\n\t\t"+
-					 "id: "+actionId);
+			streamId = input.getStringByField("streamid");
+			if(suCache.check(externalSub.getId(), su.getLastUpdate())){
+				// This SU or a posterior one has already been sent, do not send this one.
+				collector.ack(input);
+				return;
+			}
+		}catch (Exception e) {
+			LOG.error("FAIL", e);
+			collector.fail(input);
+			return;
+		}
 
-
+		String suStr = input.getStringByField("su");
+		try {
 			if(!publisher.isConnected()){
 				publisher.connect(dc.extPubUser,
 						dc.extPubPassword);
 			}
-			publisher.publishMessage(sourceSOId+"/actions", actuation.toString());
-			LOG.info("Actuation request pubished on topic "+sourceSOId+"/actions");
-			LOG.info("Actuation message contents: "+actuation.toString());
-			
+			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
 			return;
 		}
+		suCache.put(externalSub.getId(), su.getLastUpdate());
 		collector.ack(input);
 	}
 
