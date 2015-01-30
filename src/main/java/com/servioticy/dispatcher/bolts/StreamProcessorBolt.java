@@ -21,8 +21,6 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.UpdateDescriptor;
@@ -48,9 +46,7 @@ import java.util.concurrent.ExecutionException;
  * 
  */
 public class StreamProcessorBolt implements IRichBolt {
-	/**
-	 * 
-	 */
+
 	private static final long serialVersionUID = 1L;
 	private OutputCollector collector;
 	private TopologyContext context;
