@@ -77,7 +77,7 @@ public class SOProcessor010 extends SOProcessor{
     }
 
     public String replaceAliases() throws JsonGenerationException, JsonMappingException, IOException {
-        for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()) {
+        for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams(this.mapper).entrySet()) {
             SOStream010 stream = (SOStream010) streamEntry.getValue();
             for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
                 SOChannel channel = channelEntry.getValue();
@@ -94,7 +94,7 @@ public class SOProcessor010 extends SOProcessor{
     }
 
     public void compileJSONPaths() {
-        for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()) {
+        for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams(this.mapper).entrySet()) {
             PSOStream pstream = new PSOStream();
             SOStream010 stream = (SOStream010) streamEntry.getValue();
             String streamId = streamEntry.getKey();

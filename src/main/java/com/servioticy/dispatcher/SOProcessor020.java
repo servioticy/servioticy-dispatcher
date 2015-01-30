@@ -122,7 +122,7 @@ public class SOProcessor020 extends SOProcessor{
 
     public Set<String> getStreamsBySourceId(String sourceId) {
         Set<String> streams = new HashSet<String>();
-        for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()) {
+        for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams(this.mapper).entrySet()) {
             String streamId = streamEntry.getKey();
             SOStream stream = streamEntry.getValue();
             for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
@@ -147,7 +147,7 @@ public class SOProcessor020 extends SOProcessor{
 
     public Set<String> getSourceIdsByStream(String streamId) {
         Set<String> sourceIds = new HashSet<String>();
-        SOStream stream = this.so.getStreams().get(streamId);
+        SOStream stream = this.so.getStreams(this.mapper).get(streamId);
         for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
             String channelId = channelEntry.getKey();
             SOChannel channel = channelEntry.getValue();
@@ -214,7 +214,7 @@ public class SOProcessor020 extends SOProcessor{
         su.setLastUpdate(timestamp);
         su.setChannels(new LinkedHashMap<String, SUChannel>());
 
-        SOStream stream = so.getStreams().get(streamId);
+        SOStream stream = so.getStreams(this.mapper).get(streamId);
         for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
             SOChannel channel = channelEntry.getValue();
             SUChannel suChannel = new SUChannel();
