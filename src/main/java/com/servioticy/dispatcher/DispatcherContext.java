@@ -40,11 +40,11 @@ public class DispatcherContext implements Serializable{
     public String extPubPassword = null;
     public String extPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
 
-    public String servicesPubAddress = "localhost";
-    public int servicesPubPort = 1883;
-    public String servicesPubUser = null;
-    public String servicesPubPassword = null;
-    public String servicesPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
+    public String internalPubAddress = "localhost";
+    public int internalPubPort = 1883;
+    public String internalPubUser = null;
+    public String internalPubPassword = null;
+    public String internalPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
 
     public boolean benchmark = false;
     public String benchResultsDir = ".";
@@ -82,11 +82,11 @@ public class DispatcherContext implements Serializable{
             extPubPassword = config.getString("publishers/external/password", this.extPubPassword);
             extPubClassName = config.getString("publishers/external/class", this.extPubClassName);
 
-            servicesPubAddress = config.getString("publishers/services/address", this.servicesPubAddress);
-            servicesPubPort = config.getInt("publishers/services/port", this.servicesPubPort);
-            servicesPubAddress = config.getString("publishers/services/username", this.servicesPubUser);
-            servicesPubPassword = config.getString("publishers/services/password", this.servicesPubPassword);
-            servicesPubClassName = config.getString("publishers/services/class", this.servicesPubClassName);
+            internalPubAddress = config.getString("publishers/internal/address", this.internalPubAddress);
+            internalPubPort = config.getInt("publishers/internal/port", this.internalPubPort);
+            internalPubAddress = config.getString("publishers/internal/username", this.internalPubUser);
+            internalPubPassword = config.getString("publishers/internal/password", this.internalPubPassword);
+            internalPubClassName = config.getString("publishers/internal/class", this.internalPubClassName);
 
             this.benchResultsDir = config.getString("benchResultsDir", this.benchResultsDir);
 

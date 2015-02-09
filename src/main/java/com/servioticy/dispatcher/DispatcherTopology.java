@@ -84,11 +84,11 @@ public class DispatcherTopology {
 
         builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc))
                 .fieldsGrouping("subretriever", "externalSub", new Fields("subid"));
-        builder.setBolt("servicedispatcher", new ServiceDispatcherBolt(dc))
-                .fieldsGrouping("subretriever", "serviceSub", new Fields("subid"));
+        builder.setBolt("internaldispatcher", new InternalDispatcherBolt(dc))
+                .fieldsGrouping("subretriever", "internalSub", new Fields("subid"));
 
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc))
-                .shuffleGrouping("subretriever", "internalSub")
+                .shuffleGrouping("subretriever", "streamSub")
                 .shuffleGrouping("prepare", "stream");
         builder.setBolt("streamprocessor", new StreamProcessorBolt(dc))
                 .shuffleGrouping("streamdispatcher", "default");

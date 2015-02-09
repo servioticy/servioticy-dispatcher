@@ -19,14 +19,14 @@
 			<password>shines</password>
 			<class>com.servioticy.dispatcher.publishers.MQTTPublisher</class>
 		</external>
-		<services>
+		<internal>
 			<name>servioticy</name>
 			<address>tcp://localhost</address>
 			<port>1833</port>
 			<username>compose</username>
 			<password>shines</password>
 			<class>com.servioticy.dispatcher.publishers.MQTTPublisher</class>
-		</services>
+		</internal>
 	</publishers>
 	
 </context>

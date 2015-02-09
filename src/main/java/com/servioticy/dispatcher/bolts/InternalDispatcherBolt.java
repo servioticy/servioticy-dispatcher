@@ -31,7 +31,7 @@ import org.apache.log4j.Logger;
 import java.util.Map;
 
 
-public class ServiceDispatcherBolt implements IRichBolt {
+public class InternalDispatcherBolt implements IRichBolt {
 
 	private static final long serialVersionUID = 1L;
 	private OutputCollector collector;
@@ -39,10 +39,10 @@ public class ServiceDispatcherBolt implements IRichBolt {
 	private Publisher publisher;
 	private SUCache suCache;
 	private DispatcherContext dc;
-	private static Logger LOG = Logger.getLogger(ServiceDispatcherBolt.class);
+	private static Logger LOG = Logger.getLogger(InternalDispatcherBolt.class);
 	private ObjectMapper mapper;
 
-	public ServiceDispatcherBolt(DispatcherContext dc){
+	public InternalDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
 	}
 	
