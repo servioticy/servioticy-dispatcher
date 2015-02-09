@@ -114,7 +114,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                                     soSub.getDestination(),
                                     suDoc)
                     );
-                }  if (subscription.getClass().equals(ExternalSubscription.class)) {
+                } else if (subscription.getClass().equals(ExternalSubscription.class)) {
                     this.collector.emit("externalSub", input,
                             new Values(subscription.getId(),
                                     soid,
