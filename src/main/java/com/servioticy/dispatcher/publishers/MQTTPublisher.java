@@ -31,7 +31,7 @@ public class MQTTPublisher extends Publisher {
 
 	private IMqttAsyncClient asyncClient = null;
 
-	protected MQTTPublisher(String address, int port, String pubId) throws Exception{
+	public MQTTPublisher(String address, Integer port, String pubId) throws Exception{
 			asyncClient = new MqttAsyncClient(address + ":" + port, pubId);
 	}
 

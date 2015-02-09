@@ -55,36 +55,36 @@ public class InternalDispatcherBolt implements IRichBolt {
 		this.publisher = null;
 		this.suCache = new SUCache(25);
 		
-		LOG.debug("Service publisher server: " + dc.extPubAddress + ":" + dc.extPubPort);
-		LOG.debug("Service publisher user/pass: " + dc.extPubUser + " / "+dc.extPubPassword);
+		LOG.debug("Service publisher server: " + dc.internalPubAddress + ":" + dc.internalPubPort);
+		LOG.debug("Service publisher user/pass: " + dc.internalPubUser + " / "+dc.internalPubPassword);
 
 		
 		try {
-			publisher = Publisher.factory(dc.extPubClassName, dc.extPubAddress, dc.extPubPort, String.valueOf(context.getThisTaskId()));
+			publisher = Publisher.factory(dc.internalPubClassName, dc.internalPubAddress, dc.internalPubPort, String.valueOf(context.getThisTaskId()));
 		} catch (Exception e) {
 			LOG.error("Prepare: ", e);
 		}
 
 		try {
-			publisher.connect(dc.extPubUser, dc.extPubPassword);
+			publisher.connect(dc.internalPubUser, dc.internalPubPassword);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
 	public void execute(Tuple input) {
-		ExternalSubscription externalSub;
+		ExternalSubscription internalSub;
 		SensorUpdate su;
 		String sourceSOId;
 		String streamId;
 		try{
 			su = mapper.readValue(input.getStringByField("su"),
 					SensorUpdate.class);
-			externalSub = mapper.readValue(input.getStringByField("subsdoc"),
+			internalSub = mapper.readValue(input.getStringByField("subsdoc"),
 					ExternalSubscription.class);
 			sourceSOId = input.getStringByField("soid");
 			streamId = input.getStringByField("streamid");
-			if(suCache.check(externalSub.getId(), su.getLastUpdate())){
+			if(suCache.check(internalSub.getId(), su.getLastUpdate())){
 				// This SU or a posterior one has already been sent, do not send this one.
 				collector.ack(input);
 				return;
@@ -98,16 +98,16 @@ public class InternalDispatcherBolt implements IRichBolt {
 		String suStr = input.getStringByField("su");
 		try {
 			if(!publisher.isConnected()){
-				publisher.connect(dc.extPubUser,
-						dc.extPubPassword);
+				publisher.connect(dc.internalPubUser,
+						dc.internalPubPassword);
 			}
-			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
+			publisher.publishMessage(internalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
 			return;
 		}
-		suCache.put(externalSub.getId(), su.getLastUpdate());
+		suCache.put(internalSub.getId(), su.getLastUpdate());
 		collector.ack(input);
 	}
 

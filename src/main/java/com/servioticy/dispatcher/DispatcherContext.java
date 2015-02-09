@@ -34,11 +34,11 @@ public class DispatcherContext implements Serializable{
     public String kestrelQueue = "services";
     public String kestrelQueueActions = "actions";
     
-    public String extPubAddress = "localhost";
-    public int extPubPort = 1883;
-    public String extPubUser = null;
-    public String extPubPassword = null;
-    public String extPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
+    public String externalPubAddress = "localhost";
+    public int externalPubPort = 1883;
+    public String externalPubUser = null;
+    public String externalPubPassword = null;
+    public String externalPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
 
     public String internalPubAddress = "localhost";
     public int internalPubPort = 1883;
@@ -76,11 +76,11 @@ public class DispatcherContext implements Serializable{
 
             this.benchmark = config.getBoolean("benchmark", this.benchmark);
 
-            extPubAddress = config.getString("publishers/external/address", this.extPubAddress);
-            extPubPort = config.getInt("publishers/external/port", this.extPubPort);
-            extPubUser = config.getString("publishers/external/username", this.extPubUser);
-            extPubPassword = config.getString("publishers/external/password", this.extPubPassword);
-            extPubClassName = config.getString("publishers/external/class", this.extPubClassName);
+            externalPubAddress = config.getString("publishers/external/address", this.externalPubAddress);
+            externalPubPort = config.getInt("publishers/external/port", this.externalPubPort);
+            externalPubUser = config.getString("publishers/external/username", this.externalPubUser);
+            externalPubPassword = config.getString("publishers/external/password", this.externalPubPassword);
+            externalPubClassName = config.getString("publishers/external/class", this.externalPubClassName);
 
             internalPubAddress = config.getString("publishers/internal/address", this.internalPubAddress);
             internalPubPort = config.getInt("publishers/internal/port", this.internalPubPort);

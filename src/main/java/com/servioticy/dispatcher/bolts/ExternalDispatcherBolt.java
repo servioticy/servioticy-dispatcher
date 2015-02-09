@@ -57,18 +57,18 @@ public class ExternalDispatcherBolt implements IRichBolt {
 		this.publisher = null;
 		this.suCache = new SUCache(25);
 		
-		LOG.debug("External publisher server: " + dc.extPubAddress + ":" + dc.extPubPort);
-		LOG.debug("External publisher user/pass: " + dc.extPubUser + " / "+dc.extPubPassword);
+		LOG.debug("External publisher server: " + dc.externalPubAddress + ":" + dc.externalPubPort);
+		LOG.debug("External publisher user/pass: " + dc.externalPubUser + " / "+dc.externalPubPassword);
 
 		
 		try {
-			publisher = Publisher.factory(dc.extPubClassName, dc.extPubAddress, dc.extPubPort, String.valueOf(context.getThisTaskId()));
+			publisher = Publisher.factory(dc.externalPubClassName, dc.externalPubAddress, dc.externalPubPort, String.valueOf(context.getThisTaskId()));
 		} catch (Exception e) {
 			LOG.error("Prepare: ", e);
 		}
 
 		try {
-			publisher.connect(dc.extPubUser, dc.extPubPassword);
+			publisher.connect(dc.externalPubUser, dc.externalPubPassword);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -100,8 +100,8 @@ public class ExternalDispatcherBolt implements IRichBolt {
 		String suStr = input.getStringByField("su");
 		try {
 			if(!publisher.isConnected()){
-				publisher.connect(dc.extPubUser,
-						dc.extPubPassword);
+				publisher.connect(dc.externalPubUser,
+						dc.externalPubPassword);
 			}
 			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
 			LOG.info("Message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates");

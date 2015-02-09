@@ -30,7 +30,7 @@ public class CSBPublisher extends Publisher {
     private final CSBFactory factory;
     private TopicPublisher tp;
 
-    protected CSBPublisher(String address, int port, String pubId) throws Exception{
+    public CSBPublisher(String address, Integer port, String pubId) throws Exception{
             this.factory = CSBFactory.getInstance();
             this.address = address;
             this.port = port;
