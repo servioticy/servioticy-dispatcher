@@ -76,17 +76,17 @@ public class DispatcherContext implements Serializable{
 
             this.benchmark = config.getBoolean("benchmark", this.benchmark);
 
-            externalPubAddress = config.getString("publishers/external/address", this.externalPubAddress);
-            externalPubPort = config.getInt("publishers/external/port", this.externalPubPort);
-            externalPubUser = config.getString("publishers/external/username", this.externalPubUser);
-            externalPubPassword = config.getString("publishers/external/password", this.externalPubPassword);
-            externalPubClassName = config.getString("publishers/external/class", this.externalPubClassName);
+            this.externalPubAddress = config.getString("publishers/external/address", this.externalPubAddress);
+            this.externalPubPort = config.getInt("publishers/external/port", this.externalPubPort);
+            this.externalPubUser = config.getString("publishers/external/username", this.externalPubUser);
+            this.externalPubPassword = config.getString("publishers/external/password", this.externalPubPassword);
+            this.externalPubClassName = config.getString("publishers/external/class", this.externalPubClassName);
 
-            internalPubAddress = config.getString("publishers/internal/address", this.internalPubAddress);
-            internalPubPort = config.getInt("publishers/internal/port", this.internalPubPort);
-            internalPubAddress = config.getString("publishers/internal/username", this.internalPubUser);
-            internalPubPassword = config.getString("publishers/internal/password", this.internalPubPassword);
-            internalPubClassName = config.getString("publishers/internal/class", this.internalPubClassName);
+            this.internalPubAddress = config.getString("publishers/internal/address", this.internalPubAddress);
+            this.internalPubPort = config.getInt("publishers/internal/port", this.internalPubPort);
+            this.internalPubUser = config.getString("publishers/internal/username", this.internalPubUser);
+            this.internalPubPassword = config.getString("publishers/internal/password", this.internalPubPassword);
+            this.internalPubClassName = config.getString("publishers/internal/class", this.internalPubClassName);
 
             this.benchResultsDir = config.getString("benchResultsDir", this.benchResultsDir);
 
