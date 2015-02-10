@@ -109,7 +109,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                     .getSubscriptions()) {
                 if (subscription.getClass().equals(SOSubscription.class)) {
                     SOSubscription soSub = (SOSubscription) subscription;
-                    this.collector.emit("internalSub", input,
+                    this.collector.emit("streamSub", input,
                             new Values(soSub.getGroupId(),
                                     soSub.getDestination(),
                                     suDoc)
@@ -123,7 +123,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                                     streamid)
                     );
                 } else if (subscription.getClass().equals(InternalSubscription.class)) {
-                    this.collector.emit("serviceSub", input,
+                    this.collector.emit("internalSub", input,
                             new Values(subscription.getId(),
                                     soid,
                                     this.mapper.writeValueAsString(subscription),

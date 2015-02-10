@@ -22,7 +22,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
-import com.servioticy.datamodel.subscription.ExternalSubscription;
+import com.servioticy.datamodel.subscription.InternalSubscription;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.publishers.Publisher;
@@ -73,7 +73,7 @@ public class InternalDispatcherBolt implements IRichBolt {
 	}
 
 	public void execute(Tuple input) {
-		ExternalSubscription internalSub;
+		InternalSubscription internalSub;
 		SensorUpdate su;
 		String sourceSOId;
 		String streamId;
@@ -81,7 +81,7 @@ public class InternalDispatcherBolt implements IRichBolt {
 			su = mapper.readValue(input.getStringByField("su"),
 					SensorUpdate.class);
 			internalSub = mapper.readValue(input.getStringByField("subsdoc"),
-					ExternalSubscription.class);
+					InternalSubscription.class);
 			sourceSOId = input.getStringByField("soid");
 			streamId = input.getStringByField("streamid");
 			if(suCache.check(internalSub.getId(), su.getLastUpdate())){
