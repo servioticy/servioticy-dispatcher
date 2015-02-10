@@ -15,7 +15,6 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher.publishers;
 
-import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -24,9 +23,6 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttSecurityException;
 
 public class MQTTPublisher extends Publisher {
-
-	private static Logger LOG = org.apache.log4j.Logger.getLogger(MQTTPublisher.class);
-	
 	//private IMqttToken token;
 
 	private IMqttAsyncClient asyncClient = null;

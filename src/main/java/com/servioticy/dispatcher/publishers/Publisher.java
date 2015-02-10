@@ -15,12 +15,15 @@
  ******************************************************************************/
 package com.servioticy.dispatcher.publishers;
 
+import org.apache.log4j.Logger;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
 public abstract class Publisher {
+    protected static Logger LOG = org.apache.log4j.Logger.getLogger(Publisher.class);
 
 	public static Publisher factory(String className, String address, int port, String taskId)
 			throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException,
