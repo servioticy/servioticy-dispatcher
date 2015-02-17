@@ -47,8 +47,10 @@ public class MQTTPublisher extends Publisher {
 			asyncClient.connect(options).waitForCompletion();
 		} catch (MqttSecurityException e) {
 			LOG.error("FAIL in connect: ", e);
+            throw e;
 		} catch (MqttException e) {
 			LOG.error("FAIL in connect:", e);
+            throw e;
 		}	
 	}
 
