@@ -1,0 +1,12 @@
+{
+    "id": "additional_so",
+    "streams": {
+        "some_stream": {
+            "channels": {
+                "$": {
+                    "type": "number"
+                }
+            }
+        }
+    }
+}

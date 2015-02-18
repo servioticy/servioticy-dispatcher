@@ -74,28 +74,28 @@ public class DispatcherTopology {
         TopologyBuilder builder = new TopologyBuilder();
 
         // TODO Auto-assign workers to the spout in function of the number of Kestrel IPs
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
-        builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()), 4);
-        builder.setSpout("so-user", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueReputation, new ReputationScheme()), 4);
+        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()));
+        builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()));
+        builder.setSpout("so-user", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueReputation, new ReputationScheme()));
 
-        builder.setBolt("prepare", new PrepareBolt(dc), 10)
+        builder.setBolt("prepare", new PrepareBolt(dc))
                 .shuffleGrouping("dispatcher");
 
-        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 2)
+        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc))
         		.shuffleGrouping("actions");
 
-        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 4)
+        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc))
                 .shuffleGrouping("prepare", "subscription");
 
-        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
-                .fieldsGrouping("subretriever", "httpSub", new Fields("subid"));
-        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(dc), 1)
-                .fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
+        builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc))
+                .fieldsGrouping("subretriever", "externalSub", new Fields("subid"));
+        builder.setBolt("internaldispatcher", new InternalDispatcherBolt(dc))
+                .fieldsGrouping("subretriever", "internalSub", new Fields("subid"));
 
-        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 13)
-                .shuffleGrouping("subretriever", "internalSub")
+        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc))
+                .shuffleGrouping("subretriever", "streamSub")
                 .shuffleGrouping("prepare", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 17)
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc))
                 .shuffleGrouping("streamdispatcher", "default");
 
         builder.setBolt("reputation", new ReputationBolt(dc), 2)
@@ -105,7 +105,7 @@ public class DispatcherTopology {
                 .shuffleGrouping("so-user");
 
         if (dc.benchmark) {
-            builder.setBolt("benchmark", new BenchmarkBolt(dc), 4)
+            builder.setBolt("benchmark", new BenchmarkBolt(dc))
                     .shuffleGrouping("streamdispatcher", "benchmark")
                     .shuffleGrouping("subretriever", "benchmark")
                     .shuffleGrouping("streamprocessor", "benchmark")
@@ -115,7 +115,6 @@ public class DispatcherTopology {
         Config conf = new Config();
         conf.setDebug(cmd.hasOption("d"));
         if (cmd.hasOption("t")) {
-            conf.setNumWorkers(8);
             StormSubmitter.submitTopology(cmd.getOptionValue("t"), conf, builder.createTopology());
         } else {
             conf.setMaxTaskParallelism(4);

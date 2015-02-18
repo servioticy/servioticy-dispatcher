@@ -36,9 +36,17 @@ public class DispatcherContext implements Serializable{
     public String kestrelQueueActions = "actions";
     public String kestrelQueueReputation = "reputation";
     
-    public String mqttUri;
-    public String mqttUser;
-    public String mqttPassword;
+    public String externalPubAddress = "localhost";
+    public int externalPubPort = 1883;
+    public String externalPubUser = null;
+    public String externalPubPassword = null;
+    public String externalPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
+
+    public String internalPubAddress = "localhost";
+    public int internalPubPort = 1883;
+    public String internalPubUser = null;
+    public String internalPubPassword = null;
+    public String internalPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
 
     public boolean benchmark = false;
     public String benchResultsDir = ".";
@@ -70,9 +78,17 @@ public class DispatcherContext implements Serializable{
 
             this.benchmark = config.getBoolean("benchmark", this.benchmark);
 
-            mqttUri = config.getString("pubsub/mqtt/uri", this.mqttUri);
-            mqttUser = config.getString("pubsub/mqtt/username", this.mqttUser);
-            mqttPassword = config.getString("pubsub/mqtt/password", this.mqttPassword);
+            this.externalPubAddress = config.getString("publishers/external/address", this.externalPubAddress);
+            this.externalPubPort = config.getInt("publishers/external/port", this.externalPubPort);
+            this.externalPubUser = config.getString("publishers/external/username", this.externalPubUser);
+            this.externalPubPassword = config.getString("publishers/external/password", this.externalPubPassword);
+            this.externalPubClassName = config.getString("publishers/external/class", this.externalPubClassName);
+
+            this.internalPubAddress = config.getString("publishers/internal/address", this.internalPubAddress);
+            this.internalPubPort = config.getInt("publishers/internal/port", this.internalPubPort);
+            this.internalPubUser = config.getString("publishers/internal/username", this.internalPubUser);
+            this.internalPubPassword = config.getString("publishers/internal/password", this.internalPubPassword);
+            this.internalPubClassName = config.getString("publishers/internal/class", this.internalPubClassName);
 
             this.benchResultsDir = config.getString("benchResultsDir", this.benchResultsDir);
 

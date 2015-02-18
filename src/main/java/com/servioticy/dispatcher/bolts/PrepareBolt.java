@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.restclient.FutureRestResponse;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestResponse;
 
@@ -46,6 +47,8 @@ public class PrepareBolt implements IRichBolt {
     private OutputCollector collector;
     private RestClient restClient;
     private DispatcherContext dc;
+    private ObjectMapper mapper;
+
 
     public PrepareBolt(DispatcherContext dc) {
         this.dc = dc;
@@ -60,6 +63,8 @@ public class PrepareBolt implements IRichBolt {
     public void prepare(Map stormConf, TopologyContext context,
                         OutputCollector collector) {
         this.collector = collector;
+        this.mapper = new ObjectMapper();
+
         if (restClient == null) {
             restClient = new RestClient();
         }
@@ -67,32 +72,28 @@ public class PrepareBolt implements IRichBolt {
     }
 
     public void execute(Tuple input) {
-
-
         RestResponse rr;
+        FutureRestResponse frr;
         String opid = input.getStringByField("opid");
         String suDoc = input.getStringByField("su");
         String soid = input.getStringByField("soid");
         String streamid = input.getStringByField("streamid");
-        ObjectMapper mapper = new ObjectMapper();
         SensorUpdate su;
         try {
-                su = mapper.readValue(suDoc, SensorUpdate.class);
-
 
             try {
-                rr = restClient.restRequest(
+                frr = restClient.restRequest(
                         dc.restBaseURL
                                 + "private/opid/" + opid, null,
                         RestClient.GET, null
                 );
-
             } catch (Exception e) {
                 // TODO Log the error
                 // Retry until timeout
                 this.collector.fail(input);
                 return;
             }
+            su = this.mapper.readValue(suDoc, SensorUpdate.class);
 
             // Reputation
             if (su.getComposed() == null || !su.getComposed()){
@@ -129,7 +130,15 @@ public class PrepareBolt implements IRichBolt {
                     return;
                 }*/
 
-                suDoc = mapper.writeValueAsString(su);
+                suDoc = this.mapper.writeValueAsString(su);
+                try {
+                    rr = frr.get();
+                } catch (Exception e) {
+                    // TODO Log the error
+                    // Retry until timeout
+                    this.collector.fail(input);
+                    return;
+                }
             }
         } catch (Exception e) {
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");

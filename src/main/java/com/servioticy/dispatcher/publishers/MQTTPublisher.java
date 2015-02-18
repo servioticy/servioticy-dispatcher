@@ -13,55 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/ 
-package com.servioticy.dispatcher.pubsub;
+package com.servioticy.dispatcher.publishers;
 
-import org.apache.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
-import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttSecurityException;
 
-import com.servioticy.dispatcher.bolts.PubSubDispatcherBolt;
-
-
-/**
- * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
- * 
- */
-public class MQTTPublisher implements PublisherInterface {
-
-	private static Logger LOG = org.apache.log4j.Logger.getLogger(MQTTPublisher.class);
-	
+public class MQTTPublisher extends Publisher {
 	//private IMqttToken token;
-	private IMqttAsyncClient asyncClient = null; 
 
-	
-	public MQTTPublisher(String uri, String pubId){  
-		
-		
-		try {
-			
-			//asyncClient = new MqttAsyncClient("tcp://api.servioticy.com:1883",pubId);
-			asyncClient = new MqttAsyncClient(uri, pubId);
-			//asyncClient = new MqttAsyncClient("tcp://192.168.56.101:1883",pubId);
-						
-			
-		} catch (MqttSecurityException e) {
-			LOG.error("FAIL in constructor: ", e);
-		} catch (MqttException e) {
-			LOG.error("FAIL in constructor: ", e);
-		}
-	     
+	private IMqttAsyncClient asyncClient = null;
+
+	public MQTTPublisher(String address, Integer port, String pubId) throws Exception{
+			asyncClient = new MqttAsyncClient(address + ":" + port, pubId);
 	}
-	
-	public void connect(String uri, String username, String password) {
+
+	@Override
+	public void connect(String username, String password) throws Exception {
 	
 		MqttConnectOptions options = new MqttConnectOptions();
 		String uris[] = new String[1];
-		uris[0] = uri;
+		uris[0] = asyncClient.getServerURI();
 		options.setServerURIs(uris);
 		options.setUserName(username);
 		options.setPassword(password.toCharArray());
@@ -72,11 +47,14 @@ public class MQTTPublisher implements PublisherInterface {
 			asyncClient.connect(options).waitForCompletion();
 		} catch (MqttSecurityException e) {
 			LOG.error("FAIL in connect: ", e);
+            throw e;
 		} catch (MqttException e) {
 			LOG.error("FAIL in connect:", e);
+            throw e;
 		}	
 	}
-	
+
+	@Override
 	public void close() {
 		try {
 			asyncClient.disconnect().waitForCompletion();
@@ -84,7 +62,12 @@ public class MQTTPublisher implements PublisherInterface {
 			LOG.error("FAIL", e);
 		}
 	}
-	
+
+	@Override
+	public boolean isConnected() {
+		return asyncClient.isConnected();
+	}
+
 	public void publishMessage(String topic, String msg) {
 		int attempts = 0;
 		if(asyncClient != null) {

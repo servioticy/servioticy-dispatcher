@@ -22,17 +22,23 @@ import com.jayway.jsonpath.JsonPath;
 import java.util.*;
 import java.util.Map.Entry;
 
+/**
+ * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
+ */
 public class JsonPathReplacer {
+    ObjectMapper mapper;
     private String str;
     // JsonPaths with their group id pointing to a position of the str. Several JsonPaths in a row at the same position
     // 	will be inside the list.
     private SortedMap<Integer, LinkedList<Map.Entry<String, JsonPath>>> jsonPaths;
 
-    public JsonPathReplacer(String str) {
-        this(str, new HashSet<String>());
+    public JsonPathReplacer(String str, ObjectMapper mapper) {
+        this(str, mapper, new HashSet<String>());
+        this.mapper = mapper;
     }
 
-    public JsonPathReplacer(String str, Set<String> excludedDocIds) {
+    public JsonPathReplacer(String str, ObjectMapper mapper, Set<String> excludedDocIds) {
+        this.mapper = mapper;
         this.jsonPaths = new TreeMap<Integer, LinkedList<Map.Entry<String, JsonPath>>>();
         this.str = str;
 

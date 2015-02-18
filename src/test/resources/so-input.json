@@ -1,0 +1,20 @@
+{
+    "id": "so",
+    "streams": {
+        "A": {
+            "channels": {
+                "$": {
+                    "type": "number"
+                }
+            }
+        },
+        "B": {
+            "channels": {
+                "$": {
+                    "current-value": "function(A){return $input == A}",
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}

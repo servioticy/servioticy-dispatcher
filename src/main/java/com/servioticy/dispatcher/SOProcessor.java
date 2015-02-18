@@ -17,6 +17,7 @@ package com.servioticy.dispatcher;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.serviceobject.SO010;
 import com.servioticy.datamodel.serviceobject.SO020;
@@ -33,12 +34,12 @@ import java.util.Set;
 public abstract class SOProcessor {
     protected SOProcessor(){}
 
-    public static SOProcessor factory(SO so) throws IOException {
+    public static SOProcessor factory(SO so, ObjectMapper mapper) throws IOException {
         if(so.getClass() == SO010.class) {
-            return new SOProcessor010((SO010) so);
+            return new SOProcessor010((SO010) so, mapper);
         }
         if(so.getClass() == SO020.class) {
-            return new SOProcessor020((SO020) so);
+            return new SOProcessor020((SO020) so, mapper);
         }
         return null;
     }

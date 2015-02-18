@@ -30,6 +30,7 @@ import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SOProcessor;
 import com.servioticy.dispatcher.SOProcessor010;
+import com.servioticy.restclient.FutureRestResponse;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestResponse;
@@ -55,6 +56,7 @@ public class StreamDispatcherBolt implements IRichBolt {
     private TopologyContext context;
     private RestClient restClient;
     private DispatcherContext dc;
+    private ObjectMapper mapper;
 
     public StreamDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
@@ -68,6 +70,7 @@ public class StreamDispatcherBolt implements IRichBolt {
 
     public void prepare(Map stormConf, TopologyContext context,
                         OutputCollector collector) {
+        this.mapper = new ObjectMapper();
         this.collector = collector;
         this.context = context;
         if(restClient == null){
@@ -76,10 +79,10 @@ public class StreamDispatcherBolt implements IRichBolt {
     }
 
     public void execute(Tuple input) {
-        ObjectMapper mapper = new ObjectMapper();
         SOSubscription soSub = null;
         SO so;
         RestResponse rr;
+        FutureRestResponse frr;
 
         String suDoc = input.getStringByField("su");
         String docId = input.getStringByField("docid");
@@ -88,12 +91,13 @@ public class StreamDispatcherBolt implements IRichBolt {
         String soDoc;
 
         try{
-            rr = restClient.restRequest(
+            frr = restClient.restRequest(
                     dc.restBaseURL
                             + "private/" + destination, null, RestClient.GET,
                     null);
+            rr = frr.get();
             soDoc = rr.getResponse();
-            so = mapper.readValue(soDoc,
+            so = this.mapper.readValue(soDoc,
                     SO.class);
 
             if(input.getSourceStreamId().equals("stream")){
@@ -108,13 +112,13 @@ public class StreamDispatcherBolt implements IRichBolt {
                 }
             }
 
-            SOProcessor sop = SOProcessor.factory(so);
+            SOProcessor sop = SOProcessor.factory(so, this.mapper);
             if(sop.getClass() == SOProcessor010.class) {
                 soDoc = ((SOProcessor010)sop).replaceAliases();
                 ((SOProcessor010)sop).compileJSONPaths();
             }
 
-            SensorUpdate su = mapper.readValue(suDoc, SensorUpdate.class);
+            SensorUpdate su = this.mapper.readValue(suDoc, SensorUpdate.class);
             PDP pdp = new LocalPDP();
 
             // TODO Fill these fields properly

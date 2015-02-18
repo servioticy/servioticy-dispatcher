@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.servioticy</groupId>
     <artifactId>dispatcher</artifactId>
-    <version>0.4.2-security-SNAPSHOT</version>
+    <version>0.4.3-security-SNAPSHOT</version>
     <name>dispatcher</name>
     <repositories>
         <repository>
@@ -84,12 +84,7 @@
         <dependency>
             <groupId>com.servioticy</groupId>
             <artifactId>restclient</artifactId>
-            <version>0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.3.1</version>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch</groupId>
@@ -118,6 +113,12 @@
         </dependency>
     </dependencies>
     <build>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+        </testResources>
         <plugins>
             <!--
             bind the maven-assembly-plugin to the package phase

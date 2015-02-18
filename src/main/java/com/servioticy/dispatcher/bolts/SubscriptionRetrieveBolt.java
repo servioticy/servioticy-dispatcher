@@ -25,6 +25,7 @@ import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.subscription.*;
 import com.servioticy.dispatcher.DispatcherContext;
+import com.servioticy.restclient.FutureRestResponse;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestResponse;
@@ -43,6 +44,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
     private TopologyContext context;
     private RestClient restClient;
     private DispatcherContext dc;
+    private ObjectMapper mapper;
 
     public SubscriptionRetrieveBolt(DispatcherContext dc) {
         this.dc = dc;
@@ -58,22 +60,23 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                         OutputCollector collector) {
         this.collector = collector;
         this.context = context;
+        this.mapper = new ObjectMapper();
         if (restClient == null) {
             restClient = new RestClient();
         }
     }
 
     public void execute(Tuple input) {
-        ObjectMapper mapper = new ObjectMapper();
         Subscriptions subscriptions;
         RestResponse subscriptionsRR;
+        FutureRestResponse frr;
 
         String soid = input.getStringByField("soid");
         String streamid = input.getStringByField("streamid");
         String suDoc = input.getStringByField("su");
 
         try {
-            subscriptionsRR = restClient.restRequest(
+            frr = restClient.restRequest(
                     dc.restBaseURL
                             + "private/" + soid + "/streams/"
                             + streamid
@@ -81,21 +84,23 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                     null
             );
 
+            subscriptionsRR = frr.get();
+
             // In case there are no subscriptions.
             int hCode = subscriptionsRR.getHttpCode();
             if (hCode == 204) {
-                BenchmarkBolt.send(collector, input, dc, suDoc, "no-group");
+                BenchmarkBolt.send(collector, input, dc, suDoc, "no-subscription");
                 this.collector.ack(input);
                 return;
             }
 
             String substr = subscriptionsRR.getResponse();
-            subscriptions = mapper.readValue(substr,
+            subscriptions = this.mapper.readValue(substr,
                     Subscriptions.class);
 
             // No subscriptions
             if (subscriptions.getSubscriptions() == null || subscriptions.getSubscriptions().isEmpty()) {
-                BenchmarkBolt.send(collector, input, dc, suDoc, "no-group");
+                BenchmarkBolt.send(collector, input, dc, suDoc, "no-subscription");
                 collector.ack(input);
                 return;
             }
@@ -104,22 +109,24 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                     .getSubscriptions()) {
                 if (subscription.getClass().equals(SOSubscription.class)) {
                     SOSubscription soSub = (SOSubscription) subscription;
-                    this.collector.emit("internalSub", input,
+                    this.collector.emit("streamSub", input,
                             new Values(soSub.getGroupId(),
                                     soSub.getDestination(),
                                     suDoc)
                     );
-                } else if (subscription.getClass().equals(HttpSubscription.class)) {
-                    this.collector.emit("httpSub", input,
-                            new Values(subscription.getId(),
-                                    mapper.writeValueAsString(subscription),
-                                    suDoc)
-                    );
-                } else if (subscription.getClass().equals(PubSubSubscription.class)) {
-                    this.collector.emit("pubsubSub", input,
+                } else if (subscription.getClass().equals(ExternalSubscription.class)) {
+                    this.collector.emit("externalSub", input,
                             new Values(subscription.getId(),
                                     soid,
-                                    mapper.writeValueAsString(subscription),
+                                    this.mapper.writeValueAsString(subscription),
+                                    suDoc,
+                                    streamid)
+                    );
+                } else if (subscription.getClass().equals(InternalSubscription.class)) {
+                    this.collector.emit("internalSub", input,
+                            new Values(subscription.getId(),
+                                    soid,
+                                    this.mapper.writeValueAsString(subscription),
                                     suDoc,
                                     streamid)
                     );
@@ -150,9 +157,9 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream("internalSub", new Fields("docid", "destination", "su"));
-        declarer.declareStream("httpSub", new Fields("subid", "subsdoc", "su"));
-        declarer.declareStream("pubsubSub", new Fields("subid", "soid", "subsdoc", "su", "streamid"));
+        declarer.declareStream("streamSub", new Fields("docid", "destination", "su"));
+        declarer.declareStream("externalSub", new Fields("subid", "soid", "subsdoc", "su", "streamid"));
+        declarer.declareStream("internalSub", new Fields("subid", "soid", "subsdoc", "su", "streamid"));
         declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
     }
 

@@ -29,13 +29,16 @@ import com.servioticy.datamodel.actuation.ActuationDescriptor;
  * 
  */
 public class ActuationScheme implements Scheme {
+	private ObjectMapper mapper;
+	public ActuationScheme(){
+		this.mapper = new ObjectMapper();
+	}
 
 	public List<Object> deserialize(byte[] bytes) {
 		try {
-			ObjectMapper mapper = new ObjectMapper();
 			String inputDoc = new String(bytes, "UTF-8");
-			ActuationDescriptor ad = mapper.readValue(inputDoc, ActuationDescriptor.class);
-			return new Values(ad.getSoid(), ad.getId(), ad.getName(), mapper.writeValueAsString(ad.getAction()));
+			ActuationDescriptor ad = this.mapper.readValue(inputDoc, ActuationDescriptor.class);
+			return new Values(ad.getSoid(), ad.getId(), ad.getName(), this.mapper.writeValueAsString(ad.getAction()));
 		} catch(Exception e){
 			// TODO Log the error
 			throw new RuntimeException(e);

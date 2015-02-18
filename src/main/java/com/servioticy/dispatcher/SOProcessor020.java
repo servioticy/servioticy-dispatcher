@@ -48,8 +48,10 @@ public class SOProcessor020 extends SOProcessor{
     public static final int TYPE_ARRAY_GEOPOINT = 7;
 
     public SO020 so;
+    private ObjectMapper mapper;
 
-    public SOProcessor020(SO020 so) {
+    public SOProcessor020(SO020 so, ObjectMapper mapper) {
+        this.mapper = mapper;
         this.so = so;
     }
 
@@ -120,7 +122,7 @@ public class SOProcessor020 extends SOProcessor{
 
     public Set<String> getStreamsBySourceId(String sourceId) {
         Set<String> streams = new HashSet<String>();
-        for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams().entrySet()) {
+        for (Map.Entry<String, SOStream> streamEntry : this.so.getStreams(this.mapper).entrySet()) {
             String streamId = streamEntry.getKey();
             SOStream stream = streamEntry.getValue();
             for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
@@ -145,7 +147,7 @@ public class SOProcessor020 extends SOProcessor{
 
     public Set<String> getSourceIdsByStream(String streamId) {
         Set<String> sourceIds = new HashSet<String>();
-        SOStream stream = this.so.getStreams().get(streamId);
+        SOStream stream = this.so.getStreams(this.mapper).get(streamId);
         for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
             String channelId = channelEntry.getKey();
             SOChannel channel = channelEntry.getValue();
@@ -156,10 +158,9 @@ public class SOProcessor020 extends SOProcessor{
     }
 
     public String initializationCode(Map<String, SensorUpdate> sensorUpdates, String origin) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
         String result = "";
         for (Map.Entry<String, SensorUpdate> suEntry : sensorUpdates.entrySet()) {
-            result += "var " + suEntry.getKey() + " = " + mapper.writeValueAsString(suEntry.getValue()) + ";";
+            result += "var " + suEntry.getKey() + " = " + this.mapper.writeValueAsString(suEntry.getValue()) + ";";
         }
         // $input needs to be EXACTLY the same object as the origin one
         if(sensorUpdates.get("$input") == null){
@@ -205,7 +206,6 @@ public class SOProcessor020 extends SOProcessor{
     }
 
     public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws IOException, ScriptException {
-        ObjectMapper mapper = new ObjectMapper();
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
 
@@ -214,7 +214,7 @@ public class SOProcessor020 extends SOProcessor{
         su.setLastUpdate(timestamp);
         su.setChannels(new LinkedHashMap<String, SUChannel>());
 
-        SOStream stream = so.getStreams().get(streamId);
+        SOStream stream = so.getStreams(this.mapper).get(streamId);
         for (Map.Entry<String, SOChannel> channelEntry : stream.getChannels().entrySet()) {
             SOChannel channel = channelEntry.getValue();
             SUChannel suChannel = new SUChannel();
@@ -264,11 +264,10 @@ public class SOProcessor020 extends SOProcessor{
                 }
 
                 String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
-                String finalCode;
 
                 engine.eval(initializationCode(inputSUs, origin) +
                         "var " + resultVar + " = JSON.stringify(" + currentValueCode + "(" + functionArgsString(currentValueCode) + ")" + ")");
-                Object result = mapper.readValue((String)engine.get(resultVar), type);
+                Object result = this.mapper.readValue((String)engine.get(resultVar), type);
 
 
                 if (result == null) {
