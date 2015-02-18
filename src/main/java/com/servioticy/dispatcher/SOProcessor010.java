@@ -157,7 +157,6 @@ public class SOProcessor010 extends SOProcessor{
         if (filterField == null) {
             return true;
         }
-        String filterCode = filterField.replace(inputJsons);
 
         HashMap<String, String> inputVar = new HashMap();
 

@@ -18,6 +18,9 @@ package com.servioticy.dispatcher.bolts;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.passau.uni.sec.compose.pdp.servioticy.LocalPDP;
+import de.passau.uni.sec.compose.pdp.servioticy.PDP;
+import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
 import org.apache.log4j.Logger;
 
 import backtype.storm.task.OutputCollector;
@@ -32,7 +35,9 @@ import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.publishers.Publisher;
 
-
+/**
+ * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
+ */
 public class ExternalDispatcherBolt implements IRichBolt {
 
 	private static final long serialVersionUID = 1L;
@@ -43,6 +48,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
 	private DispatcherContext dc;
 	private static Logger LOG = org.apache.log4j.Logger.getLogger(ExternalDispatcherBolt.class);
 	private ObjectMapper mapper;
+    private PDP pdp;
 
 	public ExternalDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
@@ -56,7 +62,13 @@ public class ExternalDispatcherBolt implements IRichBolt {
 		this.context = context;
 		this.publisher = null;
 		this.suCache = new SUCache(25);
-		
+        this.pdp = new LocalPDP();
+        // Placeholders
+        this.pdp.setIdmHost("");
+        this.pdp.setIdmPort(0);
+        this.pdp.setIdmUser("");
+        this.pdp.setIdmPassword("");
+
 		LOG.debug("External publisher server: " + dc.externalPubAddress + ":" + dc.externalPubPort);
 		LOG.debug("External publisher user/pass: " + dc.externalPubUser + " / "+dc.externalPubPassword);
 
@@ -79,6 +91,8 @@ public class ExternalDispatcherBolt implements IRichBolt {
 		SensorUpdate su;
 		String sourceSOId;
 		String streamId;
+        PermissionCacheObject pco = null;
+
 		try{
 			su = mapper.readValue(input.getStringByField("su"),
 					SensorUpdate.class);
@@ -96,15 +110,17 @@ public class ExternalDispatcherBolt implements IRichBolt {
 			collector.fail(input);
 			return;
 		}
-
-		String suStr = input.getStringByField("su");
+        su.setSecurity(null);
 		try {
-			if(!publisher.isConnected()){
+            String suStr = mapper.writeValueAsString(su);
+            if(!publisher.isConnected()){
 				publisher.connect(dc.externalPubUser,
 						dc.externalPubPassword);
 			}
-			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
-			LOG.info("Message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates");
+            pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
+                    PDP.operationID.DispatchData);
+			publisher.publishMessage(externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates", suStr);
+			LOG.info("Message pubished on topic " + externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates");
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);

@@ -21,6 +21,7 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.reputation.Reputation;
@@ -63,6 +64,7 @@ public class StreamProcessorBolt implements IRichBolt {
 	private RestClient restClient;
     private DispatcherContext dc;
     private ObjectMapper mapper;
+    private PDP pdp;
 
     public StreamProcessorBolt(){
 		
@@ -101,6 +103,12 @@ public class StreamProcessorBolt implements IRichBolt {
 		this.collector = collector;
 		this.context = context;
 		this.suCache = new SUCache(25);
+        this.pdp = new LocalPDP();
+        // Placeholders
+        this.pdp.setIdmHost("");
+        this.pdp.setIdmPort(0);
+        this.pdp.setIdmUser("");
+        this.pdp.setIdmPassword("");
         try {
             if (this.qc == null) {
                 qc = QueueClient.factory();
@@ -114,9 +122,10 @@ public class StreamProcessorBolt implements IRichBolt {
 		if(restClient == null){
 			restClient = new RestClient();
 		}
+
 	}
 
-    private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException {
+    private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs, SO so) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException, PDPServioticyException {
 		Map<String, SensorUpdate> groupDocs = new HashMap<String, SensorUpdate>();
 
         for(Map.Entry<String, FutureRestResponse> frrEntry: rrs.entrySet()){
@@ -139,17 +148,10 @@ public class StreamProcessorBolt implements IRichBolt {
                 groupDocs.put(docId, null);
                 continue;
             }
-            PDP pdp = new LocalPDP();
-
-            // TODO Fill these fields properly
-            pdp.setIdmHost("");
-            pdp.setIdmPort(0);
-            pdp.setIdmUser("");
-            pdp.setIdmPassword("");
 
             PermissionCacheObject pco = null;
-            SensorUpdate lastSU = mapper.readValue(rr.getResponse(), SensorUpdate.class);
-            pco = pdp.checkAuthorization(null, this.mapper.readTree(this.mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(lastSU.getSecurity())), null,
+            SensorUpdate lastSU = this.mapper.readValue(rr.getResponse(), SensorUpdate.class);
+            pco = this.pdp.checkAuthorization(null, this.mapper.readTree(this.mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(lastSU.getSecurity())), null,
                     PDP.operationID.DispatchData);
             if(!pco.isPermission()){
                 return null;
@@ -261,11 +263,10 @@ public class StreamProcessorBolt implements IRichBolt {
     }
 
     public void sendToReputation(Tuple input, SensorUpdate su, SO so, String streamId, String reason, Boolean event) throws IOException, PDPServioticyException {
-        ObjectMapper mapper = new ObjectMapper();
         ServioticyProvenance prov = new ServioticyProvenance();
-        ReputationAddressSO src = mapper.readValue(
+        ReputationAddressSO src = this.mapper.readValue(
                 prov.getSourceFromSecurityMetaDataAsString(
-                        mapper.writeValueAsString(
+                        this.mapper.writeValueAsString(
                                 su.getSecurity()
                         )
                 ), ReputationAddressSO.class);
@@ -346,12 +347,12 @@ public class StreamProcessorBolt implements IRichBolt {
             try {
                 sensorUpdates.putAll(this.getStreamSUs(streamSURRs));
                 sensorUpdates.put(streamId, previousSU);
-                Map<String, SensorUpdate> groupLastSus = this.getGroupSUs(groupSURRs);
+                Map<String, SensorUpdate> groupLastSus = this.getGroupSUs(groupSURRs, so);
                 if(groupLastSus == null){
                     collector.ack(input);
                     return;
                 }
-                sensorUpdates.putAll(this.getGroupSUs(groupSURRs));
+                sensorUpdates.putAll(groupLastSus);
                 sensorUpdates.put(originId, su);
             } catch (Exception e) {
                 // TODO Log the error
