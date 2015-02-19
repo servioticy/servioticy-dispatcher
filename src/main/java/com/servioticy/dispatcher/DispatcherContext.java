@@ -94,7 +94,7 @@ public class DispatcherContext implements Serializable{
                     actions.add(address);
                 }
             }
-            this.actionsAddresses = (String[]) updates.toArray(new String[]{});
+            this.actionsAddresses = (String[]) actions.toArray(new String[]{});
             this.actionsPort = config.getInt("spouts/actions/port", this.actionsPort);
             this.actionsQueue = config.getString("spouts/actions/name", this.actionsQueue);
 
