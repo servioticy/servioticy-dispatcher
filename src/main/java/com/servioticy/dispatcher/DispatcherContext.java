@@ -29,10 +29,12 @@ public class DispatcherContext implements Serializable{
     static final public String DEFAULT_CONFIG_PATH = "dispatcher.xml";
     private static final long serialVersionUID = 1L;
     public String restBaseURL = "localhost";
-    public String[] kestrelAddresses = new String[]{"localhost"};
-    public int kestrelPort = 2229;
-    public String kestrelQueue = "services";
-    public String kestrelQueueActions = "actions";
+    public String[] updatesAddresses = new String[]{"localhost"};
+    public int updatesPort = 2229;
+    public String updatesQueue = "updates";
+    public String[] actionsAddresses = new String[]{"localhost"};
+    public int actionsPort = 2229;
+    public String actionsQueue = "actions";
     
     public String externalPubAddress = "localhost";
     public int externalPubPort = 1883;
@@ -45,6 +47,12 @@ public class DispatcherContext implements Serializable{
     public String internalPubUser = null;
     public String internalPubPassword = null;
     public String internalPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
+
+    public String actionsPubAddress = "localhost";
+    public int actionsPubPort = 1883;
+    public String actionsPubUser = null;
+    public String actionsPubPassword = null;
+    public String actionsPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
 
     public boolean benchmark = false;
     public String benchResultsDir = ".";
@@ -62,17 +70,29 @@ public class DispatcherContext implements Serializable{
 
     		this.restBaseURL = config.getString("servioticyAPI", this.restBaseURL);
 
-    		ArrayList<String> kestrel = new ArrayList<String>();
-    		if (config.containsKey("kestrels/kestrel[1]/addr")) {
-    			for (int i = 1; config.containsKey("kestrels/kestrel[" + i + "]/addr"); i++) {
-    				kestrel.add(config.getString("kestrels/kestrel[" + i + "]/addr"));
+    		ArrayList<String> updates = new ArrayList<String>();
+    		if (config.containsKey("spouts/updates/addresses/address[1]")) {
+    			for (int i = 1; config.containsKey("spouts/updates/addresses/address[" + i + "]"); i++) {
+    				updates.add(config.getString("spouts/updates/addresses/address[" + i + "]"));
     			}
     		} else {
-    			kestrel.add(this.kestrelAddresses[0]);
+    			updates.add(this.updatesAddresses[0]);
     		}
-    		this.kestrelAddresses = (String[]) kestrel.toArray(new String[]{});
-    		this.kestrelPort = config.getInt("kestrels/port", this.kestrelPort);
-    		this.kestrelQueue = config.getString("kestrels/queue", this.kestrelQueue);
+    		this.updatesAddresses = (String[]) updates.toArray(new String[]{});
+    		this.updatesPort = config.getInt("spouts/updates/port", this.updatesPort);
+    		this.updatesQueue = config.getString("spouts/updates/name", this.updatesQueue);
+
+            ArrayList<String> actions= new ArrayList<String>();
+            if (config.containsKey("spouts/actions/addresses/address[1]")) {
+                for (int i = 1; config.containsKey("spouts/actions/addresses/address[" + i + "]"); i++) {
+                    actions.add(config.getString("spouts/actions/addresses/address[" + i + "]"));
+                }
+            } else {
+                actions.add(this.updatesAddresses[0]);
+            }
+            this.actionsAddresses = (String[]) updates.toArray(new String[]{});
+            this.actionsPort = config.getInt("spouts/actions/port", this.actionsPort);
+            this.actionsQueue = config.getString("spouts/actions/name", this.actionsQueue);
 
             this.benchmark = config.getBoolean("benchmark", this.benchmark);
 
@@ -87,6 +107,12 @@ public class DispatcherContext implements Serializable{
             this.internalPubUser = config.getString("publishers/internal/username", this.internalPubUser);
             this.internalPubPassword = config.getString("publishers/internal/password", this.internalPubPassword);
             this.internalPubClassName = config.getString("publishers/internal/class", this.internalPubClassName);
+
+            this.actionsPubAddress = config.getString("publishers/actions/address", this.actionsPubAddress);
+            this.actionsPubPort = config.getInt("publishers/actions/port", this.actionsPubPort);
+            this.actionsPubUser = config.getString("publishers/actions/username", this.actionsPubUser);
+            this.actionsPubPassword = config.getString("publishers/actions/password", this.actionsPubPassword);
+            this.actionsPubClassName = config.getString("publishers/actions/class", this.actionsPubClassName);
 
             this.benchResultsDir = config.getString("benchResultsDir", this.benchResultsDir);
 

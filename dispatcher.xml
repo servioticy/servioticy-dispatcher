@@ -3,13 +3,22 @@
     <servioticyAPI>http://localhost:8080/</servioticyAPI>
     <benchmark>false</benchmark>
     <benchResultsDir>~</benchResultsDir>
-    <kestrels>
-    <kestrel>
-			<addr>localhost</addr>
-		</kestrel>
-		<port>2229</port>
-        <queue>services</queue>
-	</kestrels>
+    <spouts>
+        <updates>
+            <name>services</name>
+            <addresses>
+                <address>localhost</address>
+            </addresses>
+            <port>2229</port>
+        </updates>
+        <actions>
+            <name>actions</name>
+            <addresses>
+                <address>localhost</address>
+            </addresses>
+            <port>2229</port>
+        </actions>
+    </spouts>
 	<publishers>
 		<external>
 			<name>servioticy</name>
@@ -27,6 +36,14 @@
 			<password>shines</password>
 			<class>com.servioticy.dispatcher.publishers.MQTTPublisher</class>
 		</internal>
+        <actions>
+            <name>servioticy</name>
+            <address>tcp://localhost</address>
+            <port>1833</port>
+            <username>compose</username>
+            <password>shines</password>
+            <class>com.servioticy.dispatcher.publishers.MQTTPublisher</class>
+        </actions>
 	</publishers>
 	
 </context>

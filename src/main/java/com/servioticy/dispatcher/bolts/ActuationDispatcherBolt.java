@@ -53,18 +53,18 @@ public class ActuationDispatcherBolt implements IRichBolt {
 		this.context = context;
 		this.publisher = null;
 		
-		LOG.debug("MQTT server: " + dc.externalPubAddress + ":" + dc.externalPubPort);
-		LOG.debug("MQTT user/pass: " + dc.externalPubUser + " / "+dc.externalPubPassword);
+		LOG.debug("MQTT server: " + dc.actionsPubAddress + ":" + dc.actionsPubPort);
+		LOG.debug("MQTT user/pass: " + dc.actionsPubUser + " / "+dc.actionsPubPassword);
 		
 		
 
 		try {
-			publisher = Publisher.factory(dc.externalPubClassName,
-					dc.externalPubAddress,
-					dc.externalPubPort,
+			publisher = Publisher.factory(dc.actionsPubClassName,
+					dc.actionsPubAddress,
+					dc.actionsPubPort,
 					String.valueOf(context.getThisTaskId()));
-			publisher.connect(dc.externalPubUser,
-					dc.externalPubPassword);
+			publisher.connect(dc.actionsPubUser,
+					dc.actionsPubPassword);
 		} catch (Exception e) {
 			LOG.error("Prepare: ", e);
 		}
@@ -90,8 +90,8 @@ public class ActuationDispatcherBolt implements IRichBolt {
 
 
 			if(!publisher.isConnected()){
-				publisher.connect(dc.externalPubUser,
-						dc.externalPubPassword);
+				publisher.connect(dc.actionsPubUser,
+						dc.actionsPubPassword);
 			}
 			publisher.publishMessage(sourceSOId+"/actions", actuation.toString());
 			LOG.info("Actuation request pubished on topic "+sourceSOId+"/actions");
