@@ -101,7 +101,7 @@ public class InternalDispatcherBolt implements IRichBolt {
 				publisher.connect(dc.internalPubUser,
 						dc.internalPubPassword);
 			}
-			publisher.publishMessage(internalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
+			publisher.publishMessage(internalSub.getDestination(), suStr);
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
