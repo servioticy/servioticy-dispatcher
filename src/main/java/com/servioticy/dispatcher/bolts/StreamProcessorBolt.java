@@ -125,7 +125,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
 	}
 
-    private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs, SO so) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException, PDPServioticyException {
+    private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs, SO so, String streamId) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException, PDPServioticyException {
 		Map<String, SensorUpdate> groupDocs = new HashMap<String, SensorUpdate>();
 
         for(Map.Entry<String, FutureRestResponse> frrEntry: rrs.entrySet()){
@@ -149,9 +149,10 @@ public class StreamProcessorBolt implements IRichBolt {
                 continue;
             }
 
-            PermissionCacheObject pco = null;
+            PermissionCacheObject pco = new PermissionCacheObject();
+            pco.setStream(streamId);
             SensorUpdate lastSU = this.mapper.readValue(rr.getResponse(), SensorUpdate.class);
-            pco = this.pdp.checkAuthorization(null, this.mapper.readTree(this.mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(lastSU.getSecurity())), null,
+            pco = this.pdp.checkAuthorization(null, this.mapper.readTree(this.mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(lastSU.getSecurity())), pco,
                     PDP.operationID.DispatchData);
             if(!pco.isPermission()){
                 return null;
@@ -347,7 +348,7 @@ public class StreamProcessorBolt implements IRichBolt {
             try {
                 sensorUpdates.putAll(this.getStreamSUs(streamSURRs));
                 sensorUpdates.put(streamId, previousSU);
-                Map<String, SensorUpdate> groupLastSus = this.getGroupSUs(groupSURRs, so);
+                Map<String, SensorUpdate> groupLastSus = this.getGroupSUs(groupSURRs, so, streamId);
                 if(groupLastSus == null){
                     collector.ack(input);
                     return;

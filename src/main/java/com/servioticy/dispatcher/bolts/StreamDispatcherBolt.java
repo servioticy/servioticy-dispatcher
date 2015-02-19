@@ -128,17 +128,6 @@ public class StreamDispatcherBolt implements IRichBolt {
 
             SensorUpdate su = this.mapper.readValue(suDoc, SensorUpdate.class);
 
-            PermissionCacheObject pco = this.pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
-                    PDP.operationID.DispatchData);
-            if(!pco.isPermission()){
-                if (dc.benchmark) this.collector.emit("benchmark", input,
-                        new Values(suDoc,
-                                System.currentTimeMillis(),
-                                "forbidden")
-                );
-                collector.ack(input);
-                return;
-            }
             boolean emitted = false;
             for (String streamIdByDoc : sop.getStreamsBySourceId(docId)) {
                 // If the SU comes from the same stream than it is going, it must be stopped
@@ -151,6 +140,19 @@ public class StreamDispatcherBolt implements IRichBolt {
 //                if (beenThere) {
 //                    continue;
 //                }
+                PermissionCacheObject pco = new PermissionCacheObject();
+                pco.setStream(streamIdByDoc);
+                pco = this.pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), pco,
+                        PDP.operationID.DispatchData);
+                if(!pco.isPermission()){
+                    // TODO Needs logging
+                    if (dc.benchmark) this.collector.emit("benchmark", input,
+                            new Values(suDoc,
+                                    System.currentTimeMillis(),
+                                    "forbidden")
+                    );
+                    continue;
+                }
                 this.collector.emit("default", input,
                         new Values(destination,
                                 streamIdByDoc,

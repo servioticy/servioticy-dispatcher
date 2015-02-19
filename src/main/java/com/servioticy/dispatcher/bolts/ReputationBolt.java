@@ -94,12 +94,15 @@ public class ReputationBolt implements IRichBolt{
         ReputationAddressPubSub psOutAddress;
         ReputationAddressUser userOutAddress;
         ReputationAddressService servOutAddress;
+        ReputationAddressWebObject webObjectAddress;
 
         // src
         String stormStream = input.getSourceStreamId();
         switch (this.mapBoltStream.get(stormStream)){
             case ReputationBolt.STREAM_WO_SO:
-                reputation.setSrc("WEB_OBJECT");
+                webObjectAddress = new ReputationAddressWebObject();
+                webObjectAddress.setWebobject(true);
+                reputation.setSrc(webObjectAddress);
                 break;
             case ReputationBolt.STREAM_SO_SO:
             case ReputationBolt.STREAM_SO_PUBSUB:

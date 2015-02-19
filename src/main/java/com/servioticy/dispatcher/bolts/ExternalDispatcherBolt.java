@@ -91,7 +91,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
 		SensorUpdate su;
 		String sourceSOId;
 		String streamId;
-        PermissionCacheObject pco = null;
+        PermissionCacheObject pco = new PermissionCacheObject();
 
 		try{
 			su = mapper.readValue(input.getStringByField("su"),
@@ -110,15 +110,21 @@ public class ExternalDispatcherBolt implements IRichBolt {
 			collector.fail(input);
 			return;
 		}
-        su.setSecurity(null);
 		try {
             String suStr = mapper.writeValueAsString(su);
             if(!publisher.isConnected()){
 				publisher.connect(dc.externalPubUser,
 						dc.externalPubPassword);
 			}
-//            pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
-//                    PDP.operationID.DispatchData);
+            pco.setUserId(externalSub.getUserId());
+            pco = this.pdp.checkAuthorization(null, null, mapper.readTree(mapper.writeValueAsString(su.getSecurity())), pco,
+                    PDP.operationID.DispatchData);
+            su.setSecurity(null);
+            if(!pco.isPermission()){
+                // TODO Needs logging
+                collector.ack(input);
+                return;
+            }
 			publisher.publishMessage(externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates", suStr);
 			LOG.info("Message pubished on topic " + externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates");
 		} catch (Exception e) {
