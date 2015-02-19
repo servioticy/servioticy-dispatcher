@@ -46,8 +46,7 @@ public class InternalDispatcherBolt implements IRichBolt {
 	private ObjectMapper mapper;
     private PDP pdp;
 
-
-    public InternalDispatcherBolt(DispatcherContext dc){
+	public InternalDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
 	}
 	
@@ -123,7 +122,7 @@ public class InternalDispatcherBolt implements IRichBolt {
                 collector.ack(input);
                 return;
             }
-			publisher.publishMessage(internalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
+			publisher.publishMessage(internalSub.getDestination(), suStr);
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
