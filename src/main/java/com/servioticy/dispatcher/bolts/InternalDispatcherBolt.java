@@ -19,8 +19,11 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.datamodel.subscription.InternalSubscription;
 import com.servioticy.dispatcher.DispatcherContext;
@@ -122,7 +125,13 @@ public class InternalDispatcherBolt implements IRichBolt {
                 collector.ack(input);
                 return;
             }
-			publisher.publishMessage(internalSub.getDestination(), suStr);
+            publisher.publishMessage(internalSub.getDestination(), suStr);
+            this.collector.emit(Reputation.STREAM_SO_SERVICE, input,
+                    new Values(sourceSOId, // in-soid
+                            streamId, // in-streamid
+                            internalSub.getDestination(),
+                            internalSub.getUserId())
+            );
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
@@ -136,7 +145,9 @@ public class InternalDispatcherBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-	}
+        declarer.declareStream(Reputation.STREAM_SO_SERVICE, new Fields("in-soid", "in-streamid", "out-topic", "out-user_id"));
+
+    }
 
 	public Map<String, Object> getComponentConfiguration() {
 		return null;

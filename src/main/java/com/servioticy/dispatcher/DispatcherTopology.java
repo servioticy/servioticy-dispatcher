@@ -101,7 +101,8 @@ public class DispatcherTopology {
         builder.setBolt("reputation", new ReputationBolt(dc), 2)
                 .shuffleGrouping("prepare", Reputation.STREAM_WO_SO)
                 .shuffleGrouping("streamprocessor", Reputation.STREAM_SO_SO)
-                .shuffleGrouping("pubsubdispatcher", Reputation.STREAM_SO_PUBSUB)
+                .shuffleGrouping("externaldispatcher", Reputation.STREAM_SO_PUBSUB)
+                .shuffleGrouping("internaldispatcher", Reputation.STREAM_SO_SERVICE)
                 .shuffleGrouping("readreputation");
 
         if (dc.benchmark) {

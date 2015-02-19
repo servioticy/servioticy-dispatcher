@@ -17,7 +17,10 @@ package com.servioticy.dispatcher.bolts;
 
 import java.util.Map;
 
+import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.reputation.Reputation;
 import de.passau.uni.sec.compose.pdp.servioticy.LocalPDP;
 import de.passau.uni.sec.compose.pdp.servioticy.PDP;
 import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
@@ -125,7 +128,14 @@ public class ExternalDispatcherBolt implements IRichBolt {
                 collector.ack(input);
                 return;
             }
-			publisher.publishMessage(externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates", suStr);
+            String destTopic = externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates";
+			publisher.publishMessage(destTopic, suStr);
+            this.collector.emit(Reputation.STREAM_SO_PUBSUB, input,
+                    new Values(sourceSOId, // in-soid
+                            streamId, // in-streamid
+                            destTopic,
+                            externalSub.getUserId())
+            );
 			LOG.info("Message pubished on topic " + externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates");
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
@@ -140,7 +150,9 @@ public class ExternalDispatcherBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-	}
+        declarer.declareStream(Reputation.STREAM_SO_PUBSUB, new Fields("in-soid", "in-streamid", "out-topic", "out-user_id"));
+
+    }
 
 	public Map<String, Object> getComponentConfiguration() {
 		return null;

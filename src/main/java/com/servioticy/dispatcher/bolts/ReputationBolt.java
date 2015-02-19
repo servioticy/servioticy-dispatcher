@@ -89,11 +89,11 @@ public class ReputationBolt implements IRichBolt{
         reputation.setDiscard(Reputation.DISCARD_NONE);
         reputation.setUserTimestamp(input.getLongByField("user_timestamp"));
         reputation.setDate(input.getLongByField("date"));
+        reputation.setInternalPublisher(null);
         ReputationAddressSO soInAddress;
         ReputationAddressSO soOutAddress;
         ReputationAddressPubSub psOutAddress;
         ReputationAddressUser userOutAddress;
-        ReputationAddressService servOutAddress;
         ReputationAddressWebObject webObjectAddress;
 
         // src
@@ -129,13 +129,11 @@ public class ReputationBolt implements IRichBolt{
             case ReputationBolt.STREAM_SO_PUBSUB:
                 psOutAddress = new ReputationAddressPubSub();
                 psOutAddress.setPubSubTopic(input.getStringByField("out-topic"));
+                psOutAddress.setOnBehalfOf(input.getStringByField("out-user_id"));
                 reputation.setDest(psOutAddress);
-                break;
+                reputation.setInternalPublisher(false);
             case ReputationBolt.STREAM_SO_SERVICE:
-                servOutAddress = new ReputationAddressService();
-                servOutAddress.setOnBehalfOf(input.getStringByField("out-user_id"));
-                servOutAddress.setServiceId(input.getStringByField("out-service_id"));
-                reputation.setDest(servOutAddress);
+                reputation.setInternalPublisher(true);
                 break;
             case ReputationBolt.STREAM_SO_USER:
                 userOutAddress = new ReputationAddressUser();
