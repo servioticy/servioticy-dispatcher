@@ -76,7 +76,9 @@ public class DispatcherContext implements Serializable{
     				updates.add(config.getString("spouts/updates/addresses/address[" + i + "]"));
     			}
     		} else {
-    			updates.add(this.updatesAddresses[0]);
+                for(String address: this.updatesAddresses){
+                    updates.add(address);
+                }
     		}
     		this.updatesAddresses = (String[]) updates.toArray(new String[]{});
     		this.updatesPort = config.getInt("spouts/updates/port", this.updatesPort);
@@ -88,7 +90,9 @@ public class DispatcherContext implements Serializable{
                     actions.add(config.getString("spouts/actions/addresses/address[" + i + "]"));
                 }
             } else {
-                actions.add(this.updatesAddresses[0]);
+                for(String address: this.actionsAddresses){
+                    actions.add(address);
+                }
             }
             this.actionsAddresses = (String[]) updates.toArray(new String[]{});
             this.actionsPort = config.getInt("spouts/actions/port", this.actionsPort);
