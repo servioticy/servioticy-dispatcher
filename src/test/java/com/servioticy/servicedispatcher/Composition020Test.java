@@ -121,7 +121,7 @@
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //
-//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
+//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.updatesAddresses), dc.updatesPort, dc.updatesQueue, new UpdateDescriptorScheme()), 8);
 //
 //                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
 //                        .shuffleGrouping("dispatcher");
@@ -276,7 +276,7 @@
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //
-//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
+//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.updatesAddresses), dc.updatesPort, dc.updatesQueue, new UpdateDescriptorScheme()), 8);
 //
 //                builder.setBolt("prepare", new PrepareBolt(dc, restClient), 10)
 //                        .shuffleGrouping("dispatcher");
@@ -422,7 +422,7 @@
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(suBStr, 200));
 //
-//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
+//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.updatesAddresses), dc.updatesPort, dc.updatesQueue, new UpdateDescriptorScheme()), 8);
 //
 //                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
 //                        .shuffleGrouping("dispatcher");
@@ -561,7 +561,7 @@
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //
-//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
+//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.updatesAddresses), dc.updatesPort, dc.updatesQueue, new UpdateDescriptorScheme()), 8);
 //
 //                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
 //                        .shuffleGrouping("dispatcher");
@@ -701,7 +701,7 @@
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //
-//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
+//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.updatesAddresses), dc.updatesPort, dc.updatesQueue, new UpdateDescriptorScheme()), 8);
 //
 //                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
 //                        .shuffleGrouping("dispatcher");
@@ -828,7 +828,7 @@
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //
-//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
+//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.updatesAddresses), dc.updatesPort, dc.updatesQueue, new UpdateDescriptorScheme()), 8);
 //
 //                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
 //                        .shuffleGrouping("dispatcher");
@@ -965,7 +965,7 @@
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //
-//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
+//                builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.updatesAddresses), dc.updatesPort, dc.updatesQueue, new UpdateDescriptorScheme()), 8);
 //
 //                builder.setBolt("prepare", new PrepareBolt(dc,restClient), 10)
 //                        .shuffleGrouping("dispatcher");

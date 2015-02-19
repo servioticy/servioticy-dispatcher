@@ -80,13 +80,13 @@ public class StreamProcessorBolt implements IRichBolt {
         this.restClient = restClient;
         this.dc = dc;
         String kestrelAddresses = "";
-        for (String addr : dc.kestrelAddresses) {
-            kestrelAddresses += addr + ":" + dc.kestrelPort + " ";
+        for (String addr : dc.updatesAddresses) {
+            kestrelAddresses += addr + ":" + dc.updatesPort + " ";
         }
         KestrelThriftClient ktc = new KestrelThriftClient();
 
         ktc.setBaseAddress(kestrelAddresses);
-        ktc.setRelativeAddress(dc.kestrelQueue);
+        ktc.setRelativeAddress(dc.updatesQueue);
         ktc.setExpire(0);
         this.qc = ktc;
     }
