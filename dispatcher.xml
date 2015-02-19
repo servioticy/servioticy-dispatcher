@@ -18,6 +18,13 @@
             </addresses>
             <port>2229</port>
         </actions>
+        <reputation>
+            <name>reputation</name>
+            <addresses>
+                <address>localhost</address>
+            </addresses>
+            <port>2229</port>
+        </reputation>
     </spouts>
 	<publishers>
 		<external>
@@ -45,5 +52,13 @@
             <class>com.servioticy.dispatcher.publishers.MQTTPublisher</class>
         </actions>
 	</publishers>
-	
+    <storage>
+        <addresses>
+            <address>http://localhost:8091/pools</address>
+        </addresses>
+        <buckets>
+            <reputation>reputation</reputation>
+        </buckets>
+    </storage>
+
 </context>

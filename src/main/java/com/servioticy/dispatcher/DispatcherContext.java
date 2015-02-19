@@ -29,12 +29,18 @@ public class DispatcherContext implements Serializable{
     static final public String DEFAULT_CONFIG_PATH = "dispatcher.xml";
     private static final long serialVersionUID = 1L;
     public String restBaseURL = "localhost";
+
     public String[] updatesAddresses = new String[]{"localhost"};
     public int updatesPort = 2229;
     public String updatesQueue = "updates";
+
     public String[] actionsAddresses = new String[]{"localhost"};
     public int actionsPort = 2229;
     public String actionsQueue = "actions";
+
+    public String[] reputationAddresses = new String[]{"localhost"};
+    public int reputationPort = 2229;
+    public String reputationQueue = "actions";
     
     public String externalPubAddress = "localhost";
     public int externalPubPort = 1883;
@@ -53,6 +59,9 @@ public class DispatcherContext implements Serializable{
     public String actionsPubUser = null;
     public String actionsPubPassword = null;
     public String actionsPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
+
+    public String[] storageAddresses = new String[]{"http://localhost:8091/pools"};
+    public String reputationBucket = "reputation";
 
     public boolean benchmark = false;
     public String benchResultsDir = ".";
@@ -97,6 +106,33 @@ public class DispatcherContext implements Serializable{
             this.actionsAddresses = (String[]) actions.toArray(new String[]{});
             this.actionsPort = config.getInt("spouts/actions/port", this.actionsPort);
             this.actionsQueue = config.getString("spouts/actions/name", this.actionsQueue);
+
+            ArrayList<String> reputations = new ArrayList<String>();
+            if (config.containsKey("spouts/reputation/addresses/address[1]")) {
+                for (int i = 1; config.containsKey("spouts/reputation/addresses/address[" + i + "]"); i++) {
+                    reputations.add(config.getString("spouts/reputation/addresses/address[" + i + "]"));
+                }
+            } else {
+                for(String address: this.reputationAddresses){
+                    reputations.add(address);
+                }
+            }
+            this.reputationAddresses = (String[]) reputations.toArray(new String[]{});
+            this.reputationPort = config.getInt("spouts/actions/port", this.reputationPort);
+            this.reputationQueue = config.getString("spouts/actions/name", this.reputationQueue);
+
+            ArrayList<String> storages = new ArrayList<String>();
+            if (config.containsKey("storage/addresses/address[1]")) {
+                for (int i = 1; config.containsKey("storage/addresses/address[" + i + "]"); i++) {
+                    storages.add(config.getString("storage/addresses/address[" + i + "]"));
+                }
+            } else {
+                for(String address: this.storageAddresses){
+                    storages.add(address);
+                }
+            }
+            this.storageAddresses = (String[]) storages.toArray(new String[]{});
+            this.reputationBucket = config.getString("storage/buckets/reputation", this.actionsQueue);
 
             this.benchmark = config.getBoolean("benchmark", this.benchmark);
 

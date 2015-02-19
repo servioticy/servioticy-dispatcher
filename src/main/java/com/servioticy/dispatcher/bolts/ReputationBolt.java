@@ -69,10 +69,12 @@ public class ReputationBolt implements IRichBolt{
         this.mapBoltStream.put("default", ReputationBolt.STREAM_SO_USER);
         this.mapBoltStream.put(Reputation.STREAM_WO_SO, ReputationBolt.STREAM_WO_SO);
         ArrayList<URI> nodes = new ArrayList<URI>();
-        nodes.add(URI.create("http://192.168.56.101:8091/pools"));
+        for(String address: dc.storageAddresses){
+            nodes.add(URI.create(address));
+        }
 
         try {
-            cbClient = new CouchbaseClient(nodes, "reputation", "");
+            cbClient = new CouchbaseClient(nodes, dc.reputationBucket, "");
         } catch (IOException e) {
             throw new RuntimeException();
         }
