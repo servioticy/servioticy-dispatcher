@@ -3,13 +3,14 @@
     <servioticyAPI>http://localhost:8080/</servioticyAPI>
     <benchmark>false</benchmark>
     <benchResultsDir>~</benchResultsDir>
-    <kestrels>
-    <kestrel>
+    <spouts>
+
+        <kestrel>
 			<addr>localhost</addr>
 		</kestrel>
 		<port>2229</port>
         <queue>services</queue>
-	</kestrels>
+	</spouts>
 	<publishers>
 		<external>
 			<name>servioticy</name>

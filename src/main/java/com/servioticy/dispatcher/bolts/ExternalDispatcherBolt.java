@@ -117,8 +117,8 @@ public class ExternalDispatcherBolt implements IRichBolt {
 				publisher.connect(dc.externalPubUser,
 						dc.externalPubPassword);
 			}
-            pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
-                    PDP.operationID.DispatchData);
+//            pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
+//                    PDP.operationID.DispatchData);
 			publisher.publishMessage(externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates", suStr);
 			LOG.info("Message pubished on topic " + externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates");
 		} catch (Exception e) {

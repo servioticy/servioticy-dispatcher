@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/ 
+ ******************************************************************************/
 package com.servioticy.dispatcher.bolts;
 
 import backtype.storm.task.OutputCollector;
@@ -52,7 +52,7 @@ import java.util.concurrent.ExecutionException;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
- * 
+ *
  */
 public class StreamProcessorBolt implements IRichBolt {
 
@@ -67,9 +67,9 @@ public class StreamProcessorBolt implements IRichBolt {
     private PDP pdp;
 
     public StreamProcessorBolt(){
-		
+
 	}
-	
+
 	// For testing purposes
 	public StreamProcessorBolt(DispatcherContext dc, QueueClient qc, RestClient restClient){
         this.dc = dc;
@@ -97,7 +97,7 @@ public class StreamProcessorBolt implements IRichBolt {
     public StreamProcessorBolt(DispatcherContext dc){
         this(dc, (RestClient) null);
     }
-	
+
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
 		this.collector = collector;
@@ -219,7 +219,7 @@ public class StreamProcessorBolt implements IRichBolt {
         }
         return rrs;
     }
-    
+
     private SensorUpdate getStreamSU(FutureRestResponse frr) throws RestClientErrorCodeException, IOException, RestClientException, ExecutionException, InterruptedException {
         RestResponse rr;
         try {
@@ -238,7 +238,7 @@ public class StreamProcessorBolt implements IRichBolt {
         }
         return this.mapper.readValue(rr.getResponse(), SensorUpdate.class);
     }
-	
+
     private FutureRestResponse getStreamSUAsyncResponse(String streamId, SO so) throws RestClientException, RestClientErrorCodeException {
         FutureRestResponse frr;
         frr = restClient.restRequest(
@@ -247,10 +247,10 @@ public class StreamProcessorBolt implements IRichBolt {
                 null, RestClient.GET,
                 null
         );
-        
+
         return frr;
     }
-    
+
     public void sendAllToReputation(Tuple input, Map<String, SensorUpdate> sensorUpdates, String originId, SO so, String streamId, String reason) throws IOException, PDPServioticyException {
         for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
             boolean event = entry.getKey() == originId;
@@ -417,7 +417,7 @@ public class StreamProcessorBolt implements IRichBolt {
             ud.setOpid(opid);
             ud.setSu(resultSU);
             String upDescriptorDoc = this.mapper.writeValueAsString(ud);
-		
+
 		    // Put to the queue
             try{
                 if(!qc.isConnected()) {

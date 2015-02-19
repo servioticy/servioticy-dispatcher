@@ -46,7 +46,7 @@ public class DispatcherTopology {
     public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException, ParseException {
 
         Options options = new Options();
-        
+
         options.addOption(OptionBuilder.withArgName("file")
                 .hasArg()
                 .withDescription("Config file path.")
@@ -59,7 +59,7 @@ public class DispatcherTopology {
                 .withDescription("Enable debugging")
                 .create("d"));
 
-        
+
         CommandLineParser parser = new GnuParser();
         CommandLine cmd = parser.parse(options, args);
 
@@ -70,16 +70,16 @@ public class DispatcherTopology {
 
         DispatcherContext dc = new DispatcherContext();
         dc.loadConf(path);
-                
+
         TopologyBuilder builder = new TopologyBuilder();
 
         // TODO Auto-assign workers to the spout in function of the number of Kestrel IPs
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()));
+        builder.setSpout("updates", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()));
         builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()));
         builder.setSpout("so-user", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueReputation, new ReputationScheme()));
 
         builder.setBolt("prepare", new PrepareBolt(dc))
-                .shuffleGrouping("dispatcher");
+                .shuffleGrouping("updates");
 
         builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc))
         		.shuffleGrouping("actions");

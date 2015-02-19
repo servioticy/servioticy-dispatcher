@@ -57,6 +57,7 @@ public class StreamDispatcherBolt implements IRichBolt {
     private RestClient restClient;
     private DispatcherContext dc;
     private ObjectMapper mapper;
+    private PDP pdp;
 
     public StreamDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
@@ -76,6 +77,13 @@ public class StreamDispatcherBolt implements IRichBolt {
         if(restClient == null){
             restClient = new RestClient();
         }
+        pdp = new LocalPDP();
+
+        // TODO Fill these fields properly
+        pdp.setIdmHost("");
+        pdp.setIdmPort(0);
+        pdp.setIdmUser("");
+        pdp.setIdmPassword("");
     }
 
     public void execute(Tuple input) {
@@ -119,15 +127,8 @@ public class StreamDispatcherBolt implements IRichBolt {
             }
 
             SensorUpdate su = this.mapper.readValue(suDoc, SensorUpdate.class);
-            PDP pdp = new LocalPDP();
 
-            // TODO Fill these fields properly
-            pdp.setIdmHost("");
-            pdp.setIdmPort(0);
-            pdp.setIdmUser("");
-            pdp.setIdmPassword("");
-
-            PermissionCacheObject pco = pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
+            PermissionCacheObject pco = this.pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), null,
                     PDP.operationID.DispatchData);
             if(!pco.isPermission()){
                 if (dc.benchmark) this.collector.emit("benchmark", input,
