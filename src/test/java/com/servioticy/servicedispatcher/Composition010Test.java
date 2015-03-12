@@ -94,30 +94,30 @@
 //                // get opid
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/opid/" + opid, null,
+//                                + "security/opid/" + opid, null,
 //                        RestClient.GET,
 //                        null)).thenReturn(new RestResponse("", 200));
 //                // get subscriptions
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/A"
+//                                + "security/" + so.getId() + "/streams/A"
 //                                + "/subscriptions/", null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //                // get so
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId(), null, RestClient.GET,
+//                                + "security/" + so.getId(), null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(soStr, 200));
 //                // get SU
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/groups/lastUpdate", mapper.writeValueAsString(so.getGroups().get("group")),
+//                                + "security/groups/lastUpdate", mapper.writeValueAsString(so.getGroups().get("group")),
 //                        RestClient.POST,
 //                        null)).thenReturn(new RestResponse(suGroupStr, 200));
 //
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/B/lastUpdate",
+//                                + "security/" + so.getId() + "/streams/B/lastUpdate",
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //
@@ -243,34 +243,34 @@
 //                // get opid
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/opid/" + opid, null,
+//                                + "security/opid/" + opid, null,
 //                        RestClient.GET,
 //                        null)).thenReturn(new RestResponse("", 200));
 //                // get subscriptions
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/additional_so/streams/some_stream"
+//                                + "security/additional_so/streams/some_stream"
 //                                + "/subscriptions/", null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(subscriptionsStr, 200));
 //                // get so
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId(), null, RestClient.GET,
+//                                + "security/" + so.getId(), null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(soStr, 200));
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/additional_so", null, RestClient.GET,
+//                                + "security/additional_so", null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(additionalSOStr, 200));
 //                // get SU
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/A/lastUpdate",
+//                                + "security/" + so.getId() + "/streams/A/lastUpdate",
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(suAStr, 200));
 //
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/B/lastUpdate",
+//                                + "security/" + so.getId() + "/streams/B/lastUpdate",
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //
@@ -397,24 +397,24 @@
 //                // get opid
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/opid/" + opid, null,
+//                                + "security/opid/" + opid, null,
 //                        RestClient.GET,
 //                        null)).thenReturn(new RestResponse("", 200));
 //                // get subscriptions
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/A"
+//                                + "security/" + so.getId() + "/streams/A"
 //                                + "/subscriptions/", null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //                // get so
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId(), null, RestClient.GET,
+//                                + "security/" + so.getId(), null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(soStr, 200));
 //                // get SU
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/B/lastUpdate",
+//                                + "security/" + so.getId() + "/streams/B/lastUpdate",
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(suBStr, 200));
 //
@@ -534,24 +534,24 @@
 //                // get opid
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/opid/" + opid, null,
+//                                + "security/opid/" + opid, null,
 //                        RestClient.GET,
 //                        null)).thenReturn(new RestResponse("", 200));
 //                // get subscriptions
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/A"
+//                                + "security/" + so.getId() + "/streams/A"
 //                                + "/subscriptions/", null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //                // get so
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId(), null, RestClient.GET,
+//                                + "security/" + so.getId(), null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(soStr, 200));
 //                // get SU
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/B/lastUpdate",
+//                                + "security/" + so.getId() + "/streams/B/lastUpdate",
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //
@@ -672,24 +672,24 @@
 //                // get opid
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/opid/" + opid, null,
+//                                + "security/opid/" + opid, null,
 //                        RestClient.GET,
 //                        null)).thenReturn(new RestResponse("", 200));
 //                // get subscriptions
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/A"
+//                                + "security/" + so.getId() + "/streams/A"
 //                                + "/subscriptions/", null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //                // get so
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId(), null, RestClient.GET,
+//                                + "security/" + so.getId(), null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(soStr, 200));
 //                // get SU
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/B/lastUpdate",
+//                                + "security/" + so.getId() + "/streams/B/lastUpdate",
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //
@@ -801,24 +801,24 @@
 //                // get opid
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/opid/" + opid, null,
+//                                + "security/opid/" + opid, null,
 //                        RestClient.GET,
 //                        null)).thenReturn(new RestResponse("", 200));
 //                // get subscriptions
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/A"
+//                                + "security/" + so.getId() + "/streams/A"
 //                                + "/subscriptions/", null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //                // get so
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId(), null, RestClient.GET,
+//                                + "security/" + so.getId(), null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(soStr, 200));
 //                // get SU
 //                when(restClient.restRequest(
 //                        dc.restBaseURL
-//                                + "private/" + so.getId() + "/streams/B/lastUpdate",
+//                                + "security/" + so.getId() + "/streams/B/lastUpdate",
 //                        null, RestClient.GET,
 //                        null)).thenReturn(new RestResponse(null, 204));
 //

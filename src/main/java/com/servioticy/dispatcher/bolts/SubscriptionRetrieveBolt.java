@@ -78,7 +78,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
         try {
             frr = restClient.restRequest(
                     dc.restBaseURL
-                            + "private/" + soid + "/streams/"
+                            + "security/" + soid + "/streams/"
                             + streamid
                             + "/subscriptions/", null, RestClient.GET,
                     null
