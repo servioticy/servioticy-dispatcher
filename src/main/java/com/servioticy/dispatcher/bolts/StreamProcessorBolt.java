@@ -103,6 +103,7 @@ public class StreamProcessorBolt implements IRichBolt {
 		this.collector = collector;
 		this.context = context;
 		this.suCache = new SUCache(25);
+        this.mapper = new ObjectMapper();
         this.pdp = new LocalPDP();
         // Placeholders
         this.pdp.setIdmHost("");
@@ -188,7 +189,7 @@ public class StreamProcessorBolt implements IRichBolt {
         String glurstr = this.mapper.writeValueAsString(group);
 
         frr = restClient.restRequest(
-                dc.restBaseURL + "security/groups/lastUpdate",
+                dc.restBaseURL + "private/security/groups/lastUpdate",
                 glurstr, RestClient.POST,
                 null
         );
@@ -244,7 +245,7 @@ public class StreamProcessorBolt implements IRichBolt {
         FutureRestResponse frr;
         frr = restClient.restRequest(
                 dc.restBaseURL
-                        + "security/" + so.getId() + "/streams/" + streamId + "/lastUpdate",
+                        + "private/security/" + so.getId() + "/streams/" + streamId + "/lastUpdate",
                 null, RestClient.GET,
                 null
         );
@@ -449,7 +450,7 @@ public class StreamProcessorBolt implements IRichBolt {
             // Send to the API
             restClient.restRequest(
                     dc.restBaseURL
-                            + "security/" + soId + "/streams/"
+                            + "private/" + soId + "/streams/"
                             + streamId + "/" + opid, resultSUDoc,
                     RestClient.PUT,
                     null);

@@ -101,7 +101,7 @@ public class StreamDispatcherBolt implements IRichBolt {
         try{
             frr = restClient.restRequest(
                     dc.restBaseURL
-                            + "security/" + destination, null, RestClient.GET,
+                            + "private/security/" + destination, null, RestClient.GET,
                     null);
             rr = frr.get();
             soDoc = rr.getResponse();

@@ -84,7 +84,7 @@ public class PrepareBolt implements IRichBolt {
             try {
                 frr = restClient.restRequest(
                         dc.restBaseURL
-                                + "security/opid/" + opid, null,
+                                + "private/security/opid/" + opid, null,
                         RestClient.GET, null
                 );
             } catch (Exception e) {
