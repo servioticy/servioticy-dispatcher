@@ -128,7 +128,7 @@ public class SOProcessor010 extends SOProcessor{
 
 
             pstream.postFilter = null;
-            if (stream.getPreFilter() != null) {
+            if (stream.getPostFilter() != null) {
                 pstream.postFilter = new JsonPathReplacer(stream.getPostFilter(), mapper);
                 this.docIdsByStream.get(streamId).addAll(pstream.postFilter.getJsonPathIds());
                 addStreamByDocIds(streamId, pstream.postFilter.getJsonPathIds());
