@@ -114,7 +114,6 @@ public class ExternalDispatcherBolt implements IRichBolt {
 			return;
 		}
 		try {
-            String suStr = mapper.writeValueAsString(su);
             if(!publisher.isConnected()){
 				publisher.connect(dc.externalPubUser,
 						dc.externalPubPassword);
@@ -129,7 +128,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
                 return;
             }
             String destTopic = externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates";
-			publisher.publishMessage(destTopic, suStr);
+			publisher.publishMessage(destTopic, mapper.writeValueAsString(su));
             this.collector.emit(Reputation.STREAM_SO_PUBSUB, input,
                     new Values(sourceSOId, // in-soid
                             streamId, // in-streamid
