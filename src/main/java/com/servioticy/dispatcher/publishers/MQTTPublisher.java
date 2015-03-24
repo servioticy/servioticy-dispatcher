@@ -80,7 +80,9 @@ public class MQTTPublisher extends Publisher {
 					LOG.error("FAIL in publishMessage: msg is null");
 					return;
 				}
-				asyncClient.publish(topic, new MqttMessage(msg.getBytes()));//.waitForCompletion();
+                MqttMessage message = new MqttMessage(msg.getBytes());
+                message.setQos(0);
+				asyncClient.publish(topic, message);//.waitForCompletion();
 			} catch (Exception e) {
 				LOG.error("FAIL in publishMessage: ", e);
 			}
