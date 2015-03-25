@@ -114,7 +114,6 @@ public class ExternalDispatcherBolt implements IRichBolt {
 			return;
 		}
 		try {
-            String suStr = mapper.writeValueAsString(su);
             if(!publisher.isConnected()){
 				publisher.connect(dc.externalPubUser,
 						dc.externalPubPassword);
@@ -124,12 +123,12 @@ public class ExternalDispatcherBolt implements IRichBolt {
                     PDP.operationID.DispatchData);
             su.setSecurity(null);
             if(!pco.isPermission()){
-                // TODO Needs logging
+                LOG.debug("External dispatcher: Permission denied - " + externalSub.getDestination());
                 collector.ack(input);
                 return;
             }
             String destTopic = externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates";
-			publisher.publishMessage(destTopic, suStr);
+			publisher.publishMessage(destTopic, mapper.writeValueAsString(su));
             this.collector.emit(Reputation.STREAM_SO_PUBSUB, input,
                     new Values(sourceSOId, // in-soid
                             streamId, // in-streamid
