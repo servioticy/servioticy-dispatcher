@@ -123,7 +123,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
                     PDP.operationID.DispatchData);
             su.setSecurity(null);
             if(!pco.isPermission()){
-                // TODO Needs logging
+                LOG.debug("External dispatcher: Permission denied - " + externalSub.getDestination());
                 collector.ack(input);
                 return;
             }
