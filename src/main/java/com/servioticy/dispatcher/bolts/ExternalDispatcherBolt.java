@@ -120,7 +120,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
 			}
             pco.setUserId(externalSub.getUserId());
             pco = this.pdp.checkAuthorization(null, null, mapper.readTree(mapper.writeValueAsString(su.getSecurity())), pco,
-                    PDP.operationID.DispatchData);
+                    PDP.operationID.DispatchPublisher);
             su.setSecurity(null);
             if(!pco.isPermission()){
                 LOG.debug("External dispatcher: Permission denied - " + externalSub.getDestination());
