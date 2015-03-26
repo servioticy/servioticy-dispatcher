@@ -83,6 +83,12 @@ public class ExternalDispatcherBolt implements IRichBolt {
 			LOG.error("Prepare: ", e);
 			throw new RuntimeException();
 		}
+		try {
+			publisher.connect(dc.externalPubUser, dc.externalPubPassword);
+		} catch (Exception e) {
+			LOG.error("Prepare: ", e);
+		}
+
 	}
 
 	public void execute(Tuple input) {
@@ -118,7 +124,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
             pco.setUserId(externalSub.getUserId());
             pco = this.pdp.checkAuthorization(null, null, mapper.readTree(mapper.writeValueAsString(su.getSecurity())), pco,
                     PDP.operationID.DispatchPublisher);
-            su.setSecurity(null);
+			su.setSecurity(null);
             if(!pco.isPermission()){
                 LOG.debug("External dispatcher: Permission denied - " + externalSub.getDestination());
                 collector.ack(input);
