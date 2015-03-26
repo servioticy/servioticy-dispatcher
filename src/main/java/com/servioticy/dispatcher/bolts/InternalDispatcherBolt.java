@@ -73,15 +73,11 @@ public class InternalDispatcherBolt implements IRichBolt {
 
 		
 		try {
-			publisher = Publisher.factory(dc.internalPubClassName, dc.internalPubAddress, dc.internalPubPort, String.valueOf(context.getThisTaskId()));
-		} catch (Exception e) {
-			LOG.error("Prepare: ", e);
-		}
-
-		try {
+			publisher = Publisher.factory(dc.internalPubClassName, dc.internalPubAddress, dc.internalPubPort, String.valueOf((context.getStormId() + String.valueOf(context.getThisTaskId())).hashCode()));
 			publisher.connect(dc.internalPubUser, dc.internalPubPassword);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOG.error("Prepare: ", e);
+			throw new RuntimeException();
 		}
 	}
 
@@ -126,18 +122,20 @@ public class InternalDispatcherBolt implements IRichBolt {
                 return;
             }
             publisher.publishMessage(internalSub.getDestination(), suStr);
-            this.collector.emit(Reputation.STREAM_SO_SERVICE, input,
-                    new Values(sourceSOId, // in-soid
-                            streamId, // in-streamid
-                            internalSub.getDestination(),
-                            internalSub.getUserId())
-            );
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
 			return;
 		}
 		suCache.put(internalSub.getId(), su.getLastUpdate());
+		this.collector.emit(Reputation.STREAM_SO_SERVICE, input,
+				new Values(sourceSOId, // in-soid
+						streamId, // in-streamid
+						internalSub.getDestination(),
+						internalSub.getUserId(),
+						su.getLastUpdate(),
+						System.currentTimeMillis())
+		);
 		collector.ack(input);
 	}
 
@@ -145,7 +143,7 @@ public class InternalDispatcherBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream(Reputation.STREAM_SO_SERVICE, new Fields("in-soid", "in-streamid", "out-topic", "out-user_id"));
+        declarer.declareStream(Reputation.STREAM_SO_SERVICE, new Fields("in-soid", "in-streamid", "out-topic", "out-user_id", "date", "user_timestamp"));
 
     }
 

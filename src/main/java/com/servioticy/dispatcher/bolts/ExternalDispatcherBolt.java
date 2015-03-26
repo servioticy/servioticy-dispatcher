@@ -77,15 +77,11 @@ public class ExternalDispatcherBolt implements IRichBolt {
 
 		
 		try {
-			publisher = Publisher.factory(dc.externalPubClassName, dc.externalPubAddress, dc.externalPubPort, String.valueOf(context.getThisTaskId()));
-		} catch (Exception e) {
-			LOG.error("Prepare: ", e);
-		}
-
-		try {
+			publisher = Publisher.factory(dc.externalPubClassName, dc.externalPubAddress, dc.externalPubPort, String.valueOf((context.getStormId() + String.valueOf(context.getThisTaskId())).hashCode()));
 			publisher.connect(dc.externalPubUser, dc.externalPubPassword);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOG.error("Prepare: ", e);
+			throw new RuntimeException();
 		}
 	}
 
@@ -113,6 +109,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
 			collector.fail(input);
 			return;
 		}
+		String destTopic = externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates";
 		try {
             if(!publisher.isConnected()){
 				publisher.connect(dc.externalPubUser,
@@ -127,14 +124,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
                 collector.ack(input);
                 return;
             }
-            String destTopic = externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates";
 			publisher.publishMessage(destTopic, mapper.writeValueAsString(su));
-            this.collector.emit(Reputation.STREAM_SO_PUBSUB, input,
-                    new Values(sourceSOId, // in-soid
-                            streamId, // in-streamid
-                            destTopic,
-                            externalSub.getUserId())
-            );
 			LOG.info("Message pubished on topic " + externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates");
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
@@ -142,6 +132,14 @@ public class ExternalDispatcherBolt implements IRichBolt {
 			return;
 		}
 		suCache.put(externalSub.getId(), su.getLastUpdate());
+		this.collector.emit(Reputation.STREAM_SO_PUBSUB, input,
+				new Values(sourceSOId, // in-soid
+						streamId, // in-streamid
+						destTopic,
+						externalSub.getUserId(),
+						su.getLastUpdate(),
+						System.currentTimeMillis())
+		);
 		collector.ack(input);
 	}
 
@@ -149,7 +147,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream(Reputation.STREAM_SO_PUBSUB, new Fields("in-soid", "in-streamid", "out-topic", "out-user_id"));
+        declarer.declareStream(Reputation.STREAM_SO_PUBSUB, new Fields("in-soid", "in-streamid", "out-topic", "out-user_id", "date", "user_timestamp"));
 
     }
 

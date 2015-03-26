@@ -87,7 +87,7 @@ public class ReputationBolt implements IRichBolt{
         reputation.setEvent(true);
 //        reputation.setFresh(true);
         reputation.setDiscard(Reputation.DISCARD_NONE);
-        reputation.setUserTimestamp(input.getLongByField("user_timestamp"));
+        reputation.setUserTimestamp(input.getLongByField("user_timestamp") == null ? System.currentTimeMillis():input.getLongByField("user_timestamp"));
         reputation.setDate(input.getLongByField("date"));
         reputation.setInternalPublisher(null);
         ReputationAddressSO soInAddress;

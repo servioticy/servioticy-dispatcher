@@ -62,11 +62,12 @@ public class ActuationDispatcherBolt implements IRichBolt {
 			publisher = Publisher.factory(dc.actionsPubClassName,
 					dc.actionsPubAddress,
 					dc.actionsPubPort,
-					String.valueOf(context.getThisTaskId()));
+					String.valueOf((context.getStormId() + String.valueOf(context.getThisTaskId())).hashCode()));
 			publisher.connect(dc.actionsPubUser,
 					dc.actionsPubPassword);
 		} catch (Exception e) {
 			LOG.error("Prepare: ", e);
+			throw new RuntimeException();
 		}
 
 	}
