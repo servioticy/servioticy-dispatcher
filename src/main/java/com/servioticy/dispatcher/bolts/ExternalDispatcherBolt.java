@@ -78,7 +78,6 @@ public class ExternalDispatcherBolt implements IRichBolt {
 		
 		try {
 			publisher = Publisher.factory(dc.externalPubClassName, dc.externalPubAddress, dc.externalPubPort, String.valueOf((context.getStormId() + String.valueOf(context.getThisTaskId())).hashCode()));
-			publisher.connect(dc.externalPubUser, dc.externalPubPassword);
 		} catch (Exception e) {
 			LOG.error("Prepare: ", e);
 			throw new RuntimeException();
