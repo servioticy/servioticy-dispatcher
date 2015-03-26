@@ -60,15 +60,11 @@ public class InternalDispatcherBolt implements IRichBolt {
 
 		
 		try {
-			publisher = Publisher.factory(dc.internalPubClassName, dc.internalPubAddress, dc.internalPubPort, String.valueOf(context.getThisTaskId()));
-		} catch (Exception e) {
-			LOG.error("Prepare: ", e);
-		}
-
-		try {
+			publisher = Publisher.factory(dc.internalPubClassName, dc.internalPubAddress, dc.internalPubPort, String.valueOf((context.getStormId() + String.valueOf(context.getThisTaskId())).hashCode()));
 			publisher.connect(dc.internalPubUser, dc.internalPubPassword);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOG.error("Prepare: ", e);
+			throw new RuntimeException();
 		}
 	}
 
