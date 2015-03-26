@@ -63,11 +63,16 @@ public class ExternalDispatcherBolt implements IRichBolt {
 		
 		try {
 			publisher = Publisher.factory(dc.externalPubClassName, dc.externalPubAddress, dc.externalPubPort, String.valueOf((context.getStormId() + String.valueOf(context.getThisTaskId())).hashCode()));
-			publisher.connect(dc.externalPubUser, dc.externalPubPassword);
 		} catch (Exception e) {
 			LOG.error("Prepare: ", e);
 			throw new RuntimeException();
 		}
+		try {
+			publisher.connect(dc.externalPubUser, dc.externalPubPassword);
+		} catch (Exception e) {
+			LOG.error("Prepare: ", e);
+		}
+
 	}
 
 	public void execute(Tuple input) {
@@ -95,7 +100,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
 
 		String suStr = input.getStringByField("su");
 		try {
-			if(!publisher.isConnected()){
+			if (!publisher.isConnected()) {
 				publisher.connect(dc.externalPubUser,
 						dc.externalPubPassword);
 			}
