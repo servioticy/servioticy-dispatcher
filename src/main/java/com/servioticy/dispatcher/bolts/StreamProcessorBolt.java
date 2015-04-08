@@ -406,9 +406,6 @@ public class StreamProcessorBolt implements IRichBolt {
             }
 
 
-            resultSUDoc = this.mapper.writeValueAsString(resultSU);
-
-
             // generate opid
             String opid = Integer.toHexString(resultSUDoc.hashCode());
 
