@@ -23,6 +23,8 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.reputation.Reputation;
+import com.servioticy.datamodel.reputation.ReputationAddressSO;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.serviceobject.SOGroup;
 import com.servioticy.datamodel.subscription.SOSubscription;
@@ -39,7 +41,9 @@ import de.passau.uni.sec.compose.pdp.servioticy.LocalPDP;
 import de.passau.uni.sec.compose.pdp.servioticy.PDP;
 import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
 import de.passau.uni.sec.compose.pdp.servioticy.exception.PDPServioticyException;
+import de.passau.uni.sec.compose.pdp.servioticy.provenance.ServioticyProvenance;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -84,6 +88,26 @@ public class StreamDispatcherBolt implements IRichBolt {
         pdp.setIdmPort(0);
         pdp.setIdmUser("");
         pdp.setIdmPassword("");
+    }
+
+    public void sendToReputation(Tuple input, SensorUpdate su, SO so, String streamId, String reason, Boolean event) throws IOException, PDPServioticyException {
+        ServioticyProvenance prov = new ServioticyProvenance();
+        ReputationAddressSO src = this.mapper.readValue(
+                prov.getSourceFromSecurityMetaDataAsString(
+                        this.mapper.writeValueAsString(
+                                su.getSecurity()
+                        )
+                ), ReputationAddressSO.class);
+        this.collector.emit(Reputation.STREAM_SO_SO, input,
+                new Values(src.getSoid(), // in-soid
+                        src.getStreamid(), // in-streamid
+                        so.getId(),
+                        streamId,
+                        su.getLastUpdate(),
+                        System.currentTimeMillis(),
+                        event,
+                        reason)
+        );
     }
 
     public void execute(Tuple input) {
@@ -145,6 +169,7 @@ public class StreamDispatcherBolt implements IRichBolt {
                 pco = this.pdp.checkAuthorization(null, mapper.readTree(mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(su.getSecurity())), pco,
                         PDP.operationID.DispatchData);
                 if(!pco.isPermission()){
+                    sendToReputation(input, su, so, streamIdByDoc, Reputation.DISCARD_SECURITY, true);
                     // TODO Needs logging
                     if (dc.benchmark) this.collector.emit("benchmark", input,
                             new Values(suDoc,

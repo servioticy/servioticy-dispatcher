@@ -126,7 +126,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
 	}
 
-    private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs, SO so, String streamId) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException, PDPServioticyException {
+    private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs, SO so, String streamId, Tuple input) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException, PDPServioticyException {
 		Map<String, SensorUpdate> groupDocs = new HashMap<String, SensorUpdate>();
 
         for(Map.Entry<String, FutureRestResponse> frrEntry: rrs.entrySet()){
@@ -156,6 +156,7 @@ public class StreamProcessorBolt implements IRichBolt {
             pco = this.pdp.checkAuthorization(null, this.mapper.readTree(this.mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(lastSU.getSecurity())), pco,
                     PDP.operationID.DispatchData);
             if(!pco.isPermission()){
+                sendToReputation(input, lastSU, so, streamId, Reputation.DISCARD_SECURITY, false);
                 return null;
             }else {
                 groupDocs.put(docId, lastSU);
@@ -349,7 +350,7 @@ public class StreamProcessorBolt implements IRichBolt {
             try {
                 sensorUpdates.putAll(this.getStreamSUs(streamSURRs));
                 sensorUpdates.put(streamId, previousSU);
-                Map<String, SensorUpdate> groupLastSus = this.getGroupSUs(groupSURRs, so, streamId);
+                Map<String, SensorUpdate> groupLastSus = this.getGroupSUs(groupSURRs, so, streamId, input);
                 if(groupLastSus == null){
                     collector.ack(input);
                     return;
