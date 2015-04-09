@@ -373,7 +373,10 @@ public class StreamProcessorBolt implements IRichBolt {
                 }
                 timestamp = inputSU.getLastUpdate() > timestamp ? inputSU.getLastUpdate() : timestamp;
             }
-
+            // Reputation needs the previousSU away
+            if(originId != streamId){
+                sensorUpdates.remove(streamId);
+            }
             SensorUpdate resultSU;
             String resultSUDoc;
             try {
