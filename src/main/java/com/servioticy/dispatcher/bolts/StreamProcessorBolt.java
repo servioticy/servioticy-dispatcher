@@ -338,6 +338,7 @@ public class StreamProcessorBolt implements IRichBolt {
             // There is already a newer generated update than the one received
             if (previousSU != null) {
                 if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
+                    System.err.println("New SU older than lastUpdate");
                     BenchmarkBolt.send(collector, input, dc, suDoc, "old");
                     collector.ack(input);
                     sendToReputation(input, su, so, streamId, Reputation.DISCARD_TIMESTAMP, true);
@@ -352,6 +353,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 sensorUpdates.put(streamId, previousSU);
                 Map<String, SensorUpdate> groupLastSus = this.getGroupSUs(groupSURRs, so, streamId, input);
                 if(groupLastSus == null){
+                    System.err.println("Don't have permission to read from a group");
                     collector.ack(input);
                     return;
                 }
