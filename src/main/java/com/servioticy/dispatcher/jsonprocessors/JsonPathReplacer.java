@@ -189,7 +189,8 @@ public class JsonPathReplacer {
                     // If the path does not exist in the input json, throws InvalidPathException
                     Object content = jp.getValue().read(json);
                     if (content instanceof String) {
-                        partial += "'" + content + "'";
+                        inputVars.put(varName,"'" + mapper.writeValueAsString(content)+"'");
+
                     } else {
                         ObjectMapper mapper = new ObjectMapper();
                         inputVars.put(varName,mapper.writeValueAsString(content));

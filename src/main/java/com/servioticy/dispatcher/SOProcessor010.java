@@ -223,7 +223,10 @@ public class SOProcessor010 extends SOProcessor{
                 else {
                     return null;
                 }
-                inputVar.put(ProvenanceAPI.COMPUTATION, "JSON.stringify(" + currentValueCode + ")");
+                if (type == String.class)
+                    inputVar.put(ProvenanceAPI.COMPUTATION, currentValueCode);
+                else
+                    inputVar.put(ProvenanceAPI.COMPUTATION, "JSON.stringify(" + currentValueCode + ")");
 
                 String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
@@ -237,6 +240,9 @@ public class SOProcessor010 extends SOProcessor{
                 result = this.mapper.readValue((String)ProvenanceAPI.getResultValue(provList), type);
                 if(type == GeoPoint.class)
                     result = ((GeoPoint)result).getLat()+","+((GeoPoint)result).getLon();
+//                else if(type == String.class)
+//                    result = ((String)result).substring
+
                 suChannel.setCurrentValue(result);
 
             }
