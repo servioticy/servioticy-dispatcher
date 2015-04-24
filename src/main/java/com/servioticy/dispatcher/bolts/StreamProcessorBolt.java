@@ -44,7 +44,6 @@ import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
 import de.passau.uni.sec.compose.pdp.servioticy.exception.PDPServioticyException;
 import de.passau.uni.sec.compose.pdp.servioticy.provenance.ServioticyProvenance;
 import com.servioticy.restclient.*;
-import org.apache.log4j.Logger;
 
 import javax.script.ScriptException;
 import java.io.IOException;
@@ -66,8 +65,6 @@ public class StreamProcessorBolt implements IRichBolt {
     private DispatcherContext dc;
     private ObjectMapper mapper;
     private PDP pdp;
-    protected static Logger LOG = org.apache.log4j.Logger.getLogger(StreamProcessorBolt.class);
-
 
     public StreamProcessorBolt(){
 
@@ -309,7 +306,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
             // Begin all HTTP requests
             previousSURR = this.getStreamSUAsyncResponse(streamId, so);
-            LOG.debug("Requested lastUpdate from current stream");
+            System.out.println("Requested lastUpdate from current stream");
 
             Set<String> docIds = sop.getSourceIdsByStream(streamId);
             // Remove the origin for which we already have the SU
@@ -318,9 +315,9 @@ public class StreamProcessorBolt implements IRichBolt {
             docIds.add(streamId);
 
             streamSURRs = this.getStreamSUAsyncResponses(docIds, so);
-            LOG.debug("Requested lastUpdates from 'stream' references");
+            System.out.println("Requested lastUpdates from 'stream' references");
             groupSURRs = this.getGroupSUAsyncResponses(docIds, so);
-            LOG.debug("Requested lastUpdates from 'group' references");
+            System.out.println("Requested lastUpdates from 'group' references");
 
             /*if(suCache.check(soId + ";" + streamId, su.getLastUpdate())){
                 // This SU or a posterior one has already been sent, do not send this one.
@@ -335,18 +332,18 @@ public class StreamProcessorBolt implements IRichBolt {
             if(sop.getClass() == SOProcessor010.class) {
                 // It is not needed to replace the alias, it has been already done in the previous bolt.
                 ((SOProcessor010) sop).compileJSONPaths();
-                LOG.debug("JSONPaths compiled");
+                System.out.println("JSONPaths compiled");
             }
 
             // Get the last update from the current stream
 
             previousSU = this.getStreamSU(previousSURR);
-            LOG.debug("Received lastUpdate from current stream");
+            System.out.println("Received lastUpdate from current stream");
 
             // There is already a newer generated update than the one received
             if (previousSU != null) {
                 if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
-                    LOG.debug("New SU older than lastUpdate");
+                    System.out.println("New SU older than lastUpdate");
                     BenchmarkBolt.send(collector, input, dc, suDoc, "old");
                     collector.ack(input);
                     sendToReputation(input, su, so, streamId, Reputation.DISCARD_TIMESTAMP, true);
@@ -358,12 +355,12 @@ public class StreamProcessorBolt implements IRichBolt {
             sensorUpdates = new HashMap<String, SensorUpdate>();
             try {
                 sensorUpdates.putAll(this.getStreamSUs(streamSURRs));
-                LOG.debug("Received lastUpdates from 'stream' references");
+                System.out.println("Received lastUpdates from 'stream' references");
                 sensorUpdates.put(streamId, previousSU);
                 Map<String, SensorUpdate> groupLastSus = this.getGroupSUs(groupSURRs, so, streamId, input);
-                LOG.debug("Received lastUpdates from 'group' references");
+                System.out.println("Received lastUpdates from 'group' references");
                 if (groupLastSus == null) {
-                    LOG.debug("Don't have permission to read from a group");
+                    System.out.println("Don't have permission to read from a group");
                     collector.ack(input);
                     return;
                 }
@@ -393,11 +390,11 @@ public class StreamProcessorBolt implements IRichBolt {
             SensorUpdate resultSU;
             String resultSUDoc;
             try {
-                LOG.debug("Calculating result...");
+                System.out.println("Calculating result...");
                 resultSU = sop.getResultSU(streamId, sensorUpdates, originId, timestamp);
-                LOG.debug("Result calculated");
+                System.out.println("Result calculated");
                 if (resultSU == null) {
-                    LOG.debug("Result filtered");
+                    System.out.println("Result filtered");
                     BenchmarkBolt.send(collector, input, dc, suDoc, "filtered");
                     collector.ack(input);
                     sendAllToReputation(input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_FILTER);
@@ -438,7 +435,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
 		    // Put to the queue
             try{
-                LOG.debug("Sending the result SU to the queue");
+                System.out.println("Sending the result SU to the queue");
                 if(!qc.isConnected()) {
                     qc.connect();
                 }
@@ -449,7 +446,7 @@ public class StreamProcessorBolt implements IRichBolt {
                     collector.fail(input);
                     return;
                 }
-                LOG.debug("Result SU sent to the queue");
+                System.out.println("Result SU sent to the queue");
                 qc.disconnect();
             } catch (Exception e) {
                 // TODO Log the error
@@ -466,7 +463,7 @@ public class StreamProcessorBolt implements IRichBolt {
             resultSUDoc = this.mapper.writeValueAsString(resultSU);
 
             // Send to the API
-            LOG.debug("Sending the result SU to the API");
+            System.out.println("Sending the result SU to the API");
             restClient.restRequest(
                     dc.restBaseURL
                             + "private/" + soId + "/streams/"
@@ -474,7 +471,7 @@ public class StreamProcessorBolt implements IRichBolt {
                     RestClient.PUT,
                     null);
             sendAllToReputation(input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_NONE);
-            LOG.debug("Result SU sent to the queue");
+            System.out.println("Result SU sent to the queue");
         } catch(RestClientErrorCodeException e){
             // TODO Log the error
             e.printStackTrace();
