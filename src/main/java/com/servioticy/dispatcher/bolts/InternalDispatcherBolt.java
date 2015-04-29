@@ -29,9 +29,9 @@ import com.servioticy.datamodel.subscription.InternalSubscription;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.publishers.Publisher;
-import de.passau.uni.sec.compose.pdp.servioticy.LocalPDP;
-import de.passau.uni.sec.compose.pdp.servioticy.PDP;
-import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
+//import de.passau.uni.sec.compose.pdp.servioticy.LocalPDP;
+//import de.passau.uni.sec.compose.pdp.servioticy.PDP;
+//import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
 import org.apache.log4j.Logger;
 
 import java.util.Map;
@@ -61,12 +61,12 @@ public class InternalDispatcherBolt implements IRichBolt {
 		this.context = context;
 		this.publisher = null;
 		this.suCache = new SUCache(25);
-        this.pdp = new LocalPDP();
-        // Placeholders
-        this.pdp.setIdmHost("");
-        this.pdp.setIdmPort(0);
-        this.pdp.setIdmUser("");
-        this.pdp.setIdmPassword("");
+//        this.pdp = new LocalPDP();
+//        // Placeholders
+//        this.pdp.setIdmHost("");
+//        this.pdp.setIdmPort(0);
+//        this.pdp.setIdmUser("");
+//        this.pdp.setIdmPassword("");
 
 		LOG.debug("Service publisher server: " + dc.internalPubAddress + ":" + dc.internalPubPort);
 		LOG.debug("Service publisher user/pass: " + dc.internalPubUser + " / "+dc.internalPubPassword);
@@ -91,7 +91,7 @@ public class InternalDispatcherBolt implements IRichBolt {
 		SensorUpdate su;
 		String sourceSOId;
 		String streamId;
-        PermissionCacheObject pco = new PermissionCacheObject();
+//        PermissionCacheObject pco = new PermissionCacheObject();
 
         try{
 			su = mapper.readValue(input.getStringByField("su"),
@@ -117,15 +117,15 @@ public class InternalDispatcherBolt implements IRichBolt {
 				publisher.connect(dc.internalPubUser,
 						dc.internalPubPassword);
 			}
-            pco.setUserId(internalSub.getUserId());
-            pco = this.pdp.checkAuthorization(null, null, mapper.readTree(mapper.writeValueAsString(su.getSecurity())), pco,
-                    PDP.operationID.DispatchPublisher);
-			su.setSecurity(null);
-            if(!pco.isPermission()){
-				// TODO Needs logging
-                collector.ack(input);
-                return;
-            }
+//            pco.setUserId(internalSub.getUserId());
+//            pco = this.pdp.checkAuthorization(null, null, mapper.readTree(mapper.writeValueAsString(su.getSecurity())), pco,
+//                    PDP.operationID.DispatchPublisher);
+//			su.setSecurity(null);
+//            if(!pco.isPermission()){
+//				// TODO Needs logging
+//                collector.ack(input);
+//                return;
+//            }
             publisher.publishMessage(internalSub.getDestination(), suStr);
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
