@@ -47,7 +47,7 @@ public class InternalDispatcherBolt implements IRichBolt {
 	private DispatcherContext dc;
 	private static Logger LOG = Logger.getLogger(InternalDispatcherBolt.class);
 	private ObjectMapper mapper;
-    private PDP pdp;
+//    private PDP pdp;
 
 	public InternalDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
