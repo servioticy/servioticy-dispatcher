@@ -249,7 +249,10 @@ public class StreamProcessorBolt implements IRichBolt {
 
             // Begin all HTTP requests
             previousSURR = this.getStreamSUAsyncResponse(streamId, so);
-
+            if(sop.getClass() == SOProcessor010.class) {
+                // It is not needed to replace the alias, it has been already done in the previous bolt.
+                ((SOProcessor010)sop).compileJSONPaths();
+            }
             Set<String> docIds = sop.getSourceIdsByStream(streamId);
             // Remove the origin for which we already have the SU
             docIds.remove(originId);
@@ -269,10 +272,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 collector.ack(input);
                 return;
             }*/
-            if(sop.getClass() == SOProcessor010.class) {
-                // It is not needed to replace the alias, it has been already done in the previous bolt.
-                ((SOProcessor010)sop).compileJSONPaths();
-            }
+
 
             // Get the last update from the current stream
 
