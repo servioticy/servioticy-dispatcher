@@ -22,7 +22,6 @@ import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
 import com.servioticy.dispatcher.bolts.*;
 import org.apache.commons.cli.*;
 
@@ -70,16 +69,16 @@ public class DispatcherTopology {
         TopologyBuilder builder = new TopologyBuilder();
 
         // TODO Auto-assign workers to the spout in function of the number of Kestrel IPs
-        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 24);
+        builder.setSpout("dispatcher", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueue, new UpdateDescriptorScheme()), 8);
 //        builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.kestrelAddresses), dc.kestrelPort, dc.kestrelQueueActions, new ActuationScheme()), 4);
 
-        builder.setBolt("prepare", new PrepareBolt(dc), 24)
+        builder.setBolt("prepare", new PrepareBolt(dc), 8)
                 .shuffleGrouping("dispatcher");
 
 //        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 2)
 //        		.shuffleGrouping("actions");
 
-        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 24)
+        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 8)
                 .shuffleGrouping("prepare", "subscription");
 
 //        builder.setBolt("httpdispatcher", new HttpSubsDispatcherBolt(), 1)
@@ -87,18 +86,21 @@ public class DispatcherTopology {
 //        builder.setBolt("pubsubdispatcher", new PubSubDispatcherBolt(dc), 1)
 //                .fieldsGrouping("subretriever", "pubsubSub", new Fields("subid"));
 
-        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 24)
+        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 8)
                 .shuffleGrouping("subretriever", "internalSub")
                 .shuffleGrouping("prepare", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 24)
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 8)
                 .shuffleGrouping("streamdispatcher", "default");
 
         if (dc.benchmark) {
-            builder.setBolt("benchmark", new BenchmarkBolt(dc), 24)
+            builder.setBolt("benchmark", new PathPerformanceBolt(dc), 8)
                     .shuffleGrouping("streamdispatcher", "benchmark")
                     .shuffleGrouping("subretriever", "benchmark")
                     .shuffleGrouping("streamprocessor", "benchmark")
                     .shuffleGrouping("prepare", "benchmark");
+            builder.setBolt("stages", new StagesPerformanceBolt(dc), 8)
+                    .shuffleGrouping("streamprocessor", "stages")
+                    .shuffleGrouping("prepare", "stages");
         }
 
         Config conf = new Config();

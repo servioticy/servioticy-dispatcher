@@ -29,10 +29,7 @@ import com.servioticy.restclient.FutureRestResponse;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestResponse;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -114,7 +111,11 @@ public class PrepareBolt implements IRichBolt {
                     //TODO Log the error
                     return;
                 }*/
-
+                if(su.getStageStartTS() == null){
+                    su.setStageStartTS(new LinkedHashMap<String, Long>());
+                    su.getStageStartTS().put("queue", su.getLastUpdate());
+                    su.getStageStartTS().put("out", su.getLastUpdate());
+                }
                 suDoc = mapper.writeValueAsString(su);
 //                try {
 //                    rr = frr.get();
@@ -124,9 +125,13 @@ public class PrepareBolt implements IRichBolt {
 //                    this.collector.fail(input);
 //                    return;
 //                }
+
+                StagesPerformanceBolt.send(collector, input, dc, "queue", soid, streamid, su.getStageStartTS().get("queue"), System.currentTimeMillis());
+
+
             }
         } catch (Exception e) {
-            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            PathPerformanceBolt.send(collector, input, dc, suDoc, "error");
             // TODO Log the error
             e.printStackTrace();
             collector.ack(input);
@@ -157,6 +162,7 @@ public class PrepareBolt implements IRichBolt {
         declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
         declarer.declareStream("stream", new Fields("docid", "destination", "su"));
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
+        if (dc.benchmark) declarer.declareStream("stages", new Fields("soid", "stream", "stage", "startts", "stopts"));
 
     }
 

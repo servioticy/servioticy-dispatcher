@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
-public class BenchmarkBolt implements IRichBolt {
+public class PathPerformanceBolt implements IRichBolt {
     /**
      *
      */
@@ -41,7 +41,7 @@ public class BenchmarkBolt implements IRichBolt {
     private TopologyContext context;
     private DispatcherContext dc;
 
-    public BenchmarkBolt(DispatcherContext dc) {
+    public PathPerformanceBolt(DispatcherContext dc) {
         this.dc = dc;
     }
 
@@ -79,7 +79,7 @@ public class BenchmarkBolt implements IRichBolt {
                 csvLine += su.getTriggerPath().get(i).get(0) + "," + su.getTriggerPath().get(i).get(1);
             }
 
-            File file = new File(dc.benchResultsDir + "/" + context.getThisTaskId() + ".csv");
+            File file = new File(dc.benchResultsDir + "/" + context.getThisTaskId() + "-paths.csv");
             file.createNewFile();
             FileWriter writer = new FileWriter(file, true);
             writer.append(csvLine + "\n");
