@@ -44,6 +44,8 @@ import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
 import de.passau.uni.sec.compose.pdp.servioticy.exception.PDPServioticyException;
 import de.passau.uni.sec.compose.pdp.servioticy.provenance.ServioticyProvenance;
 import com.servioticy.restclient.*;
+import org.mozilla.javascript.EvaluatorException;
+import org.mozilla.javascript.RhinoException;
 
 import javax.script.ScriptException;
 import java.io.IOException;
@@ -391,7 +393,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 }
                 resultSUDoc = this.mapper.writeValueAsString(resultSU);
 
-            } catch (ScriptException e) {
+            } catch (RhinoException e) {
                 // TODO Log the error
                 e.printStackTrace();
                 BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
