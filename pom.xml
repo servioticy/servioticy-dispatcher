@@ -104,7 +104,7 @@
         <dependency>
             <groupId>de.passau.uni</groupId>
             <artifactId>servioticy-pdp</artifactId>
-            <version>0.1.0</version>
+            <version>0.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
