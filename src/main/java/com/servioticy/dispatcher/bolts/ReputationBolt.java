@@ -19,8 +19,12 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
-import com.couchbase.client.CouchbaseClient;
 import backtype.storm.tuple.Tuple;
+import com.couchbase.client.java.Bucket;
+import com.couchbase.client.java.Cluster;
+import com.couchbase.client.java.CouchbaseCluster;
+import com.couchbase.client.java.document.JsonDocument;
+import com.couchbase.client.java.document.json.JsonObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.reputation.*;
@@ -28,10 +32,7 @@ import com.servioticy.dispatcher.DispatcherContext;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -43,7 +44,8 @@ public class ReputationBolt implements IRichBolt{
     private TopologyContext context;
     private DispatcherContext dc;
     private Map<String, Integer> mapBoltStream;
-    private CouchbaseClient cbClient;
+    private Cluster cbCluster;
+    private Bucket reputationBucket;
     ObjectMapper mapper;
 
     private static final int STREAM_SO_PUBSUB = 0;
@@ -68,16 +70,13 @@ public class ReputationBolt implements IRichBolt{
         this.mapBoltStream.put(Reputation.STREAM_SO_SO, ReputationBolt.STREAM_SO_SO);
         this.mapBoltStream.put("default", ReputationBolt.STREAM_SO_USER);
         this.mapBoltStream.put(Reputation.STREAM_WO_SO, ReputationBolt.STREAM_WO_SO);
-        ArrayList<URI> nodes = new ArrayList<URI>();
+        List<String> nodes = new ArrayList<String>();
         for(String address: dc.storageAddresses){
-            nodes.add(URI.create(address));
+            nodes.add(address);
         }
 
-        try {
-            cbClient = new CouchbaseClient(nodes, dc.reputationBucket, "");
-        } catch (IOException e) {
-            throw new RuntimeException();
-        }
+        cbCluster = CouchbaseCluster.create(nodes);
+        reputationBucket = cbCluster.openBucket(dc.reputationBucket);
 
     }
 
@@ -161,10 +160,9 @@ public class ReputationBolt implements IRichBolt{
         }
         try {
             String repString = mapper.writeValueAsString(reputation);
-            cbClient.set(
+            reputationBucket.insert(JsonDocument.create(
                     Long.toHexString(UUID.randomUUID().getMostSignificantBits()) + "-" + reputation.getDate(),
-                    repString
-            ).get();
+                    JsonObject.fromJson(repString)));
         } catch (Exception e) {
             // TODO log the error
             e.printStackTrace();
