@@ -158,7 +158,7 @@ public class StreamProcessorBolt implements IRichBolt {
             pco = this.pdp.checkAuthorization(null, this.mapper.readTree(this.mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(lastSU.getSecurity())), pco,
                     PDP.operationID.DispatchData);
             if(!pco.isPermission()){
-                sendToReputation(input, lastSU, so, streamId, Reputation.DISCARD_SECURITY, false);
+                ReputationBolt.sendToReputation(collector, mapper, input, lastSU, so, streamId, Reputation.DISCARD_SECURITY, false);
                 return null;
             }else {
                 groupDocs.put(docId, lastSU);
@@ -256,36 +256,6 @@ public class StreamProcessorBolt implements IRichBolt {
         return frr;
     }
 
-    public void sendAllToReputation(Tuple input, Map<String, SensorUpdate> sensorUpdates, String originId, SO so, String streamId, String reason) throws IOException, PDPServioticyException {
-        for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
-            boolean event = entry.getKey() == originId;
-            SensorUpdate entrySU = entry.getValue();
-            if(entrySU == null){
-                continue;
-            }
-            sendToReputation(input, entrySU, so, streamId, reason, event);
-        }
-    }
-
-    public void sendToReputation(Tuple input, SensorUpdate su, SO so, String streamId, String reason, Boolean event) throws IOException, PDPServioticyException {
-        ServioticyProvenance prov = new ServioticyProvenance();
-        ReputationAddressSO src = this.mapper.readValue(
-                prov.getSourceFromSecurityMetaDataAsString(
-                        this.mapper.writeValueAsString(
-                                su.getSecurity()
-                        )
-                ), ReputationAddressSO.class);
-        this.collector.emit(Reputation.STREAM_SO_SO, input,
-                new Values(src.getSoid(), // in-soid
-                        src.getStreamid(), // in-streamid
-                        so.getId(),
-                        streamId,
-                        su.getLastUpdate(),
-                        System.currentTimeMillis(),
-                        event,
-                        reason)
-        );
-    }
     public void execute(Tuple input) {
         SensorUpdate su;
         FutureRestResponse previousSURR;
@@ -343,7 +313,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
                     BenchmarkBolt.send(collector, input, dc, suDoc, "old");
                     collector.ack(input);
-                    sendToReputation(input, su, so, streamId, Reputation.DISCARD_TIMESTAMP, true);
+                    ReputationBolt.sendToReputation(collector, mapper, input, su, so, streamId, Reputation.DISCARD_TIMESTAMP, true);
                     return;
                 }
             }
@@ -388,7 +358,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 if (resultSU == null) {
                     BenchmarkBolt.send(collector, input, dc, suDoc, "filtered");
                     collector.ack(input);
-                    sendAllToReputation(input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_FILTER);
+                    ReputationBolt.sendAllToReputation(collector, mapper, input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_FILTER);
                     return;
                 }
                 resultSUDoc = this.mapper.writeValueAsString(resultSU);
@@ -399,7 +369,7 @@ public class StreamProcessorBolt implements IRichBolt {
                 BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
                 collector.ack(input);
                 //Reputation
-                sendAllToReputation(input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_ERROR);
+                ReputationBolt.sendAllToReputation(collector, mapper, input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_ERROR);
                 return;
             }
             if(dc.benchmark) {
@@ -458,7 +428,7 @@ public class StreamProcessorBolt implements IRichBolt {
                             + streamId + "/" + opid, resultSUDoc,
                     RestClient.PUT,
                     null);
-            sendAllToReputation(input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_NONE);
+            ReputationBolt.sendAllToReputation(collector, mapper, input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_NONE);
         } catch(RestClientErrorCodeException e){
             // TODO Log the error
             e.printStackTrace();

@@ -20,6 +20,7 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
@@ -28,7 +29,11 @@ import com.couchbase.client.java.document.json.JsonObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.reputation.*;
+import com.servioticy.datamodel.sensorupdate.SensorUpdate;
+import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.dispatcher.DispatcherContext;
+import de.passau.uni.sec.compose.pdp.servioticy.exception.PDPServioticyException;
+import de.passau.uni.sec.compose.pdp.servioticy.provenance.ServioticyProvenance;
 
 import java.io.IOException;
 import java.net.URI;
@@ -78,6 +83,37 @@ public class ReputationBolt implements IRichBolt{
         cbCluster = CouchbaseCluster.create(nodes);
         reputationBucket = cbCluster.openBucket(dc.reputationBucket);
 
+    }
+
+    public static void sendAllToReputation(OutputCollector collector, ObjectMapper mapper, Tuple input, Map<String, SensorUpdate> sensorUpdates, String originId, SO so, String streamId, String reason) throws IOException, PDPServioticyException {
+        for (Map.Entry<String, SensorUpdate> entry: sensorUpdates.entrySet()) {
+            boolean event = entry.getKey().equals(originId);
+            SensorUpdate entrySU = entry.getValue();
+            if(entrySU == null){
+                continue;
+            }
+            sendToReputation(collector, mapper, input, entrySU, so, streamId, reason, event);
+        }
+    }
+
+    public static void sendToReputation(OutputCollector collector, ObjectMapper mapper, Tuple input, SensorUpdate su, SO so, String streamId, String reason, Boolean event) throws IOException, PDPServioticyException {
+        ServioticyProvenance prov = new ServioticyProvenance();
+        ReputationAddressSO src = mapper.readValue(
+                prov.getSourceFromSecurityMetaDataAsString(
+                        mapper.writeValueAsString(
+                                su.getSecurity()
+                        )
+                ), ReputationAddressSO.class);
+        collector.emit(Reputation.STREAM_SO_SO, input,
+                new Values(src.getSoid(), // in-soid
+                        src.getStreamid(), // in-streamid
+                        so.getId(),
+                        streamId,
+                        su.getLastUpdate(),
+                        System.currentTimeMillis(),
+                        event,
+                        reason)
+        );
     }
 
     @Override
