@@ -108,6 +108,7 @@ public class DispatcherTopology {
 
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
         actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
+        reputationSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
 
         builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig));
         builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig));
