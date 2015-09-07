@@ -94,6 +94,8 @@ public class DispatcherTopology {
         SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/", UUID.randomUUID().toString());
         SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/", UUID.randomUUID().toString());
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
+        actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
+
         builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig));
         builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig));
 
