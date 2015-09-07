@@ -20,7 +20,9 @@ import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
+import backtype.storm.scheme.StringScheme;
 import backtype.storm.spout.KestrelThriftSpout;
+import backtype.storm.spout.SchemeAsMultiScheme;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import com.servioticy.datamodel.reputation.Reputation;
@@ -29,8 +31,14 @@ import com.servioticy.dispatcher.schemes.ActuationScheme;
 import com.servioticy.dispatcher.schemes.ReputationScheme;
 import com.servioticy.dispatcher.schemes.UpdateDescriptorScheme;
 import org.apache.commons.cli.*;
+import storm.kafka.BrokerHosts;
+import storm.kafka.KafkaSpout;
+import storm.kafka.SpoutConfig;
+import storm.kafka.ZkHosts;
+
 
 import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -44,7 +52,6 @@ public class DispatcherTopology {
      * @throws InterruptedException
      */
     public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, InterruptedException, ParseException {
-
         Options options = new Options();
         
         options.addOption(OptionBuilder.withArgName("file")
@@ -74,9 +81,35 @@ public class DispatcherTopology {
         TopologyBuilder builder = new TopologyBuilder();
 
         // TODO Auto-assign workers to the spout in function of the number of Kestrel IPs
-        builder.setSpout("updates", new KestrelThriftSpout(Arrays.asList(dc.updatesAddresses), dc.updatesPort, dc.updatesQueue, new UpdateDescriptorScheme()));
-        builder.setSpout("actions", new KestrelThriftSpout(Arrays.asList(dc.actionsAddresses), dc.actionsPort, dc.actionsQueue, new ActuationScheme()));
-        builder.setSpout("readreputation", new KestrelThriftSpout(Arrays.asList(dc.reputationAddresses), dc.reputationPort, dc.reputationQueue, new ReputationScheme()));
+        String updatesBrokerZkStr = "";
+        for(String updateAddress: dc.updatesAddresses){
+            updatesBrokerZkStr += updateAddress + ",";
+        }
+        updatesBrokerZkStr = updatesBrokerZkStr.substring(0, updatesBrokerZkStr.length()-1);
+        BrokerHosts updatesHosts = new ZkHosts(updatesBrokerZkStr);
+
+        String actionsBrokerZkStr = "";
+        for(String actionsAddress: dc.actionsAddresses){
+            actionsBrokerZkStr += actionsAddress + ",";
+        }
+        actionsBrokerZkStr = actionsBrokerZkStr.substring(0, actionsBrokerZkStr.length()-1);
+        BrokerHosts actionsHosts = new ZkHosts(actionsBrokerZkStr);
+
+        String reputationBrokerZkStr = "";
+        for(String reputationAddress: dc.reputationAddresses){
+            reputationBrokerZkStr += reputationAddress + ",";
+        }
+        reputationBrokerZkStr = reputationBrokerZkStr.substring(0, reputationBrokerZkStr.length()-1);
+        BrokerHosts reputationHosts = new ZkHosts(reputationBrokerZkStr);
+
+        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/", UUID.randomUUID().toString());
+        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/", UUID.randomUUID().toString());
+        SpoutConfig reputationSpoutConfig = new SpoutConfig(actionsHosts, dc.reputationQueue, "/", UUID.randomUUID().toString());
+
+        updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
+        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig));
+        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig));
+        builder.setSpout("readreputation", new KafkaSpout(reputationSpoutConfig));
 
         builder.setBolt("prepare", new PrepareBolt(dc))
                 .shuffleGrouping("updates");

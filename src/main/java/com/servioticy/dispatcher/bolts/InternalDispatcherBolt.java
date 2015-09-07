@@ -113,7 +113,7 @@ public class InternalDispatcherBolt implements IRichBolt {
 
 		String suStr = input.getStringByField("su");
 		try {
-			if(!publisher.isConnected()){
+			if (!publisher.isConnected()) {
 				publisher.connect(dc.internalPubUser,
 						dc.internalPubPassword);
 			}

@@ -116,7 +116,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
 		}
 		String destTopic = externalSub.getDestination() + "/" + sourceSOId + "/streams/" + streamId + "/updates";
 		try {
-            if(!publisher.isConnected()){
+			if (!publisher.isConnected()) {
 				publisher.connect(dc.externalPubUser,
 						dc.externalPubPassword);
 			}

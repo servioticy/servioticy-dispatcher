@@ -281,9 +281,8 @@ public class StreamProcessorBolt implements IRichBolt {
 
             if(sop.getClass() == SOProcessor010.class) {
                 // It is not needed to replace the alias, it has been already done in the previous bolt.
-                ((SOProcessor010) sop).compileJSONPaths();
+                ((SOProcessor010)sop).compileJSONPaths();
             }
-
             Set<String> docIds = sop.getSourceIdsByStream(streamId);
             // Remove the origin for which we already have the SU
             docIds.remove(originId);
