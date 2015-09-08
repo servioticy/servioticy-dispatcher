@@ -75,8 +75,8 @@ public class StreamProcessorBolt implements IRichBolt {
         }
         KestrelThriftClient ktc = new KestrelThriftClient();
 
-        ktc.setBaseAddress(kestrelAddresses);
-        ktc.setRelativeAddress(dc.updatesQueue);
+        ktc.setAddress(kestrelAddresses);
+        ktc.setQueueName(dc.updatesQueue);
         ktc.setExpire(0);
         this.qc = ktc;
     }
@@ -94,9 +94,14 @@ public class StreamProcessorBolt implements IRichBolt {
 		this.collector = collector;
 		this.context = context;
 		this.suCache = new SUCache(25);
+        String updatesAddrStr = "";
+        for(String updateAddress: dc.updatesAddresses){
+            updatesAddrStr += updateAddress + ",";
+        }
+        updatesAddrStr = updatesAddrStr.substring(0, updatesAddrStr.length()-1);
         try {
             if (this.qc == null) {
-                qc = QueueClient.factory();
+                qc = QueueClient.factory(updatesAddrStr, dc.updatesQueue, "es.bsc.queueclient.KafkaClient", null);
 
             }
             qc.connect();
