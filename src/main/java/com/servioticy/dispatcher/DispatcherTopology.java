@@ -104,7 +104,7 @@ public class DispatcherTopology {
 
         SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/", UUID.randomUUID().toString());
         SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/", UUID.randomUUID().toString());
-        SpoutConfig reputationSpoutConfig = new SpoutConfig(actionsHosts, dc.reputationQueue, "/", UUID.randomUUID().toString());
+        SpoutConfig reputationSpoutConfig = new SpoutConfig(reputationHosts, dc.reputationQueue, "/", UUID.randomUUID().toString());
 
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
         actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
