@@ -102,13 +102,13 @@ public class DispatcherTopology {
         reputationBrokerZkStr = reputationBrokerZkStr.substring(0, reputationBrokerZkStr.length()-1);
         BrokerHosts reputationHosts = new ZkHosts(reputationBrokerZkStr);
 
-        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/", UUID.randomUUID().toString());
-        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/", UUID.randomUUID().toString());
-        SpoutConfig reputationSpoutConfig = new SpoutConfig(reputationHosts, dc.reputationQueue, "/", UUID.randomUUID().toString());
+        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, UUID.randomUUID().toString());
+        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/" + dc.actionsQueue, UUID.randomUUID().toString());
+        SpoutConfig reputationSpoutConfig = new SpoutConfig(reputationHosts, dc.reputationQueue, "/" + dc.reputationQueue, UUID.randomUUID().toString());
 
-        updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
-        actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
-        reputationSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
+        updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
+        actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new ActuationScheme());
+        reputationSpoutConfig.scheme = new SchemeAsMultiScheme(new ReputationScheme());
 
         builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig));
         builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig));

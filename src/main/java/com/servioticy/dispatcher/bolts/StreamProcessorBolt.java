@@ -82,6 +82,7 @@ public class StreamProcessorBolt implements IRichBolt {
         this.restClient = restClient;
         this.dc = dc;
         this.qc = null;
+
     }
     public StreamProcessorBolt(DispatcherContext dc, QueueClient qc){
         this.dc = dc;
@@ -105,12 +106,13 @@ public class StreamProcessorBolt implements IRichBolt {
         this.pdp.setIdmPassword("");
         String updatesAddrStr = "";
         for(String updateAddress: dc.updatesAddresses){
-            updatesAddrStr += updateAddress + ",";
+
+            updatesAddrStr += updateAddress.split(":")[0]+":"+"9092" + ",";
         }
         updatesAddrStr = updatesAddrStr.substring(0, updatesAddrStr.length()-1);
         try {
             if (this.qc == null) {
-                qc = QueueClient.factory(updatesAddrStr, dc.updatesQueue, "es.bsc.queueclient.KafkaClient", null);
+                qc = QueueClient.factory(updatesAddrStr, dc.updatesQueue, "com.servioticy.queueclient.KafkaClient", null);
 
             }
             qc.connect();
