@@ -102,7 +102,7 @@ public class StreamProcessorBolt implements IRichBolt {
         updatesAddrStr = updatesAddrStr.substring(0, updatesAddrStr.length()-1);
         try {
             if (this.qc == null) {
-                qc = QueueClient.factory(updatesAddrStr, dc.updatesQueue, "es.bsc.queueclient.KafkaClient", null);
+                qc = QueueClient.factory(updatesAddrStr, dc.updatesQueue, "com.servioticy.queueclient.KafkaClient", null);
 
             }
             qc.connect();

@@ -15,6 +15,9 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher;
 
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,8 +37,13 @@ public class UpdateDescriptorScheme implements Scheme {
 		this.mapper = new ObjectMapper();
 	}
 	public List<Object> deserialize(byte[] bytes) {
+		ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+		ObjectInput in = null;
 		try {
-			String inputDoc = new String(bytes, "UTF-8");
+			in = new ObjectInputStream(bis);
+			Object o = in.readObject();
+			bis.close();
+			String inputDoc = (String) o;
 			UpdateDescriptor ud = this.mapper.readValue(inputDoc, UpdateDescriptor.class);
 			return new Values(ud.getOpid(), ud.getSoid(), ud.getStreamid(), this.mapper.writeValueAsString(ud.getSu()));
 		} catch(Exception e){

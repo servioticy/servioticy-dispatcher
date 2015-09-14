@@ -88,10 +88,10 @@ public class DispatcherTopology {
         actionsBrokerZkStr = actionsBrokerZkStr.substring(0, actionsBrokerZkStr.length()-1);
         BrokerHosts actionsHosts = new ZkHosts(actionsBrokerZkStr);
 
-        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/", UUID.randomUUID().toString());
-        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/", UUID.randomUUID().toString());
-        updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
-        actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
+        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, UUID.randomUUID().toString());
+        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/" + dc.actionsQueue, UUID.randomUUID().toString());
+        updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
+        actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new ActuationScheme());
 
         builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig));
         builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig));
