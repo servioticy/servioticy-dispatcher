@@ -69,16 +69,16 @@ public class StreamProcessorBolt implements IRichBolt {
     public StreamProcessorBolt(DispatcherContext dc, RestClient restClient){
         this.restClient = restClient;
         this.dc = dc;
-        String kestrelAddresses = "";
-        for (String addr : dc.updatesAddresses) {
-            kestrelAddresses += addr + ":" + dc.updatesPort + " ";
-        }
-        KestrelThriftClient ktc = new KestrelThriftClient();
-
-        ktc.setAddress(kestrelAddresses);
-        ktc.setQueueName(dc.updatesQueue);
-        ktc.setExpire(0);
-        this.qc = ktc;
+//        String kestrelAddresses = "";
+//        for (String addr : dc.updatesAddresses) {
+//            kestrelAddresses += addr + ":" + dc.updatesPort + " ";
+//        }
+//        KestrelThriftClient ktc = new KestrelThriftClient();
+//
+//        ktc.setAddress(kestrelAddresses);
+//        ktc.setQueueName(dc.updatesQueue);
+//        ktc.setExpire(0);
+//        this.qc = ktc;
     }
     public StreamProcessorBolt(DispatcherContext dc, QueueClient qc){
         this.dc = dc;
@@ -96,7 +96,8 @@ public class StreamProcessorBolt implements IRichBolt {
 		this.suCache = new SUCache(25);
         String updatesAddrStr = "";
         for(String updateAddress: dc.updatesAddresses){
-            updatesAddrStr += updateAddress + ",";
+
+            updatesAddrStr += updateAddress.split(":")[0]+":"+"9092" + ",";
         }
         updatesAddrStr = updatesAddrStr.substring(0, updatesAddrStr.length()-1);
         try {
