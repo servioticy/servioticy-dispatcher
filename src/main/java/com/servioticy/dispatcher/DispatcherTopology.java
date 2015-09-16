@@ -20,8 +20,6 @@ import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
-import backtype.storm.scheme.StringScheme;
-import backtype.storm.spout.KestrelThriftSpout;
 import backtype.storm.spout.SchemeAsMultiScheme;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
@@ -31,10 +29,7 @@ import com.servioticy.dispatcher.schemes.ActuationScheme;
 import com.servioticy.dispatcher.schemes.ReputationScheme;
 import com.servioticy.dispatcher.schemes.UpdateDescriptorScheme;
 import org.apache.commons.cli.*;
-import storm.kafka.BrokerHosts;
-import storm.kafka.KafkaSpout;
-import storm.kafka.SpoutConfig;
-import storm.kafka.ZkHosts;
+import storm.kafka.*;
 
 
 import java.util.Arrays;
@@ -87,6 +82,7 @@ public class DispatcherTopology {
         }
         updatesBrokerZkStr = updatesBrokerZkStr.substring(0, updatesBrokerZkStr.length()-1);
         BrokerHosts updatesHosts = new ZkHosts(updatesBrokerZkStr);
+
 
         String actionsBrokerZkStr = "";
         for(String actionsAddress: dc.actionsAddresses){
