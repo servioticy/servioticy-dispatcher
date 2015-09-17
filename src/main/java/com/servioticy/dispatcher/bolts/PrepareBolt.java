@@ -72,27 +72,27 @@ public class PrepareBolt implements IRichBolt {
     }
 
     public void execute(Tuple input) {
-        RestResponse rr;
-        FutureRestResponse frr;
-        String opid = input.getStringByField("opid");
+//        RestResponse rr;
+//        FutureRestResponse frr;
+//        String opid = input.getStringByField("opid");
         String suDoc = input.getStringByField("su");
         String soid = input.getStringByField("soid");
         String streamid = input.getStringByField("streamid");
         SensorUpdate su;
         try {
 
-            try {
-                frr = restClient.restRequest(
-                        dc.restBaseURL
-                                + "private/security/opid/" + opid, null,
-                        RestClient.GET, null
-                );
-            } catch (Exception e) {
-                // TODO Log the error
-                // Retry until timeout
-                this.collector.fail(input);
-                return;
-            }
+//            try {
+//                frr = restClient.restRequest(
+//                        dc.restBaseURL
+//                                + "private/security/opid/" + opid, null,
+//                        RestClient.GET, null
+//                );
+//            } catch (Exception e) {
+//                // TODO Log the error
+//                // Retry until timeout
+//                this.collector.fail(input);
+//                return;
+//            }
             su = this.mapper.readValue(suDoc, SensorUpdate.class);
 
             // Reputation
@@ -131,14 +131,14 @@ public class PrepareBolt implements IRichBolt {
                 }*/
 
                 suDoc = this.mapper.writeValueAsString(su);
-                try {
-                    rr = frr.get();
-                } catch (Exception e) {
-                    // TODO Log the error
-                    // Retry until timeout
-                    this.collector.fail(input);
-                    return;
-                }
+//                try {
+//                    rr = frr.get();
+//                } catch (Exception e) {
+//                    // TODO Log the error
+//                    // Retry until timeout
+//                    this.collector.fail(input);
+//                    return;
+//                }
             }
         } catch (Exception e) {
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
