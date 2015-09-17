@@ -98,9 +98,9 @@ public class DispatcherTopology {
         reputationBrokerZkStr = reputationBrokerZkStr.substring(0, reputationBrokerZkStr.length()-1);
         BrokerHosts reputationHosts = new ZkHosts(reputationBrokerZkStr);
 
-        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, UUID.randomUUID().toString());
-        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/" + dc.actionsQueue, UUID.randomUUID().toString());
-        SpoutConfig reputationSpoutConfig = new SpoutConfig(reputationHosts, dc.reputationQueue, "/" + dc.reputationQueue, UUID.randomUUID().toString());
+        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, "dispatcher-" + dc.updatesQueue);
+        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/" + dc.actionsQueue, "dispatcher-" + dc.actionsQueue);
+        SpoutConfig reputationSpoutConfig = new SpoutConfig(reputationHosts, dc.reputationQueue, "/" + dc.reputationQueue, "dispatcher-" + dc.reputationQueue);
 
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
         actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new ActuationScheme());
