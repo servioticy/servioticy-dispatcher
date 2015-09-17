@@ -92,27 +92,27 @@ public class DispatcherTopology {
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
         actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new ActuationScheme());
 
-        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig));
-        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig));
+        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 4);
+        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig), 4);
 
-        builder.setBolt("prepare", new PrepareBolt(dc))
+        builder.setBolt("prepare", new PrepareBolt(dc), 12)
                 .shuffleGrouping("updates");
 
-        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc))
+        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 12)
         		.shuffleGrouping("actions");
 
-        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc))
+        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 12)
                 .shuffleGrouping("prepare", "subscription");
 
-        builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc))
+        builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc), 12)
                 .fieldsGrouping("subretriever", "externalSub", new Fields("subid"));
-        builder.setBolt("internaldispatcher", new InternalDispatcherBolt(dc))
+        builder.setBolt("internaldispatcher", new InternalDispatcherBolt(dc), 12)
                 .fieldsGrouping("subretriever", "internalSub", new Fields("subid"));
 
-        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc))
+        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 12)
                 .shuffleGrouping("subretriever", "streamSub")
                 .shuffleGrouping("prepare", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc))
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 12)
                 .shuffleGrouping("streamdispatcher", "default");
 
         if (dc.benchmark) {
@@ -126,6 +126,7 @@ public class DispatcherTopology {
         Config conf = new Config();
         conf.setDebug(cmd.hasOption("d"));
         if (cmd.hasOption("t")) {
+            conf.setNumWorkers(4);
             StormSubmitter.submitTopology(cmd.getOptionValue("t"), conf, builder.createTopology());
         } else {
             conf.setMaxTaskParallelism(4);
