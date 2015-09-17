@@ -379,15 +379,10 @@ public class StreamProcessorBolt implements IRichBolt {
                 resultSU.getPathTimestamps().add(System.currentTimeMillis());
             }
 
-
-            // generate opid
-            String opid = Integer.toHexString(resultSUDoc.hashCode());
-
             // The output update descriptor
             UpdateDescriptor ud = new UpdateDescriptor();
             ud.setSoid(soId);
             ud.setStreamid(streamId);
-            ud.setOpid(opid);
             ud.setSu(resultSU);
             String upDescriptorDoc = this.mapper.writeValueAsString(ud);
 
