@@ -87,8 +87,8 @@ public class DispatcherTopology {
         actionsBrokerZkStr = actionsBrokerZkStr.substring(0, actionsBrokerZkStr.length()-1);
         BrokerHosts actionsHosts = new ZkHosts(actionsBrokerZkStr);
 
-        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, UUID.randomUUID().toString());
-        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/" + dc.actionsQueue, UUID.randomUUID().toString());
+        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, "dispatcher-" + dc.updatesQueue);
+        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/" + dc.actionsQueue, "dispatcher-" + dc.actionsQueue);
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
         actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new ActuationScheme());
 
