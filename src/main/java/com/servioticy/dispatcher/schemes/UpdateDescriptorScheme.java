@@ -53,7 +53,7 @@ public class UpdateDescriptorScheme implements Scheme {
 	}
 
 	public Fields getOutputFields() {
-		return new Fields("opid", "soid", "streamid", "su");
+		return new Fields("soid", "streamid", "su");
 	}
 
 }
