@@ -198,6 +198,7 @@ public class ReputationBolt implements IRichBolt{
             String repString = mapper.writeValueAsString(reputation);
             reputationBucket.insert(JsonDocument.create(
                     Long.toHexString(UUID.randomUUID().getMostSignificantBits()) + "-" + reputation.getDate(),
+                    2*24*3600,
                     JsonObject.fromJson(repString)));
         } catch (Exception e) {
             // TODO log the error
