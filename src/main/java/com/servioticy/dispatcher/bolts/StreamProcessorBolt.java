@@ -336,6 +336,18 @@ public class StreamProcessorBolt implements IRichBolt {
                 collector.ack(input);
                 return;
             }
+
+            resultSUDoc = this.mapper.writeValueAsString(resultSU);
+
+
+            // Send to the API
+            restClient.restRequest(
+                    dc.restBaseURL
+                            + "private/" + soId + "/streams/"
+                            + streamId, resultSUDoc,
+                    RestClient.PUT,
+                    null);
+
             if(dc.benchmark) {
                 String[] fromStr = {so.getId(), streamId};
                 resultSU.setTriggerPath(su.getTriggerPath());
@@ -344,20 +356,14 @@ public class StreamProcessorBolt implements IRichBolt {
 
                 resultSU.getTriggerPath().add(new ArrayList<String>(Arrays.asList(fromStr)));
                 resultSU.getPathTimestamps().add(System.currentTimeMillis());
+
+                resultSUDoc = this.mapper.writeValueAsString(resultSU);
             }
-
-
-            resultSUDoc = this.mapper.writeValueAsString(resultSU);
-
-
-            // generate opid
-            String opid = Integer.toHexString(resultSUDoc.hashCode());
 
             // The output update descriptor
             UpdateDescriptor ud = new UpdateDescriptor();
             ud.setSoid(soId);
             ud.setStreamid(streamId);
-            ud.setOpid(opid);
             ud.setSu(resultSU);
             String upDescriptorDoc = this.mapper.writeValueAsString(ud);
 		
@@ -381,20 +387,6 @@ public class StreamProcessorBolt implements IRichBolt {
                 return;
             }
 
-            // Remove the data that doesn't need to be stored.
-            resultSU.setTriggerPath(null);
-            resultSU.setPathTimestamps(null);
-            resultSU.setOriginId(null);
-
-            resultSUDoc = this.mapper.writeValueAsString(resultSU);
-
-            // Send to the API
-            restClient.restRequest(
-					dc.restBaseURL
-							+ "private/" + soId + "/streams/"
-							+ streamId + "/" + opid, resultSUDoc,
-					RestClient.PUT,
-					null);
         } catch(RestClientErrorCodeException e){
             // TODO Log the error
             e.printStackTrace();
