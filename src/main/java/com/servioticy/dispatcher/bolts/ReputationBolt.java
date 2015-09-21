@@ -26,6 +26,8 @@ import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.CouchbaseCluster;
 import com.couchbase.client.java.document.JsonDocument;
 import com.couchbase.client.java.document.json.JsonObject;
+import com.couchbase.client.java.env.CouchbaseEnvironment;
+import com.couchbase.client.java.env.DefaultCouchbaseEnvironment;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.reputation.*;
@@ -66,6 +68,10 @@ public class ReputationBolt implements IRichBolt{
     @Override
     public void prepare(Map stormConf, TopologyContext context,
                         OutputCollector collector) {
+        CouchbaseEnvironment env = DefaultCouchbaseEnvironment.builder()
+                   .connectTimeout(10000) //10000ms = 10s, default is 5s
+                   .build();
+
         mapper = new ObjectMapper();
         this.collector = collector;
         this.context = context;
@@ -80,7 +86,7 @@ public class ReputationBolt implements IRichBolt{
             nodes.add(address);
         }
 
-        cbCluster = CouchbaseCluster.create(nodes);
+        cbCluster = CouchbaseCluster.create(env, nodes);
         reputationBucket = cbCluster.openBucket(dc.reputationBucket);
 
     }
