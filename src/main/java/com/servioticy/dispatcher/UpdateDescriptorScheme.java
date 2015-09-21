@@ -45,7 +45,7 @@ public class UpdateDescriptorScheme implements Scheme {
 			bis.close();
 			String inputDoc = (String) o;
 			UpdateDescriptor ud = this.mapper.readValue(inputDoc, UpdateDescriptor.class);
-			return new Values(ud.getOpid(), ud.getSoid(), ud.getStreamid(), this.mapper.writeValueAsString(ud.getSu()));
+			return new Values(ud.getSoid(), ud.getStreamid(), this.mapper.writeValueAsString(ud.getSu()));
 		} catch(Exception e){
 			// TODO Log the error
 			throw new RuntimeException(e);
@@ -53,7 +53,7 @@ public class UpdateDescriptorScheme implements Scheme {
 	}
 
 	public Fields getOutputFields() {
-		return new Fields("opid", "soid", "streamid", "su");
+		return new Fields("soid", "streamid", "su");
 	}
 
 }
