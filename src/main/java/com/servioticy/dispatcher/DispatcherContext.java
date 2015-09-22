@@ -29,11 +29,11 @@ public class DispatcherContext implements Serializable{
     static final public String DEFAULT_CONFIG_PATH = "dispatcher.xml";
     private static final long serialVersionUID = 1L;
     public String restBaseURL = "localhost";
-    public String[] updatesAddresses = new String[]{"localhost"};
-    public int updatesPort = 2229;
+
+    public String[] updatesAddresses = new String[]{"localhost:2181"};
     public String updatesQueue = "updates";
-    public String[] actionsAddresses = new String[]{"localhost"};
-    public int actionsPort = 2229;
+
+    public String[] actionsAddresses = new String[]{"localhost:2181"};
     public String actionsQueue = "actions";
     
     public String externalPubAddress = "localhost";
@@ -53,6 +53,8 @@ public class DispatcherContext implements Serializable{
     public String actionsPubUser = null;
     public String actionsPubPassword = null;
     public String actionsPubClassName = "com.servioticy.dispatcher.publishers.MQTTPublisher";
+
+    public String updatesFeedbackAddress = "localhost:9092";
 
     public boolean benchmark = false;
     public String benchResultsDir = ".";
@@ -81,7 +83,6 @@ public class DispatcherContext implements Serializable{
                 }
     		}
     		this.updatesAddresses = (String[]) updates.toArray(new String[]{});
-    		this.updatesPort = config.getInt("spouts/updates/port", this.updatesPort);
     		this.updatesQueue = config.getString("spouts/updates/name", this.updatesQueue);
 
             ArrayList<String> actions= new ArrayList<String>();
@@ -95,7 +96,6 @@ public class DispatcherContext implements Serializable{
                 }
             }
             this.actionsAddresses = (String[]) actions.toArray(new String[]{});
-            this.actionsPort = config.getInt("spouts/actions/port", this.actionsPort);
             this.actionsQueue = config.getString("spouts/actions/name", this.actionsQueue);
 
             this.benchmark = config.getBoolean("benchmark", this.benchmark);
@@ -119,6 +119,8 @@ public class DispatcherContext implements Serializable{
             this.actionsPubClassName = config.getString("publishers/actions/class", this.actionsPubClassName);
 
             this.benchResultsDir = config.getString("benchResultsDir", this.benchResultsDir);
+
+            this.updatesFeedbackAddress = config.getString("updatesFeedback/address", this.updatesFeedbackAddress);
 
         } catch (Exception e) {
             e.printStackTrace();

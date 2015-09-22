@@ -94,15 +94,9 @@ public class StreamProcessorBolt implements IRichBolt {
 		this.collector = collector;
 		this.context = context;
 		this.suCache = new SUCache(25);
-        String updatesAddrStr = "";
-        for(String updateAddress: dc.updatesAddresses){
-
-            updatesAddrStr += updateAddress.split(":")[0]+":"+"9092" + ",";
-        }
-        updatesAddrStr = updatesAddrStr.substring(0, updatesAddrStr.length()-1);
         try {
             if (this.qc == null) {
-                qc = QueueClient.factory(updatesAddrStr, dc.updatesQueue, "com.servioticy.queueclient.KafkaClient", null);
+                qc = QueueClient.factory(dc.updatesFeedbackAddress, dc.updatesQueue, "com.servioticy.queueclient.KafkaClient", null);
 
             }
             qc.connect();
