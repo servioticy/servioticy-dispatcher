@@ -22,6 +22,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.UpdateDescriptor;
 import com.servioticy.datamodel.reputation.ReputationSOUserDescriptor;
 
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.util.List;
 
 /**
@@ -32,8 +35,13 @@ public class ReputationScheme implements Scheme {
 
 	public List<Object> deserialize(byte[] bytes) {
 		try {
+			ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+			ObjectInput in = null;
+			in = new ObjectInputStream(bis);
+			Object o = in.readObject();
+			bis.close();
+			String inputDoc = (String) o;
 			ObjectMapper mapper = new ObjectMapper();
-			String inputDoc = new String(bytes, "UTF-8");
 			ReputationSOUserDescriptor rd = mapper.readValue(inputDoc, ReputationSOUserDescriptor.class);
 			return new Values(rd.getSrc().getSoid(), rd.getSrc().getStreamid(), rd.getDest().getUserId(), rd.getSu(), System.currentTimeMillis());
 		} catch(Exception e){
