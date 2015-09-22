@@ -212,10 +212,8 @@ public class SOProcessor010 extends SOProcessor{
                 else {
                     return null;
                 }
-                if (type == String.class || type == GeoPoint.class)
-                    engine.eval("var result = " + currentValueCode);
-                else
-                    engine.eval("var result = JSON.stringify(" + currentValueCode + ")");
+
+                engine.eval("var result = JSON.stringify(" + currentValueCode + ")");
                 result = this.mapper.readValue((String)engine.get("result"), type);
                 if(type == GeoPoint.class)
                     result = ((GeoPoint)result).getLat()+","+((GeoPoint)result).getLon();
