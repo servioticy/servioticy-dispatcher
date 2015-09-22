@@ -106,31 +106,31 @@ public class DispatcherTopology {
         actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new ActuationScheme());
         reputationSpoutConfig.scheme = new SchemeAsMultiScheme(new ReputationScheme());
 
-        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 4);
-        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig), 4);
-        builder.setSpout("readreputation", new KafkaSpout(reputationSpoutConfig), 4);
+        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 8);
+        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig), 8);
+        builder.setSpout("readreputation", new KafkaSpout(reputationSpoutConfig), 8);
 
-        builder.setBolt("prepare", new PrepareBolt(dc), 12)
+        builder.setBolt("prepare", new PrepareBolt(dc), 48)
                 .shuffleGrouping("updates");
 
-        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 12)
+        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 48)
         		.shuffleGrouping("actions");
 
-        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 12)
+        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 48)
                 .shuffleGrouping("prepare", "subscription");
 
-        builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc), 12)
+        builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc), 48)
                 .fieldsGrouping("subretriever", "externalSub", new Fields("subid"));
-        builder.setBolt("internaldispatcher", new InternalDispatcherBolt(dc), 12)
+        builder.setBolt("internaldispatcher", new InternalDispatcherBolt(dc), 48)
                 .fieldsGrouping("subretriever", "internalSub", new Fields("subid"));
 
-        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 12)
+        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 48)
                 .shuffleGrouping("subretriever", "streamSub")
                 .shuffleGrouping("prepare", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 12)
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 48)
                 .shuffleGrouping("streamdispatcher", "default");
 
-        builder.setBolt("reputation", new ReputationBolt(dc), 12)
+        builder.setBolt("reputation", new ReputationBolt(dc), 48)
                 .shuffleGrouping("prepare", Reputation.STREAM_WO_SO)
                 .shuffleGrouping("streamprocessor", Reputation.STREAM_SO_SO)
                 .shuffleGrouping("externaldispatcher", Reputation.STREAM_SO_PUBSUB)
