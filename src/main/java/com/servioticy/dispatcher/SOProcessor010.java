@@ -29,6 +29,7 @@ import com.servioticy.datamodel.sensorupdate.SUChannel;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.jsonprocessors.AliasReplacer;
 import com.servioticy.dispatcher.jsonprocessors.JsonPathReplacer;
+import org.apache.log4j.Logger;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.mozilla.javascript.ProvenanceAPI;
 import org.mozilla.javascript.Provelement;
@@ -49,6 +50,8 @@ public class SOProcessor010 extends SOProcessor{
     SO010 so;
     Map<String, HashSet<String>> streamsByDocId;
     Map<String, HashSet<String>> docIdsByStream;
+    private static Logger LOG = org.apache.log4j.Logger.getLogger(SOProcessor010.class);
+
 
     public SOProcessor010(SO010 so, ObjectMapper mapper) throws JsonParseException, JsonMappingException, IOException {
 
@@ -230,9 +233,12 @@ public class SOProcessor010 extends SOProcessor{
 
                 String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
+                LOG.info("JS code triggered by '" + origin + "' on '" + streamId +"', channel '"+
+                        channelEntry.getKey() + "': " + fullComputationString);
+
                 List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeSOcode(fullComputationString, provList, soSecurityDoc);
                 if(newProvList == null){
-                    throw new ScriptException("Something went wrong");
+                    throw new ScriptException("Problem executing the JS code.");
                 }
                 provList.clear();
                 provList.addAll(newProvList);

@@ -68,7 +68,7 @@ public class StreamProcessorBolt implements IRichBolt {
     private DispatcherContext dc;
     private ObjectMapper mapper;
     private PDP pdp;
-    private static Logger LOG = org.apache.log4j.Logger.getLogger(ActuationDispatcherBolt.class);
+    private static Logger LOG = org.apache.log4j.Logger.getLogger(StreamProcessorBolt.class);
 
 
     public StreamProcessorBolt(){
