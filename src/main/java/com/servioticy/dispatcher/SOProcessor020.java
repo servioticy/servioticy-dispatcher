@@ -264,11 +264,16 @@ public class SOProcessor020 extends SOProcessor{
                 }
 
                 String resultVar = "$" + Long.toHexString(UUID.randomUUID().getMostSignificantBits());
-
-                engine.eval(initializationCode(inputSUs, origin) +
+                if (type.getType() == String.class || type.getType() == GeoPoint.class)
+                    engine.eval(initializationCode(inputSUs, origin) +
+                            "var " + resultVar + " = " + currentValueCode + "(" + functionArgsString(currentValueCode) + ")");
+                else
+                    engine.eval(initializationCode(inputSUs, origin) +
                         "var " + resultVar + " = JSON.stringify(" + currentValueCode + "(" + functionArgsString(currentValueCode) + ")" + ")");
                 Object result = this.mapper.readValue((String)engine.get(resultVar), type);
 
+                if(type.getType() == GeoPoint.class)
+                    result = ((GeoPoint)result).getLat()+","+((GeoPoint)result).getLon();
 
                 if (result == null) {
                     // Filtered output. The type is not the expected one.
