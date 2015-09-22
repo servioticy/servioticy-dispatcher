@@ -226,9 +226,9 @@ public class SOProcessor010 extends SOProcessor{
                 else {
                     return null;
                 }
-                if (type == String.class || type == GeoPoint.class)
-                    inputVar.put(ProvenanceAPI.COMPUTATION, currentValueCode);
-                else
+//                if (type == String.class || type == GeoPoint.class)
+//                    inputVar.put(ProvenanceAPI.COMPUTATION, currentValueCode);
+//                else
                     inputVar.put(ProvenanceAPI.COMPUTATION, "JSON.stringify(" + currentValueCode + ")");
 
                 String fullComputationString = ProvenanceAPI.buildString(inputVar);

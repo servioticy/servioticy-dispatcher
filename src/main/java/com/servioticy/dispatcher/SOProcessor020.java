@@ -274,7 +274,7 @@ public class SOProcessor020 extends SOProcessor{
                     return null;
                 }
 
-                if(channel.getType().equals("geo_point"))
+                if(type.getType().equals("geo_point"))
                     result = ((GeoPoint)result).getLat()+","+((GeoPoint)result).getLon();
 
                 suChannel.setCurrentValue(result);
