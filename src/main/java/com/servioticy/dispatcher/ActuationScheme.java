@@ -15,6 +15,9 @@
  ******************************************************************************/ 
 package com.servioticy.dispatcher;
 
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.util.List;
 
 import backtype.storm.spout.Scheme;
@@ -36,7 +39,12 @@ public class ActuationScheme implements Scheme {
 
 	public List<Object> deserialize(byte[] bytes) {
 		try {
-			String inputDoc = new String(bytes, "UTF-8");
+			ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+			ObjectInput in = null;
+			in = new ObjectInputStream(bis);
+			Object o = in.readObject();
+			bis.close();
+			String inputDoc = (String) o;
 			ActuationDescriptor ad = this.mapper.readValue(inputDoc, ActuationDescriptor.class);
 			return new Values(ad.getSoid(), ad.getId(), ad.getName(), this.mapper.writeValueAsString(ad.getAction()));
 		} catch(Exception e){
