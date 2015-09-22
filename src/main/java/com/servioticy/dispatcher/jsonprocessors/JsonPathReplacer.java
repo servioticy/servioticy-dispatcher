@@ -186,11 +186,11 @@ public class JsonPathReplacer {
                     // If the path does not exist in the input json, throws InvalidPathException
                     json = jsons.get(key);
                     Object content = jp.getValue().read(json);
-                    if (content instanceof String) {
-                        partial += "'" + content + "'";
-                    } else{
+//                    if (content instanceof String) {
+//                        partial += "'" + content + "'";
+//                    } else{
                         partial += this.mapper.writeValueAsString(content);
-                    }
+//                    }
                 } catch (java.lang.IllegalArgumentException e) {
                     // The input is not a json
                     // TODO This should be done *only* on queries. In navigations of implicit queries or selfdocument, it should be an error
