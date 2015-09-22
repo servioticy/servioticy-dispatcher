@@ -30,17 +30,14 @@ public class DispatcherContext implements Serializable{
     private static final long serialVersionUID = 1L;
     public String restBaseURL = "localhost";
 
-    public String[] updatesAddresses = new String[]{"localhost"};
-    public int updatesPort = 2229;
+    public String[] updatesAddresses = new String[]{"localhost:2181"};
     public String updatesQueue = "updates";
 
-    public String[] actionsAddresses = new String[]{"localhost"};
-    public int actionsPort = 2229;
+    public String[] actionsAddresses = new String[]{"localhost:2181"};
     public String actionsQueue = "actions";
 
-    public String[] reputationAddresses = new String[]{"localhost"};
-    public int reputationPort = 2229;
-    public String reputationQueue = "actions";
+    public String[] reputationAddresses = new String[]{"localhost:2181"};
+    public String reputationQueue = "reputation";
     
     public String externalPubAddress = "localhost";
     public int externalPubPort = 1883;
@@ -62,6 +59,8 @@ public class DispatcherContext implements Serializable{
 
     public String[] storageAddresses = new String[]{"http://localhost:8091/pools"};
     public String reputationBucket = "reputation";
+
+    public String updatesFeedbackAddress = "localhost:9092";
 
     public boolean benchmark = false;
     public String benchResultsDir = ".";
@@ -90,7 +89,6 @@ public class DispatcherContext implements Serializable{
                 }
     		}
     		this.updatesAddresses = (String[]) updates.toArray(new String[]{});
-    		this.updatesPort = config.getInt("spouts/updates/port", this.updatesPort);
     		this.updatesQueue = config.getString("spouts/updates/name", this.updatesQueue);
 
             ArrayList<String> actions= new ArrayList<String>();
@@ -104,7 +102,6 @@ public class DispatcherContext implements Serializable{
                 }
             }
             this.actionsAddresses = (String[]) actions.toArray(new String[]{});
-            this.actionsPort = config.getInt("spouts/actions/port", this.actionsPort);
             this.actionsQueue = config.getString("spouts/actions/name", this.actionsQueue);
 
             ArrayList<String> reputations = new ArrayList<String>();
@@ -118,8 +115,7 @@ public class DispatcherContext implements Serializable{
                 }
             }
             this.reputationAddresses = (String[]) reputations.toArray(new String[]{});
-            this.reputationPort = config.getInt("spouts/actions/port", this.reputationPort);
-            this.reputationQueue = config.getString("spouts/actions/name", this.reputationQueue);
+            this.reputationQueue = config.getString("spouts/reputation/name", this.reputationQueue);
 
             ArrayList<String> storages = new ArrayList<String>();
             if (config.containsKey("storage/addresses/address[1]")) {
@@ -155,6 +151,8 @@ public class DispatcherContext implements Serializable{
             this.actionsPubClassName = config.getString("publishers/actions/class", this.actionsPubClassName);
 
             this.benchResultsDir = config.getString("benchResultsDir", this.benchResultsDir);
+
+            this.updatesFeedbackAddress = config.getString("updatesFeedback/address", this.updatesFeedbackAddress);
 
         } catch (Exception e) {
             e.printStackTrace();
