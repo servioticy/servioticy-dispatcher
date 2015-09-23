@@ -3,62 +3,26 @@
     <servioticyAPI>http://localhost:8080/</servioticyAPI>
     <benchmark>false</benchmark>
     <benchResultsDir>~</benchResultsDir>
+    <updatesFeedback>
+        <address>localhost:9092</address>
+    </updatesFeedback>
     <spouts>
         <updates>
-            <name>services</name>
+            <name>updates</name>
             <addresses>
-                <address>localhost</address>
+                <address>localhost:2181</address>
             </addresses>
-            <port>2229</port>
         </updates>
-        <actions>
-            <name>actions</name>
-            <addresses>
-                <address>localhost</address>
-            </addresses>
-            <port>2229</port>
-        </actions>
-        <reputation>
-            <name>reputation</name>
-            <addresses>
-                <address>localhost</address>
-            </addresses>
-            <port>2229</port>
-        </reputation>
     </spouts>
-	<publishers>
-		<external>
-			<name>servioticy</name>
-			<address>tcp://localhost</address>
-			<port>1833</port>
-			<username>compose</username>
-			<password>shines</password>
-			<class>com.servioticy.dispatcher.publishers.MQTTPublisher</class>
-		</external>
-		<internal>
-			<name>servioticy</name>
-			<address>tcp://localhost</address>
-			<port>1833</port>
-			<username>compose</username>
-			<password>shines</password>
-			<class>com.servioticy.dispatcher.publishers.MQTTPublisher</class>
-		</internal>
-        <actions>
-            <name>servioticy</name>
-            <address>tcp://localhost</address>
-            <port>1833</port>
-            <username>compose</username>
-            <password>shines</password>
-            <class>com.servioticy.dispatcher.publishers.MQTTPublisher</class>
-        </actions>
-	</publishers>
+    <publishers>
+    </publishers>
     <storage>
         <addresses>
-            <address>http://localhost:8091/pools</address>
+            <address>localhost</address>
         </addresses>
         <buckets>
             <reputation>reputation</reputation>
         </buckets>
     </storage>
-
+    ​
 </context>

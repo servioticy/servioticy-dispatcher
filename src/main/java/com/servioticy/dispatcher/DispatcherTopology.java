@@ -23,17 +23,10 @@ import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.spout.SchemeAsMultiScheme;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
-import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.dispatcher.bolts.*;
-import com.servioticy.dispatcher.schemes.ActuationScheme;
-import com.servioticy.dispatcher.schemes.ReputationScheme;
 import com.servioticy.dispatcher.schemes.UpdateDescriptorScheme;
 import org.apache.commons.cli.*;
 import storm.kafka.*;
-
-
-import java.util.Arrays;
-import java.util.UUID;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -83,59 +76,24 @@ public class DispatcherTopology {
         updatesBrokerZkStr = updatesBrokerZkStr.substring(0, updatesBrokerZkStr.length()-1);
         BrokerHosts updatesHosts = new ZkHosts(updatesBrokerZkStr);
 
-
-        String actionsBrokerZkStr = "";
-        for(String actionsAddress: dc.actionsAddresses){
-            actionsBrokerZkStr += actionsAddress + ",";
-        }
-        actionsBrokerZkStr = actionsBrokerZkStr.substring(0, actionsBrokerZkStr.length()-1);
-        BrokerHosts actionsHosts = new ZkHosts(actionsBrokerZkStr);
-
-        String reputationBrokerZkStr = "";
-        for(String reputationAddress: dc.reputationAddresses){
-            reputationBrokerZkStr += reputationAddress + ",";
-        }
-        reputationBrokerZkStr = reputationBrokerZkStr.substring(0, reputationBrokerZkStr.length()-1);
-        BrokerHosts reputationHosts = new ZkHosts(reputationBrokerZkStr);
-
         SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, "dispatcher-" + dc.updatesQueue);
-        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/" + dc.actionsQueue, "dispatcher-" + dc.actionsQueue);
-        SpoutConfig reputationSpoutConfig = new SpoutConfig(reputationHosts, dc.reputationQueue, "/" + dc.reputationQueue, "dispatcher-" + dc.reputationQueue);
+
 
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
-        actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new ActuationScheme());
-        reputationSpoutConfig.scheme = new SchemeAsMultiScheme(new ReputationScheme());
 
         builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 8);
-        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig), 8);
-        builder.setSpout("readreputation", new KafkaSpout(reputationSpoutConfig), 8);
 
         builder.setBolt("prepare", new PrepareBolt(dc), 48)
                 .shuffleGrouping("updates");
 
-        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 48)
-        		.shuffleGrouping("actions");
-
         builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 48)
                 .shuffleGrouping("prepare", "subscription");
-
-        builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc), 48)
-                .fieldsGrouping("subretriever", "externalSub", new Fields("subid"));
-        builder.setBolt("internaldispatcher", new InternalDispatcherBolt(dc), 48)
-                .fieldsGrouping("subretriever", "internalSub", new Fields("subid"));
 
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 48)
                 .shuffleGrouping("subretriever", "streamSub")
                 .shuffleGrouping("prepare", "stream");
         builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 48)
                 .shuffleGrouping("streamdispatcher", "default");
-
-        builder.setBolt("reputation", new ReputationBolt(dc), 48)
-                .shuffleGrouping("prepare", Reputation.STREAM_WO_SO)
-                .shuffleGrouping("streamprocessor", Reputation.STREAM_SO_SO)
-                .shuffleGrouping("externaldispatcher", Reputation.STREAM_SO_PUBSUB)
-                .shuffleGrouping("internaldispatcher", Reputation.STREAM_SO_SERVICE)
-                .shuffleGrouping("readreputation");
 
         if (dc.benchmark) {
             builder.setBolt("benchmark", new BenchmarkBolt(dc))

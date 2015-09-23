@@ -152,7 +152,6 @@ public class StreamProcessorBolt implements IRichBolt {
             pco = this.pdp.checkAuthorization(null, this.mapper.readTree(this.mapper.writeValueAsString(so.getSecurity())), mapper.readTree(mapper.writeValueAsString(lastSU.getSecurity())), pco,
                     PDP.operationID.DispatchData);
             if(!pco.isPermission()){
-                ReputationBolt.sendToReputation(collector, mapper, input, lastSU, so, streamId, Reputation.DISCARD_SECURITY, false);
                 return null;
             }else {
                 groupDocs.put(docId, lastSU);
@@ -304,7 +303,6 @@ public class StreamProcessorBolt implements IRichBolt {
                 if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
                     BenchmarkBolt.send(collector, input, dc, suDoc, "old");
                     collector.ack(input);
-                    ReputationBolt.sendToReputation(collector, mapper, input, su, so, streamId, Reputation.DISCARD_TIMESTAMP, true);
                     return;
                 }
             }
@@ -353,7 +351,6 @@ public class StreamProcessorBolt implements IRichBolt {
                             ", triggered by " + originId + "'");
                     BenchmarkBolt.send(collector, input, dc, suDoc, "filtered");
                     collector.ack(input);
-                    ReputationBolt.sendAllToReputation(collector, mapper, input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_FILTER);
                     return;
                 }
                 resultSUDoc = this.mapper.writeValueAsString(resultSU);
@@ -364,7 +361,6 @@ public class StreamProcessorBolt implements IRichBolt {
                 BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
                 collector.ack(input);
                 //Reputation
-                ReputationBolt.sendAllToReputation(collector, mapper, input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_ERROR);
                 return;
             }
 
@@ -421,7 +417,6 @@ public class StreamProcessorBolt implements IRichBolt {
                 return;
             }
 
-            ReputationBolt.sendAllToReputation(collector, mapper, input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_NONE);
         } catch(RestClientErrorCodeException e) {
             if (e.getRestResponse().getHttpCode() >= 500) {
                 LOG.error("Error on the API with code " + e.getRestResponse().getHttpCode() + ": " +
