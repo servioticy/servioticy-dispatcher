@@ -24,10 +24,7 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.datamodel.UpdateDescriptor;
-import com.servioticy.datamodel.reputation.ReputationAddress;
-import com.servioticy.datamodel.reputation.ReputationAddressSO;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.serviceobject.SOGroup;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
@@ -58,7 +55,9 @@ import java.util.concurrent.ExecutionException;
  *
  */
 public class StreamProcessorBolt implements IRichBolt {
-
+	/**
+	 * 
+	 */
 	private static final long serialVersionUID = 1L;
 	private OutputCollector collector;
 	private TopologyContext context;
@@ -126,6 +125,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
     private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs, SO so, String streamId, Tuple input) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException, PDPServioticyException {
 		Map<String, SensorUpdate> groupDocs = new HashMap<String, SensorUpdate>();
+		ObjectMapper mapper = new ObjectMapper();
 
         for(Map.Entry<String, FutureRestResponse> frrEntry: rrs.entrySet()){
             FutureRestResponse frr = frrEntry.getValue();
@@ -179,6 +179,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
     private FutureRestResponse getGroupSUAsyncResponse(String groupId, SO so) throws RestClientException, RestClientErrorCodeException, JsonProcessingException {
         FutureRestResponse frr;
+        ObjectMapper mapper = new ObjectMapper();
 
         SOGroup group = so.getGroups().get(groupId);
         // TODO Resolve dynsets
@@ -246,8 +247,9 @@ public class StreamProcessorBolt implements IRichBolt {
 
         return frr;
     }
-
-    public void execute(Tuple input) {
+    
+	public void execute(Tuple input) {
+        LinkedHashMap<String, Long> localStageStartTS = new LinkedHashMap<String, Long>();
         SensorUpdate su;
         FutureRestResponse previousSURR;
         SensorUpdate previousSU;
@@ -263,7 +265,12 @@ public class StreamProcessorBolt implements IRichBolt {
         Map<String, FutureRestResponse> streamSURRs;
         Map<String, FutureRestResponse> groupSURRs;
         try {
+            Long ts = System.currentTimeMillis();
+            localStageStartTS.put("in", ts);
             su = this.mapper.readValue(suDoc, SensorUpdate.class);
+            String originSoid = su.getTriggerPath().get(su.getTriggerPath().size()-1).get(0);
+            String originStream = su.getTriggerPath().get(su.getTriggerPath().size()-1).get(1);
+            StagesPerformanceBolt.send(collector, input, dc, "out", originSoid, originStream,su.getStageStartTS().get("out"), ts);
             so = this.mapper.readValue(soDoc, SO.class);
             sop = SOProcessor.factory(so, this.mapper);
 
@@ -301,7 +308,7 @@ public class StreamProcessorBolt implements IRichBolt {
             // There is already a newer generated update than the one received
             if (previousSU != null) {
                 if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
-                    BenchmarkBolt.send(collector, input, dc, suDoc, "old");
+                    PathPerformanceBolt.send(collector, input, dc, suDoc, "old");
                     collector.ack(input);
                     return;
                 }
@@ -338,6 +345,11 @@ public class StreamProcessorBolt implements IRichBolt {
                 }
                 timestamp = inputSU.getLastUpdate() > timestamp ? inputSU.getLastUpdate() : timestamp;
             }
+
+            ts = System.currentTimeMillis();
+            StagesPerformanceBolt.send(collector, input, dc, "in", soId, streamId, localStageStartTS.get("in"), ts);
+            localStageStartTS.put("process", ts);
+
             // Reputation needs the previousSU away
             if(originId != streamId){
                 sensorUpdates.remove(streamId);
@@ -347,9 +359,9 @@ public class StreamProcessorBolt implements IRichBolt {
             try {
                 resultSU = sop.getResultSU(streamId, sensorUpdates, originId, timestamp);
                 if (resultSU == null) {
+                    PathPerformanceBolt.send(collector, input, dc, suDoc, "filtered");
                     LOG.info("Composition filtered on stream " + soId + ":" + streamId +
                             ", triggered by " + originId + "'");
-                    BenchmarkBolt.send(collector, input, dc, suDoc, "filtered");
                     collector.ack(input);
                     return;
                 }
@@ -358,9 +370,8 @@ public class StreamProcessorBolt implements IRichBolt {
             } catch (RhinoException e) {
                 LOG.warn("Error executing JS code from stream " + soId + ":" + streamId +
                         ", triggered by '" + originId + "'", e);
-                BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
+                PathPerformanceBolt.send(collector, input, dc, suDoc, "script-error");
                 collector.ack(input);
-                //Reputation
                 return;
             }
 
@@ -388,13 +399,19 @@ public class StreamProcessorBolt implements IRichBolt {
                     null);
 
             if(dc.benchmark) {
+                ts = System.currentTimeMillis();
                 String[] fromStr = {so.getId(), streamId};
                 resultSU.setTriggerPath(su.getTriggerPath());
                 resultSU.setPathTimestamps(su.getPathTimestamps());
                 resultSU.setOriginId(su.getOriginId());
+                resultSU.setStageStartTS(su.getStageStartTS());
+                resultSU.getStageStartTS().put("queue", ts);
+                resultSU.getStageStartTS().put("out", ts);
+                StagesPerformanceBolt.send(collector, input, dc, "process", soId, streamId, localStageStartTS.get("process"), ts);
 
-                resultSU.getTriggerPath().add(new ArrayList<String>(Arrays.asList(fromStr)));
-                resultSU.getPathTimestamps().add(System.currentTimeMillis());
+
+//                resultSU.getTriggerPath().add(new ArrayList<String>(Arrays.asList(fromStr)));
+//                resultSU.getPathTimestamps().add(System.currentTimeMillis());
             }
 		    // Put to the queue
             try{
@@ -405,7 +422,6 @@ public class StreamProcessorBolt implements IRichBolt {
                 if(!qc.put(upDescriptorDoc)){
                     LOG.warn("Error sending feedback from " + soId + ":" + streamId +
                             ", triggered by '" + originId + "'");
-                    BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
                     collector.fail(input);
                     return;
                 }
@@ -427,16 +443,16 @@ public class StreamProcessorBolt implements IRichBolt {
                 return;
             }
             LOG.error("Error returned by the API with code " + e.getRestResponse().getHttpCode() + ": " +
-                                e.getRestResponse().getResponse() + "\n The composition on stream " +
-                                soId + ":" + streamId + ", triggered by '" + originId +
-                                "' failed and will be discarded", e);
-            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+                    e.getRestResponse().getResponse() + "\n The composition on stream " +
+                    soId + ":" + streamId + ", triggered by '" + originId +
+                    "' failed and will be discarded", e);
+            PathPerformanceBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         } catch (Exception e) {
             LOG.warn("Composition error on stream " + soId + ":" + streamId +
                     ", triggered by '" + originId + "'. JSON malformed?", e);
-            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            PathPerformanceBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         }
@@ -457,8 +473,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
-        declarer.declareStream(Reputation.STREAM_SO_SO, new Fields("in-soid", "in-streamid", "out-soid", "out-streamid", "user_timestamp", "date", "event", "discard"));
-
+        if (dc.benchmark) declarer.declareStream("stages", new Fields("soid", "stream", "stage", "startts", "stopts"));
     }
 
     public Map<String, Object> getComponentConfiguration() {

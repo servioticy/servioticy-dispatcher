@@ -89,7 +89,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
             // In case there are no subscriptions.
             int hCode = subscriptionsRR.getHttpCode();
             if (hCode == 204) {
-                BenchmarkBolt.send(collector, input, dc, suDoc, "no-subscription");
+                PathPerformanceBolt.send(collector, input, dc, suDoc, "no-subscription");
                 this.collector.ack(input);
                 return;
             }
@@ -100,7 +100,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
 
             // No subscriptions
             if (subscriptions.getSubscriptions() == null || subscriptions.getSubscriptions().isEmpty()) {
-                BenchmarkBolt.send(collector, input, dc, suDoc, "no-subscription");
+                PathPerformanceBolt.send(collector, input, dc, suDoc, "no-subscription");
                 collector.ack(input);
                 return;
             }
@@ -123,13 +123,13 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                 collector.fail(input);
                 return;
             }
-            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            PathPerformanceBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         } catch (Exception e) {
             // TODO Log the error
             e.printStackTrace();
-            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            PathPerformanceBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         }

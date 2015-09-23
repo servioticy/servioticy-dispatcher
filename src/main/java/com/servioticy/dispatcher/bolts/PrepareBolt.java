@@ -23,17 +23,13 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.restclient.FutureRestResponse;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestResponse;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -48,7 +44,6 @@ public class PrepareBolt implements IRichBolt {
     private RestClient restClient;
     private DispatcherContext dc;
     private ObjectMapper mapper;
-
 
     public PrepareBolt(DispatcherContext dc) {
         this.dc = dc;
@@ -72,9 +67,6 @@ public class PrepareBolt implements IRichBolt {
     }
 
     public void execute(Tuple input) {
-//        RestResponse rr;
-//        FutureRestResponse frr;
-//        String opid = input.getStringByField("opid");
         String suDoc = input.getStringByField("su");
         String soid = input.getStringByField("soid");
         String streamid = input.getStringByField("streamid");
@@ -94,29 +86,18 @@ public class PrepareBolt implements IRichBolt {
 //                return;
 //            }
             su = this.mapper.readValue(suDoc, SensorUpdate.class);
-
-            // Reputation
-            if (su.getComposed() == null || !su.getComposed()){
-                this.collector.emit(Reputation.STREAM_WO_SO, input,
-                        new Values(soid,
-                                streamid,
-                                su.getLastUpdate(),
-                                System.currentTimeMillis(),
-                                true) // TODO this needs to come from the API
-                );
-            }
             
             // Benchmark
             if(dc.benchmark) {
 
                 if (su.getTriggerPath() == null) {
                     su.setTriggerPath(new ArrayList<ArrayList<String>>());
-                    String[] chainInit = {soid, streamid};
-                    su.getTriggerPath().add(new ArrayList<String>(Arrays.asList(chainInit)));
                     su.setPathTimestamps(new ArrayList<Long>());
-                    su.getPathTimestamps().add(System.currentTimeMillis());
                     su.setOriginId(UUID.randomUUID().getMostSignificantBits());
                 }
+                String[] chainInit = {soid, streamid};
+                su.getTriggerPath().add(new ArrayList<String>(Arrays.asList(chainInit)));
+                su.getPathTimestamps().add(System.currentTimeMillis());
                 /*else if( (System.currentTimeMillis() - su.getPathTimestamps().get(su.getPathTimestamps().size()-1)) > 2*60*1000 ||
                          (System.currentTimeMillis() - su.getPathTimestamps().get(0)) > 10*60*1000){
                     // Timeout
@@ -129,7 +110,13 @@ public class PrepareBolt implements IRichBolt {
                     //TODO Log the error
                     return;
                 }*/
-
+                
+                if(su.getStageStartTS() == null){
+                    su.setStageStartTS(new LinkedHashMap<String, Long>());
+                    su.getStageStartTS().put("queue", su.getLastUpdate());
+                    su.getStageStartTS().put("out", su.getLastUpdate());
+                }
+                
                 suDoc = this.mapper.writeValueAsString(su);
 //                try {
 //                    rr = frr.get();
@@ -139,9 +126,11 @@ public class PrepareBolt implements IRichBolt {
 //                    this.collector.fail(input);
 //                    return;
 //                }
+                StagesPerformanceBolt.send(collector, input, dc, "queue", soid, streamid, su.getStageStartTS().get("queue"), System.currentTimeMillis());
+
             }
         } catch (Exception e) {
-            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            PathPerformanceBolt.send(collector, input, dc, suDoc, "error");
             // TODO Log the error
             e.printStackTrace();
             collector.ack(input);
@@ -171,8 +160,8 @@ public class PrepareBolt implements IRichBolt {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
         declarer.declareStream("stream", new Fields("docid", "destination", "su"));
-        declarer.declareStream(Reputation.STREAM_WO_SO, new Fields("out-soid", "out-streamid", "user_timestamp", "date", "fresh"));
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
+        if (dc.benchmark) declarer.declareStream("stages", new Fields("soid", "stream", "stage", "startts", "stopts"));
 
     }
 

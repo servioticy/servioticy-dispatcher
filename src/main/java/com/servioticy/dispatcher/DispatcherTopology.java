@@ -22,7 +22,6 @@ import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.spout.SchemeAsMultiScheme;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
 import com.servioticy.dispatcher.bolts.*;
 import com.servioticy.dispatcher.schemes.UpdateDescriptorScheme;
 import org.apache.commons.cli.*;
@@ -78,6 +77,8 @@ public class DispatcherTopology {
 
         SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, "dispatcher-" + dc.updatesQueue);
 
+        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 2)
+        		.shuffleGrouping("actions");
 
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
 
@@ -96,11 +97,14 @@ public class DispatcherTopology {
                 .shuffleGrouping("streamdispatcher", "default");
 
         if (dc.benchmark) {
-            builder.setBolt("benchmark", new BenchmarkBolt(dc))
+            builder.setBolt("benchmark", new PathPerformanceBolt(dc), 8)
                     .shuffleGrouping("streamdispatcher", "benchmark")
                     .shuffleGrouping("subretriever", "benchmark")
                     .shuffleGrouping("streamprocessor", "benchmark")
                     .shuffleGrouping("prepare", "benchmark");
+            builder.setBolt("stages", new StagesPerformanceBolt(dc), 8)
+                    .shuffleGrouping("streamprocessor", "stages")
+                    .shuffleGrouping("prepare", "stages");
         }
 
         Config conf = new Config();

@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  */
-public class BenchmarkBolt implements IRichBolt {
+public class StagesPerformanceBolt implements IRichBolt {
     /**
      *
      */
@@ -40,17 +40,19 @@ public class BenchmarkBolt implements IRichBolt {
     private OutputCollector collector;
     private TopologyContext context;
     private DispatcherContext dc;
-    private ObjectMapper mapper;
 
-    public BenchmarkBolt(DispatcherContext dc) {
+    public StagesPerformanceBolt(DispatcherContext dc) {
         this.dc = dc;
     }
 
-    public static void send(OutputCollector collector, Tuple input, DispatcherContext dc, String suDoc, String reason){
-        if (dc.benchmark) collector.emit("benchmark", input,
-                new Values(suDoc,
-                        System.currentTimeMillis(),
-                        reason)
+    public static void send(OutputCollector collector, Tuple input, DispatcherContext dc, String soid, String stream, String stage, Long startts, Long stopts){
+        if (dc.benchmark) collector.emit("stages", input,
+                new Values(
+                        soid,
+                        stream,
+                        stage,
+                        startts,
+                        stopts)
         );
     }
 
@@ -58,36 +60,27 @@ public class BenchmarkBolt implements IRichBolt {
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         this.collector = outputCollector;
         this.context = topologyContext;
-        this.mapper = new ObjectMapper();
-
     }
 
     @Override
     public void execute(Tuple input) {
-        String suDoc = input.getStringByField("su");
-        Long stopTS = input.getLongByField("stopts") == null ? System.currentTimeMillis() : input.getLongByField("stopts");
-        String reason = input.getStringByField("reason") == null ? "timeout" : input.getStringByField("reason");
+        ObjectMapper mapper = new ObjectMapper();
+        String soid = input.getStringByField("soid");
+        String streamid = input.getStringByField("stream");
+        String stage = input.getStringByField("stage");
+        Long startTs = input.getLongByField("startts");
+        Long stopTS = input.getLongByField("stopts");
 
-        SensorUpdate su;
+        String csvLine = soid + "," + streamid + "," + stage + "," + Long.toString(startTs) + "," + Long.toString(stopTS);
+
+        File file = new File(dc.benchResultsDir + "/" + context.getThisTaskId() + "-degrees.csv");
         try {
-            su = this.mapper.readValue(suDoc, SensorUpdate.class);
-
-            int chainSize = su.getPathTimestamps() == null ? 0 : su.getPathTimestamps().size();
-
-            String csvLine = Long.toHexString(su.getOriginId()) + "," + su.getLastUpdate() + "," + stopTS + "," + reason + "," + chainSize;
-            for (int i = 0; i < chainSize; i++) {
-                csvLine += ",";
-                csvLine += su.getPathTimestamps().get(i) + ",";
-                csvLine += su.getTriggerPath().get(i).get(0) + "," + su.getTriggerPath().get(i).get(1);
-            }
-
-            File file = new File(dc.benchResultsDir + "/" + context.getThisTaskId() + ".csv");
             file.createNewFile();
             FileWriter writer = new FileWriter(file, true);
             writer.append(csvLine + "\n");
             writer.flush();
             writer.close();
-        } catch (Exception e) {
+        } catch (Exception e){
             // TODO Log the error
             e.printStackTrace();
             collector.ack(input);
