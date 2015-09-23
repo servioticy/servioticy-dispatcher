@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.servioticy</groupId>
     <artifactId>dispatcher</artifactId>
-    <version>0.4.3-SNAPSHOT</version>
+    <version>0.4.3-benchmark-no-security-SNAPSHOT</version>
     <name>dispatcher</name>
     <repositories>
         <repository>
@@ -23,7 +23,6 @@
             <version>0.9.5</version>
             <!-- keep storm out of the jar-with-dependencies -->
             <scope>provided</scope>
-
         </dependency>
         <dependency>
             <groupId>org.eclipse.paho</groupId>
@@ -76,7 +75,7 @@
         <dependency>
             <groupId>com.servioticy</groupId>
             <artifactId>datamodel</artifactId>
-            <version>0.4.1-SNAPSHOT</version>
+            <version>0.4.1-benchmark-no-security-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.servioticy</groupId>
@@ -157,7 +156,6 @@
             <!--<version>1.0.0</version>-->
         <!--</dependency>-->
     </dependencies>
-
     <build>
         <testSourceDirectory>src/test/java</testSourceDirectory>
         <testResources>

@@ -22,7 +22,6 @@ import backtype.storm.generated.AlreadyAliveException;
 import backtype.storm.generated.InvalidTopologyException;
 import backtype.storm.spout.SchemeAsMultiScheme;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
 import com.servioticy.dispatcher.bolts.*;
 import org.apache.commons.cli.*;
 import storm.kafka.BrokerHosts;
@@ -80,35 +79,9 @@ public class DispatcherTopology {
         updatesBrokerZkStr = updatesBrokerZkStr.substring(0, updatesBrokerZkStr.length()-1);
         BrokerHosts updatesHosts = new ZkHosts(updatesBrokerZkStr);
 
-        String actionsBrokerZkStr = "";
-        for(String actionsAddress: dc.actionsAddresses){
-            actionsBrokerZkStr += actionsAddress + ",";
-        }
-        actionsBrokerZkStr = actionsBrokerZkStr.substring(0, actionsBrokerZkStr.length()-1);
-        BrokerHosts actionsHosts = new ZkHosts(actionsBrokerZkStr);
-
-        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, "dispatcher-" + dc.updatesQueue);
-        SpoutConfig actionsSpoutConfig = new SpoutConfig(actionsHosts, dc.actionsQueue, "/" + dc.actionsQueue, "dispatcher-" + dc.actionsQueue);
-        updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
-        actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new ActuationScheme());
-
-        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 4);
-        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig), 4);
-
-        builder.setBolt("prepare", new PrepareBolt(dc), 12)
-                .shuffleGrouping("updates");
-
-        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 12)
-        		.shuffleGrouping("actions");
-
         builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 12)
                 .shuffleGrouping("prepare", "subscription");
-
-        builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc), 12)
-                .fieldsGrouping("subretriever", "externalSub", new Fields("subid"));
-        builder.setBolt("internaldispatcher", new InternalDispatcherBolt(dc), 12)
-                .fieldsGrouping("subretriever", "internalSub", new Fields("subid"));
-
+        
         builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 12)
                 .shuffleGrouping("subretriever", "streamSub")
                 .shuffleGrouping("prepare", "stream");
@@ -116,11 +89,14 @@ public class DispatcherTopology {
                 .shuffleGrouping("streamdispatcher", "default");
 
         if (dc.benchmark) {
-            builder.setBolt("benchmark", new BenchmarkBolt(dc))
+            builder.setBolt("benchmark", new PathPerformanceBolt(dc), 8)
                     .shuffleGrouping("streamdispatcher", "benchmark")
                     .shuffleGrouping("subretriever", "benchmark")
                     .shuffleGrouping("streamprocessor", "benchmark")
                     .shuffleGrouping("prepare", "benchmark");
+            builder.setBolt("stages", new StagesPerformanceBolt(dc), 8)
+                    .shuffleGrouping("streamprocessor", "stages")
+                    .shuffleGrouping("prepare", "stages");
         }
 
         Config conf = new Config();

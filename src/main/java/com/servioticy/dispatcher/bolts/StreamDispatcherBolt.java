@@ -136,7 +136,7 @@ public class StreamDispatcherBolt implements IRichBolt {
                 emitted = true;
             }
             if (!emitted) {
-                BenchmarkBolt.send(collector, input, dc, suDoc, "no-stream");
+                PathPerformanceBolt.send(collector, input, dc, suDoc, "no-stream");
             }
         } catch(RestClientErrorCodeException e){
             // TODO Log the error
@@ -145,13 +145,13 @@ public class StreamDispatcherBolt implements IRichBolt {
                 collector.fail(input);
                 return;
             }
-            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            PathPerformanceBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         }catch (Exception e) {
             // TODO Log the error
             e.printStackTrace();
-            BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            PathPerformanceBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         }
