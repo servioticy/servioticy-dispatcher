@@ -21,6 +21,7 @@ import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.UpdateDescriptor;
 import com.servioticy.datamodel.reputation.ReputationSOUserDescriptor;
+import org.apache.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
@@ -32,22 +33,23 @@ import java.util.List;
  * 
  */
 public class ReputationScheme implements Scheme {
-
+	private static Logger LOG = org.apache.log4j.Logger.getLogger(ReputationScheme.class);
 	public List<Object> deserialize(byte[] bytes) {
+		String inputDoc = "";
 		try {
 			ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
 			ObjectInput in = null;
 			in = new ObjectInputStream(bis);
 			Object o = in.readObject();
 			bis.close();
-			String inputDoc = (String) o;
+			inputDoc = (String) o;
 			ObjectMapper mapper = new ObjectMapper();
 			ReputationSOUserDescriptor rd = mapper.readValue(inputDoc, ReputationSOUserDescriptor.class);
 			return new Values(rd.getSrc().getSoid(), rd.getSrc().getStreamid(), rd.getDest().getUserId(), rd.getSu(), System.currentTimeMillis());
 		} catch(Exception e){
-			// TODO Log the error
-			throw new RuntimeException(e);
+			LOG.warn("Reputation malformed: " + inputDoc, e);
 		}
+		return null;
 	}
 
 	public Fields getOutputFields() {
