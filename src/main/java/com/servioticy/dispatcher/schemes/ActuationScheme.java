@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/ 
-package com.servioticy.dispatcher;
+package com.servioticy.dispatcher.schemes;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
@@ -26,31 +26,35 @@ import backtype.storm.tuple.Values;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.actuation.ActuationDescriptor;
+import org.apache.log4j.Logger;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
 public class ActuationScheme implements Scheme {
+	private static Logger LOG = org.apache.log4j.Logger.getLogger(ActuationScheme.class);
 	private ObjectMapper mapper;
 	public ActuationScheme(){
 		this.mapper = new ObjectMapper();
 	}
 
 	public List<Object> deserialize(byte[] bytes) {
+		String inputDoc = "";
 		try {
 			ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
 			ObjectInput in = null;
 			in = new ObjectInputStream(bis);
 			Object o = in.readObject();
 			bis.close();
-			String inputDoc = (String) o;
+			inputDoc = (String) o;
 			ActuationDescriptor ad = this.mapper.readValue(inputDoc, ActuationDescriptor.class);
 			return new Values(ad.getSoid(), ad.getId(), ad.getName(), this.mapper.writeValueAsString(ad.getAction()));
 		} catch(Exception e){
-			// TODO Log the error
-			throw new RuntimeException(e);
+			LOG.warn("Actuation malformed: " + inputDoc, e);
+
 		}
+		return null;
 	}
 
 	public Fields getOutputFields() {

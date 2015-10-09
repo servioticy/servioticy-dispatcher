@@ -31,7 +31,7 @@
 //import com.servioticy.datamodel.subscription.SOSubscription;
 //import com.servioticy.datamodel.subscription.Subscriptions;
 //import com.servioticy.dispatcher.DispatcherContext;
-//import com.servioticy.dispatcher.UpdateDescriptorScheme;
+//import com.servioticy.dispatcher.schemes.UpdateDescriptorScheme;
 //import com.servioticy.dispatcher.bolts.*;
 //import com.servioticy.queueclient.QueueClient;
 //import com.servioticy.restclient.RestClient;

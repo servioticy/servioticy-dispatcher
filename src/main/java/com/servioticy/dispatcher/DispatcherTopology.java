@@ -24,13 +24,13 @@ import backtype.storm.spout.SchemeAsMultiScheme;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import com.servioticy.dispatcher.bolts.*;
+import com.servioticy.dispatcher.schemes.ActuationScheme;
+import com.servioticy.dispatcher.schemes.UpdateDescriptorScheme;
 import org.apache.commons.cli.*;
 import storm.kafka.BrokerHosts;
 import storm.kafka.KafkaSpout;
 import storm.kafka.SpoutConfig;
 import storm.kafka.ZkHosts;
-
-import java.util.UUID;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>

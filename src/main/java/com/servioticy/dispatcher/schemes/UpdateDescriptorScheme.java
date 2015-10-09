@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/ 
-package com.servioticy.dispatcher;
+package com.servioticy.dispatcher.schemes;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
@@ -26,12 +26,15 @@ import com.servioticy.datamodel.UpdateDescriptor;
 import backtype.storm.spout.Scheme;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
+import org.apache.log4j.Logger;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
 public class UpdateDescriptorScheme implements Scheme {
+	private static Logger LOG = org.apache.log4j.Logger.getLogger(UpdateDescriptorScheme.class);
+
 	private ObjectMapper mapper;
 	public UpdateDescriptorScheme(){
 		this.mapper = new ObjectMapper();
@@ -39,17 +42,18 @@ public class UpdateDescriptorScheme implements Scheme {
 	public List<Object> deserialize(byte[] bytes) {
 		ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
 		ObjectInput in = null;
+		String inputDoc = "";
 		try {
 			in = new ObjectInputStream(bis);
 			Object o = in.readObject();
 			bis.close();
-			String inputDoc = (String) o;
+			inputDoc = (String) o;
 			UpdateDescriptor ud = this.mapper.readValue(inputDoc, UpdateDescriptor.class);
 			return new Values(ud.getSoid(), ud.getStreamid(), this.mapper.writeValueAsString(ud.getSu()));
 		} catch(Exception e){
-			// TODO Log the error
-			throw new RuntimeException(e);
+			LOG.warn("Update malformed: " + inputDoc, e);
 		}
+		return null;
 	}
 
 	public Fields getOutputFields() {
