@@ -77,9 +77,6 @@ public class DispatcherTopology {
 
         SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, "dispatcher-" + dc.updatesQueue);
 
-        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 2)
-        		.shuffleGrouping("actions");
-
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
 
         builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 8);
@@ -97,12 +94,12 @@ public class DispatcherTopology {
                 .shuffleGrouping("streamdispatcher", "default");
 
         if (dc.benchmark) {
-            builder.setBolt("benchmark", new PathPerformanceBolt(dc), 8)
+            builder.setBolt("benchmark", new PathPerformanceBolt(dc), 48)
                     .shuffleGrouping("streamdispatcher", "benchmark")
                     .shuffleGrouping("subretriever", "benchmark")
                     .shuffleGrouping("streamprocessor", "benchmark")
                     .shuffleGrouping("prepare", "benchmark");
-            builder.setBolt("stages", new StagesPerformanceBolt(dc), 8)
+            builder.setBolt("stages", new StagesPerformanceBolt(dc), 48)
                     .shuffleGrouping("streamprocessor", "stages")
                     .shuffleGrouping("prepare", "stages");
         }

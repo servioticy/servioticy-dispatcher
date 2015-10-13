@@ -22,7 +22,7 @@ for (( i=0; i<${#GIT_REPOS[@]}; i++ ));
 do
     if [[ $(git clone ${GIT_REPOS[$i]} $SOURCES/${ARTIFACTIDS[$i]}) !=  "Already up-to-date." ]] || [ ! $(mvn -q dependency:get -Dartifact=${GROUPIDS[$i]}:${ARTIFACTIDS[$i]}:${VERSIONS[$i]} -o -DrepoUrl=file://$LOCAL_REPO > /dev/null 2>&1) ] ; then
         cd $SOURCES/${ARTIFACTIDS[$i]}
-        git checkout ${REVISIONS[$i]} .
+        git checkout ${REVISIONS[$i]}
         eval ${BUILD_CMDS[$i]}
         mvn deploy:deploy-file -Durl=file://$LOCAL_REPO -Dfile=${JAR_FILE[$i]} -DgroupId=${GROUPIDS[$i]} -DartifactId=${ARTIFACTIDS[$i]} -Dpackaging=jar -Dversion=${VERSIONS[$i]}
         cd $DIR
