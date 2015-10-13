@@ -79,22 +79,31 @@ public class DispatcherTopology {
         updatesBrokerZkStr = updatesBrokerZkStr.substring(0, updatesBrokerZkStr.length()-1);
         BrokerHosts updatesHosts = new ZkHosts(updatesBrokerZkStr);
 
-        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 12)
+        SpoutConfig updatesSpoutConfig = new SpoutConfig(updatesHosts, dc.updatesQueue, "/" + dc.updatesQueue, "dispatcher-" + dc.updatesQueue);
+
+        updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
+
+        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 8);
+
+        builder.setBolt("prepare", new PrepareBolt(dc), 48)
+                .shuffleGrouping("updates");
+
+        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 48)
                 .shuffleGrouping("prepare", "subscription");
         
-        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 12)
+        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 48)
                 .shuffleGrouping("subretriever", "streamSub")
                 .shuffleGrouping("prepare", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 12)
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 48)
                 .shuffleGrouping("streamdispatcher", "default");
 
         if (dc.benchmark) {
-            builder.setBolt("benchmark", new PathPerformanceBolt(dc), 8)
+            builder.setBolt("benchmark", new PathPerformanceBolt(dc), 48)
                     .shuffleGrouping("streamdispatcher", "benchmark")
                     .shuffleGrouping("subretriever", "benchmark")
                     .shuffleGrouping("streamprocessor", "benchmark")
                     .shuffleGrouping("prepare", "benchmark");
-            builder.setBolt("stages", new StagesPerformanceBolt(dc), 8)
+            builder.setBolt("stages", new StagesPerformanceBolt(dc), 48)
                     .shuffleGrouping("streamprocessor", "stages")
                     .shuffleGrouping("prepare", "stages");
         }
