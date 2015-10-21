@@ -42,6 +42,7 @@ import de.passau.uni.sec.compose.pdp.servioticy.PDP;
 import de.passau.uni.sec.compose.pdp.servioticy.PermissionCacheObject;
 import de.passau.uni.sec.compose.pdp.servioticy.exception.PDPServioticyException;
 import de.passau.uni.sec.compose.pdp.servioticy.provenance.ServioticyProvenance;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Map;
@@ -62,6 +63,8 @@ public class StreamDispatcherBolt implements IRichBolt {
     private DispatcherContext dc;
     private ObjectMapper mapper;
     private PDP pdp;
+    private static Logger LOG = org.apache.log4j.Logger.getLogger(StreamDispatcherBolt.class);
+
 
     public StreamDispatcherBolt(DispatcherContext dc){
         this.dc = dc;
@@ -190,12 +193,12 @@ public class StreamDispatcherBolt implements IRichBolt {
                 BenchmarkBolt.send(collector, input, dc, suDoc, "no-stream");
             }
         } catch(RestClientErrorCodeException e){
-            // TODO Log the error
-            e.printStackTrace();
             if(e.getRestResponse().getHttpCode()>= 500){
+                LOG.error("Retrieving SO " + destination + " from the API failed", e);
                 collector.fail(input);
                 return;
             }
+            LOG.warn("SO " + destination + "was not found by the API", e);
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
