@@ -198,7 +198,7 @@ public class StreamDispatcherBolt implements IRichBolt {
                 collector.fail(input);
                 return;
             }
-            LOG.warn("SO " + destination + "was not found by the API", e);
+            LOG.warn("SO " + destination + " was not found by the API, triggered by '" + docId +"' from SO '" + input.getStringByField("originso") + "'", e);
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;

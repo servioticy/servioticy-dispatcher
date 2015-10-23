@@ -440,7 +440,7 @@ public class StreamProcessorBolt implements IRichBolt {
             return;
         } catch (Exception e) {
             LOG.warn("Composition error on stream " + soId + ":" + streamId +
-                    ", triggered by '" + originId + "'. JSON malformed?", e);
+                    ", triggered by '" + originId + "'. JSON malformed?\n" + suDoc, e);
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;

@@ -152,7 +152,8 @@ public class PrepareBolt implements IRichBolt {
                 input,
                 new Values(streamid,
                         soid,
-                        suDoc)
+                        suDoc,
+                        soid)
         );
 
         this.collector.emit(
@@ -170,7 +171,7 @@ public class PrepareBolt implements IRichBolt {
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declareStream("subscription", new Fields("soid", "streamid", "su"));
-        declarer.declareStream("stream", new Fields("docid", "destination", "su"));
+        declarer.declareStream("stream", new Fields("docid", "destination", "su", "originso"));
         declarer.declareStream(Reputation.STREAM_WO_SO, new Fields("out-soid", "out-streamid", "user_timestamp", "date", "fresh"));
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
 
