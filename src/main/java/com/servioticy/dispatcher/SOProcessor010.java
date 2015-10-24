@@ -178,7 +178,7 @@ public class SOProcessor010 extends SOProcessor{
 
         String result = (String) ProvenanceAPI.getResultValue(provList);
 
-        LOG.info(soid+":"+streamId+" ("+origin+") filter JS code"+": " + fullComputationString);
+        LOG.info(soid+":"+streamId+" ("+origin+") filter JS code"+":\n" + fullComputationString + "\nresult:\n" + result);
 
 
         return Boolean.parseBoolean(result);
@@ -240,7 +240,8 @@ public class SOProcessor010 extends SOProcessor{
 
                 String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
-                LOG.info(soid+":"+streamId+":"+channelEntry.getKey()+" "+ origin +" JS code: " + fullComputationString);
+                LOG.info(soid+":"+streamId+":"+channelEntry.getKey()+" "+ origin +" JS code: " + fullComputationString +
+                        "\nresult:\n" + result);
 
 
                 List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeSOcode(fullComputationString, provList, soSecurityDoc);
