@@ -156,7 +156,10 @@ public class SOProcessor010 extends SOProcessor{
         return result;
     }
 
-    public boolean checkFilter(JsonPathReplacer filterField, Map<String, String> inputJsons, List<Provelement> provList, Map<String, String> mapVarSU, String soSecurityDoc) throws ScriptException {
+    public boolean checkFilter(JsonPathReplacer filterField, Map<String, String> inputJsons, List<Provelement> provList,
+                               Map<String, String> mapVarSU, String soSecurityDoc, String origin, String soid,
+                               String streamId)
+            throws ScriptException {
         if (filterField == null) {
             return true;
         }
@@ -175,12 +178,16 @@ public class SOProcessor010 extends SOProcessor{
 
         String result = (String) ProvenanceAPI.getResultValue(provList);
 
+        LOG.info(soid+":"+streamId+" ("+origin+") filter JS code"+": " + fullComputationString);
+
 
         return Boolean.parseBoolean(result);
     }
 
     @Override
-    public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws JsonParseException, JsonMappingException, IOException, ScriptException {
+    public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, String soid,
+                                    long timestamp)
+            throws JsonParseException, JsonMappingException, IOException, ScriptException {
 
         List<Provelement> provList = new LinkedList<Provelement>();
         Map<String, String> mapVarSU = new HashMap<String, String>();
@@ -190,7 +197,7 @@ public class SOProcessor010 extends SOProcessor{
             inputDocs.put(inputSUEntry.getKey(), this.mapper.writeValueAsString(inputSUEntry.getValue()));
         }
         PSOStream pstream = this.streams.get(streamId);
-        if (!checkFilter(pstream.preFilter, inputDocs, provList, mapVarSU, soSecurityDoc)){
+        if (!checkFilter(pstream.preFilter, inputDocs, provList, mapVarSU, soSecurityDoc, origin, soid, streamId)) {
             return null;
         }
 
@@ -233,8 +240,8 @@ public class SOProcessor010 extends SOProcessor{
 
                 String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
-                LOG.info("JS code triggered by '" + origin + "' on '" + streamId +"', channel '"+
-                        channelEntry.getKey() + "': " + fullComputationString);
+                LOG.info(soid+":"+streamId+":"+channelEntry.getKey()+" "+ origin +" JS code: " + fullComputationString);
+
 
                 List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeSOcode(fullComputationString, provList, soSecurityDoc);
                 if(newProvList == null){
@@ -272,7 +279,7 @@ public class SOProcessor010 extends SOProcessor{
             inputDocs.put("result", resultSUDoc);
         }
 
-        if (!checkFilter(pstream.postFilter, inputDocs, provList, mapVarSU, soSecurityDoc)){
+        if (!checkFilter(pstream.postFilter, inputDocs, provList, mapVarSU, soSecurityDoc, origin, soid, streamId)){
             return null;
         }
 

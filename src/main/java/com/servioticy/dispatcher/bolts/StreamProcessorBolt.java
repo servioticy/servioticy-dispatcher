@@ -303,8 +303,8 @@ public class StreamProcessorBolt implements IRichBolt {
             if (previousSU != null) {
                 if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
                     BenchmarkBolt.send(collector, input, dc, suDoc, "old");
-                    collector.ack(input);
                     ReputationBolt.sendToReputation(collector, mapper, input, su, so, streamId, Reputation.DISCARD_TIMESTAMP, true);
+                    collector.ack(input);
                     return;
                 }
             }
@@ -316,16 +316,15 @@ public class StreamProcessorBolt implements IRichBolt {
                 sensorUpdates.put(streamId, previousSU);
                 Map<String, SensorUpdate> groupLastSus = this.getGroupSUs(groupSURRs, so, streamId, input);
                 if (groupLastSus == null) {
-                    LOG.info(soId + ":" + streamId +
-                            " doesn't have permissions to read one or more sources. Discarding composition.");
+                    LOG.info(soId + ":" + streamId + " (" + originId +
+                            ") doesn't have permissions to read one or more sources. Discarding composition.");
                     collector.ack(input);
                     return;
                 }
                 sensorUpdates.putAll(groupLastSus);
                 sensorUpdates.put(originId, su);
             } catch (Exception e) {
-                LOG.warn("Error obtaining sources for stream " + soId + ":" + streamId +
-                        ", triggered by '" + originId + "'", e);
+                LOG.warn(soId + ":" + streamId + " (" + originId + ") error obtaining sources", e);
                 collector.fail(input);
                 return;
             }
@@ -347,24 +346,22 @@ public class StreamProcessorBolt implements IRichBolt {
             SensorUpdate resultSU;
             String resultSUDoc;
             try {
-                resultSU = sop.getResultSU(streamId, sensorUpdates, originId, timestamp);
+                resultSU = sop.getResultSU(streamId, sensorUpdates, originId, soId, timestamp);
                 if (resultSU == null) {
-                    LOG.info("Composition filtered on stream " + soId + ":" + streamId +
-                            ", triggered by " + originId + "'");
+                    LOG.info(soId + ":" + streamId + " (" + originId + ") composition filtered");
                     BenchmarkBolt.send(collector, input, dc, suDoc, "filtered");
-                    collector.ack(input);
                     ReputationBolt.sendAllToReputation(collector, mapper, input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_FILTER);
+                    collector.ack(input);
                     return;
                 }
                 resultSUDoc = this.mapper.writeValueAsString(resultSU);
 
             } catch (RhinoException e) {
-                LOG.warn("Error executing JS code from stream " + soId + ":" + streamId +
-                        ", triggered by '" + originId + "'", e);
+                LOG.warn(soId + ":" + streamId + " (" + originId + ") error executing JS code", e);
                 BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
-                collector.ack(input);
                 //Reputation
                 ReputationBolt.sendAllToReputation(collector, mapper, input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_ERROR);
+                collector.ack(input);
                 return;
             }
 
@@ -407,16 +404,14 @@ public class StreamProcessorBolt implements IRichBolt {
                 }
 
                 if(!qc.put(upDescriptorDoc)){
-                    LOG.warn("Error sending feedback from " + soId + ":" + streamId +
-                            ", triggered by '" + originId + "'");
+                    LOG.warn(soId + ":" + streamId + " (" + originId + ") error sending feedback");
                     BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
                     collector.fail(input);
                     return;
                 }
                 qc.disconnect();
             } catch (Exception e) {
-                LOG.warn("Error sending feedback from " + soId + ":" + streamId +
-                        ", triggered by '" + originId + "'", e);
+                LOG.warn(soId + ":" + streamId + " (" + originId + ") error sending feedback", e);
                 collector.fail(input);
                 return;
             }
@@ -424,23 +419,20 @@ public class StreamProcessorBolt implements IRichBolt {
             ReputationBolt.sendAllToReputation(collector, mapper, input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_NONE);
         } catch(RestClientErrorCodeException e) {
             if (e.getRestResponse().getHttpCode() >= 500) {
-                LOG.error("Error on the API with code " + e.getRestResponse().getHttpCode() + ": " +
-                        e.getRestResponse().getResponse() + "\n The composition on stream " +
-                        soId + ":" + streamId + ", triggered by '" + originId +
-                                "' failed and will be executed again", e);
+                LOG.error(soId + ":" + streamId + " (" + originId + ") error on the API with code "
+                        + e.getRestResponse().getHttpCode() + ": " +
+                        e.getRestResponse().getResponse(), e);
                 collector.fail(input);
                 return;
             }
-            LOG.error("Error returned by the API with code " + e.getRestResponse().getHttpCode() + ": " +
-                                e.getRestResponse().getResponse() + "\n The composition on stream " +
-                                soId + ":" + streamId + ", triggered by '" + originId +
-                                "' failed and will be discarded", e);
+            LOG.error(soId + ":" + streamId + " (" + originId + ") error returned by the API with code "
+                    + e.getRestResponse().getHttpCode() + ": " +
+                                e.getRestResponse().getResponse(), e);
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
         } catch (Exception e) {
-            LOG.warn("Composition error on stream " + soId + ":" + streamId +
-                    ", triggered by '" + originId + "'. JSON malformed?\n" + suDoc, e);
+            LOG.warn(soId + ":" + streamId + " (" + originId + ") composition error. JSON malformed?" + suDoc, e);
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;

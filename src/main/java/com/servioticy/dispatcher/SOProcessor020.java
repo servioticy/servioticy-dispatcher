@@ -205,7 +205,9 @@ public class SOProcessor020 extends SOProcessor{
         return -1;
     }
 
-    public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, long timestamp) throws IOException, ScriptException {
+    public SensorUpdate getResultSU(String streamId, Map<String, SensorUpdate> inputSUs, String origin, String soid,
+                                    long timestamp)
+            throws IOException, ScriptException {
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("JavaScript");
 

@@ -194,11 +194,11 @@ public class StreamDispatcherBolt implements IRichBolt {
             }
         } catch(RestClientErrorCodeException e){
             if(e.getRestResponse().getHttpCode()>= 500){
-                LOG.error("Retrieving SO " + destination + " from the API failed", e);
+                LOG.error(destination + " ("+ input.getStringByField("originso") + "->" + docId + ") retrieving SO from the API failed", e);
                 collector.fail(input);
                 return;
             }
-            LOG.warn("SO " + destination + " was not found by the API, triggered by '" + docId +"' from SO '" + input.getStringByField("originso") + "'", e);
+            LOG.warn(destination + " ("+ input.getStringByField("originso") + "->" + docId + ") SO was not found by the API", e);
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;

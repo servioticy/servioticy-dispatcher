@@ -24,7 +24,8 @@ do
         cd $SOURCES/${ARTIFACTIDS[$i]}
         git checkout ${REVISIONS[$i]} .
         eval ${BUILD_CMDS[$i]}
-        mvn deploy:deploy-file -Durl=file://$LOCAL_REPO -Dfile=${JAR_FILE[$i]} -DgroupId=${GROUPIDS[$i]} -DartifactId=${ARTIFACTIDS[$i]} -Dpackaging=jar -Dversion=${VERSIONS[$i]}
+        #mvn deploy:deploy-file -Durl=file://$LOCAL_REPO -Dfile=${JAR_FILE[$i]} -DgroupId=${GROUPIDS[$i]} -DartifactId=${ARTIFACTIDS[$i]} -Dpackaging=jar -Dversion=${VERSIONS[$i]}
+        mvn install -Dfile=${JAR_FILE[$i]} -DgroupId=${GROUPIDS[$i]} -DartifactId=${ARTIFACTIDS[$i]} -Dpackaging=jar -Dversion=${VERSIONS[$i]}
         cd $DIR
     fi
 done

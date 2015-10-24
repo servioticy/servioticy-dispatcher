@@ -106,31 +106,31 @@ public class DispatcherTopology {
         actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new ActuationScheme());
         reputationSpoutConfig.scheme = new SchemeAsMultiScheme(new ReputationScheme());
 
-        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 8);
-        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig), 8);
-        builder.setSpout("readreputation", new KafkaSpout(reputationSpoutConfig), 8);
+        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 1);
+        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig), 1);
+        builder.setSpout("readreputation", new KafkaSpout(reputationSpoutConfig), 1);
 
-        builder.setBolt("prepare", new PrepareBolt(dc), 48)
+        builder.setBolt("prepare", new PrepareBolt(dc), 24)
                 .shuffleGrouping("updates");
 
-        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 48)
+        builder.setBolt("actuationdispatcher", new ActuationDispatcherBolt(dc), 24)
         		.shuffleGrouping("actions");
 
-        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 48)
+        builder.setBolt("subretriever", new SubscriptionRetrieveBolt(dc), 24)
                 .shuffleGrouping("prepare", "subscription");
 
-        builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc), 48)
+        builder.setBolt("externaldispatcher", new ExternalDispatcherBolt(dc), 24)
                 .fieldsGrouping("subretriever", "externalSub", new Fields("subid"));
-        builder.setBolt("internaldispatcher", new InternalDispatcherBolt(dc), 48)
+        builder.setBolt("internaldispatcher", new InternalDispatcherBolt(dc), 24)
                 .fieldsGrouping("subretriever", "internalSub", new Fields("subid"));
 
-        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 48)
+        builder.setBolt("streamdispatcher", new StreamDispatcherBolt(dc), 24)
                 .shuffleGrouping("subretriever", "streamSub")
                 .shuffleGrouping("prepare", "stream");
-        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 48)
+        builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 24)
                 .shuffleGrouping("streamdispatcher", "default");
 
-        builder.setBolt("reputation", new ReputationBolt(dc), 48)
+        builder.setBolt("reputation", new ReputationBolt(dc), 24)
                 .shuffleGrouping("prepare", Reputation.STREAM_WO_SO)
                 .shuffleGrouping("streamprocessor", Reputation.STREAM_SO_SO)
                 .shuffleGrouping("externaldispatcher", Reputation.STREAM_SO_PUBSUB)
@@ -147,6 +147,9 @@ public class DispatcherTopology {
 
         Config conf = new Config();
         conf.setDebug(cmd.hasOption("d"));
+//        conf.setMessageTimeoutSecs(0);
+        conf.setMaxSpoutPending(10000);
+//        conf.setNumAckers(24);
         if (cmd.hasOption("t")) {
             StormSubmitter.submitTopology(cmd.getOptionValue("t"), conf, builder.createTopology());
         } else {
