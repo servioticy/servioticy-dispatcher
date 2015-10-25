@@ -240,18 +240,18 @@ public class SOProcessor010 extends SOProcessor{
 
                 String fullComputationString = ProvenanceAPI.buildString(inputVar);
 
-                LOG.info(soid+":"+streamId+":"+channelEntry.getKey()+" "+ origin +" JS code: " + fullComputationString +
-                        " result: " + result);
-
-
                 List<Provelement> newProvList = (List<Provelement>)ProvenanceAPI.executeSOcode(fullComputationString, provList, soSecurityDoc);
                 if(newProvList == null){
                     throw new ScriptException("Problem executing the JS code.");
                 }
                 provList.clear();
                 provList.addAll(newProvList);
+                String resultStr = (String)ProvenanceAPI.getResultValue(provList);
 
-                result = this.mapper.readValue((String)ProvenanceAPI.getResultValue(provList), type);
+                LOG.info(soid+":"+streamId+":"+channelEntry.getKey()+" "+ origin +" JS code: " + fullComputationString +
+                        " result: " + resultStr);
+
+                result = this.mapper.readValue(resultStr, type);
                 if(type == GeoPoint.class)
                     result = ((GeoPoint)result).getLat()+","+((GeoPoint)result).getLon();
 //                else if(type == String.class)
