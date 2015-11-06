@@ -79,7 +79,7 @@ public class DispatcherTopology {
 
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
 
-        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 8);
+        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 1);
 
         builder.setBolt("prepare", new PrepareBolt(dc), 48)
                 .shuffleGrouping("updates");
