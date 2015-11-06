@@ -268,9 +268,11 @@ public class StreamProcessorBolt implements IRichBolt {
             Long ts = System.currentTimeMillis();
             localStageStartTS.put("in", ts);
             su = this.mapper.readValue(suDoc, SensorUpdate.class);
-            String originSoid = su.getTriggerPath().get(su.getTriggerPath().size()-1).get(0);
-            String originStream = su.getTriggerPath().get(su.getTriggerPath().size()-1).get(1);
-            StagesPerformanceBolt.send(collector, input, dc, "out", originSoid, originStream,su.getStageStartTS().get("out"), ts);
+            if(dc.benchmark) {
+                String originSoid = su.getTriggerPath().get(su.getTriggerPath().size() - 1).get(0);
+                String originStream = su.getTriggerPath().get(su.getTriggerPath().size() - 1).get(1);
+                StagesPerformanceBolt.send(collector, input, dc, "out", originSoid, originStream, su.getStageStartTS().get("out"), ts);
+            }
             so = this.mapper.readValue(soDoc, SO.class);
             sop = SOProcessor.factory(so, this.mapper);
 
