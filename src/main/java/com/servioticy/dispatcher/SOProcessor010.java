@@ -176,7 +176,7 @@ public class SOProcessor010 extends SOProcessor{
         provList.clear();
         provList.addAll(newProvList);
 
-        String result = (String) ProvenanceAPI.getResultValue(provList);
+        String result = (String) ProvenanceAPI.getResultValue(newProvList);
 
         LOG.info(soid+":"+streamId+" ("+origin+") filter JS code"+":" + fullComputationString + " result: " + result);
 
@@ -192,6 +192,7 @@ public class SOProcessor010 extends SOProcessor{
         List<Provelement> provList = new LinkedList<Provelement>();
         Map<String, String> mapVarSU = new HashMap<String, String>();
         String soSecurityDoc = mapper.writeValueAsString(this.so.getSecurity());
+
         Map<String, String> inputDocs = new HashMap<String, String>();
         for(Map.Entry<String,SensorUpdate> inputSUEntry: inputSUs.entrySet()){
             inputDocs.put(inputSUEntry.getKey(), this.mapper.writeValueAsString(inputSUEntry.getValue()));
@@ -244,11 +245,12 @@ public class SOProcessor010 extends SOProcessor{
                 if(newProvList == null){
                     throw new ScriptException("Problem executing the JS code.");
                 }
+
                 provList.clear();
                 provList.addAll(newProvList);
-                String resultStr = (String)ProvenanceAPI.getResultValue(provList);
+                String resultStr = (String)ProvenanceAPI.getResultValue(newProvList);
 
-                LOG.info(soid+":"+streamId+":"+channelEntry.getKey()+" "+ origin +" JS code: " + fullComputationString +
+                LOG.info(soid+":"+streamId+":"+channelEntry.getKey()+" ("+ origin +") JS code: " + fullComputationString +
                         " result: " + resultStr);
 
                 result = this.mapper.readValue(resultStr, type);

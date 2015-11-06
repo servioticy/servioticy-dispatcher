@@ -339,14 +339,14 @@ public class StreamProcessorBolt implements IRichBolt {
                 }
                 timestamp = inputSU.getLastUpdate() > timestamp ? inputSU.getLastUpdate() : timestamp;
             }
-            // Reputation needs the previousSU away
-            if(originId != streamId){
-                sensorUpdates.remove(streamId);
-            }
             SensorUpdate resultSU;
             String resultSUDoc;
             try {
                 resultSU = sop.getResultSU(streamId, sensorUpdates, originId, soId, timestamp);
+                // Reputation needs the previousSU away
+                if(originId != streamId){
+                    sensorUpdates.remove(streamId);
+                }
                 if (resultSU == null) {
                     LOG.info(soId + ":" + streamId + " (" + originId + ") composition filtered");
                     BenchmarkBolt.send(collector, input, dc, suDoc, "filtered");
@@ -360,6 +360,10 @@ public class StreamProcessorBolt implements IRichBolt {
                 LOG.warn(soId + ":" + streamId + " (" + originId + ") error executing JS code", e);
                 BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
                 //Reputation
+                // Reputation needs the previousSU away
+                if(originId != streamId){
+                    sensorUpdates.remove(streamId);
+                }
                 ReputationBolt.sendAllToReputation(collector, mapper, input, sensorUpdates, originId, so, streamId, Reputation.DISCARD_ERROR);
                 collector.ack(input);
                 return;
