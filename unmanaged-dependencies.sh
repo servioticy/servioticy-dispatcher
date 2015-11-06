@@ -10,7 +10,7 @@ VERSIONS=( "1.7R4-mod-SNAPSHOT" )
 GROUPIDS=( "org.mozilla" )
 BUILD_CMDS=( "ant jar" )
 JAR_FILE=( "build/rhino1_7R5pre/js.jar" )
-REVISIONS=( "master" )
+REVISIONS=( "threadLocal" )
 
 echo $PROJECT_DIR
 echo $LOCAL_REPO
@@ -20,14 +20,15 @@ mkdir -p $LOCAL_REPO
 
 for (( i=0; i<${#GIT_REPOS[@]}; i++ ));
 do
-    if [[ $(git clone ${GIT_REPOS[$i]} $SOURCES/${ARTIFACTIDS[$i]}) !=  "Already up-to-date." ]] || [ ! $(mvn -q dependency:get -Dartifact=${GROUPIDS[$i]}:${ARTIFACTIDS[$i]}:${VERSIONS[$i]} -o -DrepoUrl=file://$LOCAL_REPO > /dev/null 2>&1) ] ; then
+#    if [[ $(git clone ${GIT_REPOS[$i]} $SOURCES/${ARTIFACTIDS[$i]}) !=  "Already up-to-date." ]] || [ ! $(mvn -q dependency:get -Dartifact=${GROUPIDS[$i]}:${ARTIFACTIDS[$i]}:${VERSIONS[$i]} -o -DrepoUrl=file://$LOCAL_REPO > /dev/null 2>&1) ] ; then
+        git clone ${GIT_REPOS[$i]} $SOURCES/${ARTIFACTIDS[$i]}
         cd $SOURCES/${ARTIFACTIDS[$i]}
         git checkout ${REVISIONS[$i]}
         eval ${BUILD_CMDS[$i]}
         #mvn deploy:deploy-file -Durl=file://$LOCAL_REPO -Dfile=${JAR_FILE[$i]} -DgroupId=${GROUPIDS[$i]} -DartifactId=${ARTIFACTIDS[$i]} -Dpackaging=jar -Dversion=${VERSIONS[$i]}
         mvn clean install:install-file -Dfile=${JAR_FILE[$i]} -DgroupId=${GROUPIDS[$i]} -DartifactId=${ARTIFACTIDS[$i]} -Dpackaging=jar -Dversion=${VERSIONS[$i]}
         cd $DIR
-    fi
+#    fi
 done
 
 #rm -Rf $SOURCES
