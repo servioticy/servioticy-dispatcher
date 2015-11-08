@@ -377,6 +377,19 @@ public class StreamProcessorBolt implements IRichBolt {
                 return;
             }
 
+            if(dc.benchmark) {
+                ts = System.currentTimeMillis();
+                String[] fromStr = {so.getId(), streamId};
+                resultSU.setTriggerPath(su.getTriggerPath());
+                resultSU.setPathTimestamps(su.getPathTimestamps());
+                resultSU.setOriginId(su.getOriginId());
+                resultSU.setStageStartTS(su.getStageStartTS());
+                resultSU.getStageStartTS().put("queue", ts);
+                resultSU.getStageStartTS().put("out", ts);
+                StagesPerformanceBolt.send(collector, input, dc, "process", soId, streamId, localStageStartTS.get("process"), ts);
+//                resultSU.getTriggerPath().add(new ArrayList<String>(Arrays.asList(fromStr)));
+//                resultSU.getPathTimestamps().add(System.currentTimeMillis());
+            }
 
             // The output update descriptor
             UpdateDescriptor ud = new UpdateDescriptor();
@@ -400,21 +413,6 @@ public class StreamProcessorBolt implements IRichBolt {
                     RestClient.PUT,
                     null);
 
-            if(dc.benchmark) {
-                ts = System.currentTimeMillis();
-                String[] fromStr = {so.getId(), streamId};
-                resultSU.setTriggerPath(su.getTriggerPath());
-                resultSU.setPathTimestamps(su.getPathTimestamps());
-                resultSU.setOriginId(su.getOriginId());
-                resultSU.setStageStartTS(su.getStageStartTS());
-                resultSU.getStageStartTS().put("queue", ts);
-                resultSU.getStageStartTS().put("out", ts);
-                StagesPerformanceBolt.send(collector, input, dc, "process", soId, streamId, localStageStartTS.get("process"), ts);
-
-
-//                resultSU.getTriggerPath().add(new ArrayList<String>(Arrays.asList(fromStr)));
-//                resultSU.getPathTimestamps().add(System.currentTimeMillis());
-            }
 		    // Put to the queue
             try{
                 if(!qc.isConnected()) {
