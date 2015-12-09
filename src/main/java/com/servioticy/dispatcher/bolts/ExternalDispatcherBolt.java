@@ -32,7 +32,9 @@ import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.publishers.Publisher;
 
-
+/**
+ * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
+ */
 public class ExternalDispatcherBolt implements IRichBolt {
 
 	private static final long serialVersionUID = 1L;

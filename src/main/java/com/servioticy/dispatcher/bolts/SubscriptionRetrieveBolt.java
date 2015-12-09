@@ -112,7 +112,8 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
                     this.collector.emit("streamSub", input,
                             new Values(soSub.getGroupId(),
                                     soSub.getDestination(),
-                                    suDoc)
+                                    suDoc,
+                                    soid)
                     );
                 } else if (subscription.getClass().equals(ExternalSubscription.class)) {
                     this.collector.emit("externalSub", input,
@@ -157,7 +158,7 @@ public class SubscriptionRetrieveBolt implements IRichBolt {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream("streamSub", new Fields("docid", "destination", "su"));
+        declarer.declareStream("streamSub", new Fields("docid", "destination", "su", "originso"));
         declarer.declareStream("externalSub", new Fields("subid", "soid", "subsdoc", "su", "streamid"));
         declarer.declareStream("internalSub", new Fields("subid", "soid", "subsdoc", "su", "streamid"));
         declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));

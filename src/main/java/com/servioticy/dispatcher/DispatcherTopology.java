@@ -92,8 +92,8 @@ public class DispatcherTopology {
         updatesSpoutConfig.scheme = new SchemeAsMultiScheme(new UpdateDescriptorScheme());
         actionsSpoutConfig.scheme = new SchemeAsMultiScheme(new ActuationScheme());
 
-        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 4);
-        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig), 4);
+        builder.setSpout("updates", new KafkaSpout(updatesSpoutConfig), 1);
+        builder.setSpout("actions", new KafkaSpout(actionsSpoutConfig), 1);
 
         builder.setBolt("prepare", new PrepareBolt(dc), 12)
                 .shuffleGrouping("updates");
@@ -125,8 +125,10 @@ public class DispatcherTopology {
 
         Config conf = new Config();
         conf.setDebug(cmd.hasOption("d"));
+//        conf.setMessageTimeoutSecs(0);
+        conf.setMaxSpoutPending(10000);
+//        conf.setNumAckers(24);
         if (cmd.hasOption("t")) {
-            conf.setNumWorkers(4);
             StormSubmitter.submitTopology(cmd.getOptionValue("t"), conf, builder.createTopology());
         } else {
             conf.setMaxTaskParallelism(4);

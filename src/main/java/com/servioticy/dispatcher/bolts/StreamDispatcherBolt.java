@@ -34,6 +34,7 @@ import com.servioticy.restclient.FutureRestResponse;
 import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestClientErrorCodeException;
 import com.servioticy.restclient.RestResponse;
+import org.apache.log4j.Logger;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -52,6 +53,7 @@ public class StreamDispatcherBolt implements IRichBolt {
     private RestClient restClient;
     private DispatcherContext dc;
     private ObjectMapper mapper;
+    private static Logger LOG = org.apache.log4j.Logger.getLogger(StreamDispatcherBolt.class);
 
 
     public StreamDispatcherBolt(DispatcherContext dc){
@@ -115,6 +117,7 @@ public class StreamDispatcherBolt implements IRichBolt {
             }
 
             SensorUpdate su = this.mapper.readValue(suDoc, SensorUpdate.class);
+
             boolean emitted = false;
             for (String streamIdByDoc : sop.getStreamsBySourceId(docId)) {
                 // If the SU comes from the same stream than it is going, it must be stopped
@@ -139,12 +142,12 @@ public class StreamDispatcherBolt implements IRichBolt {
                 BenchmarkBolt.send(collector, input, dc, suDoc, "no-stream");
             }
         } catch(RestClientErrorCodeException e){
-            // TODO Log the error
-            e.printStackTrace();
             if(e.getRestResponse().getHttpCode()>= 500){
+                LOG.error(destination + " ("+ input.getStringByField("originso") + "->" + docId + ") retrieving SO from the API failed", e);
                 collector.fail(input);
                 return;
             }
+            LOG.warn(destination + " ("+ input.getStringByField("originso") + "->" + docId + ") SO was not found by the API", e);
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             collector.ack(input);
             return;
