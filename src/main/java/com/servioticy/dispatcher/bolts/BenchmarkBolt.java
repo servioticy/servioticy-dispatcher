@@ -72,13 +72,14 @@ public class BenchmarkBolt implements IRichBolt {
         try {
             su = this.mapper.readValue(suDoc, SensorUpdate.class);
 
-            int chainSize = su.getPathTimestamps() == null ? 0 : su.getPathTimestamps().size();
+            int pathSize = su.getProvenance().get(0).size();
 
-            String csvLine = Long.toHexString(su.getOriginId()) + "," + su.getLastUpdate() + "," + stopTS + "," + reason + "," + chainSize;
-            for (int i = 0; i < chainSize; i++) {
+            String csvLine = Long.toHexString(su.getOriginId()) + "," + su.getLastUpdate() + "," + stopTS + "," + reason + "," + pathSize;
+            for (int i = pathSize - 1; i >= 0; i--) {
                 csvLine += ",";
-                csvLine += su.getPathTimestamps().get(i) + ",";
-                csvLine += su.getTriggerPath().get(i).get(0) + "," + su.getTriggerPath().get(i).get(1);
+                csvLine += su.getProvenance().get(0).get(i).getTimestamp() + ",";
+                csvLine += su.getProvenance().get(0).get(i).getSoId() + "," +
+                        su.getProvenance().get(0).get(i).getStreamId();
             }
 
             File file = new File(dc.benchResultsDir + "/" + context.getThisTaskId() + ".csv");

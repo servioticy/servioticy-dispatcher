@@ -23,6 +23,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.sensorupdate.ProvenanceUnit;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.restclient.FutureRestResponse;
@@ -70,6 +71,26 @@ public class PrepareBolt implements IRichBolt {
 
     }
 
+    public static SensorUpdate initializeProvenance(SensorUpdate su, String soid, String streamid){
+        if(su.getProvenance() == null){
+            su.setProvenance(new ArrayList<ArrayList<ProvenanceUnit>>());
+        }
+        if(su.getProvenance().isEmpty()){
+            su.getProvenance().add(new ArrayList<ProvenanceUnit>());
+        }
+        if(su.getProvenance().get(0) == null){
+            su.getProvenance().set(0, new ArrayList<ProvenanceUnit>());
+        }
+        if(su.getProvenance().get(0).isEmpty()){
+            su.getProvenance().get(0).add(new ProvenanceUnit(soid, streamid, System.currentTimeMillis()));
+
+        }
+        if(su.getProvenance().get(0).get(0) == null){
+            su.getProvenance().get(0).set(0, new ProvenanceUnit(soid, streamid, System.currentTimeMillis()));
+        }
+        return su;
+    }
+
     public void execute(Tuple input) {
         RestResponse rr;
         FutureRestResponse frr;
@@ -82,30 +103,15 @@ public class PrepareBolt implements IRichBolt {
 
             // Benchmark
             if(dc.benchmark) {
-
-                if (su.getTriggerPath() == null) {
-                    su.setTriggerPath(new ArrayList<ArrayList<String>>());
-                    String[] chainInit = {soid, streamid};
-                    su.getTriggerPath().add(new ArrayList<String>(Arrays.asList(chainInit)));
-                    su.setPathTimestamps(new ArrayList<Long>());
-                    su.getPathTimestamps().add(System.currentTimeMillis());
+                if (su.getOriginId() == null){
                     su.setOriginId(UUID.randomUUID().getMostSignificantBits());
                 }
-                /*else if( (System.currentTimeMillis() - su.getPathTimestamps().get(su.getPathTimestamps().size()-1)) > 2*60*1000 ||
-                         (System.currentTimeMillis() - su.getPathTimestamps().get(0)) > 10*60*1000){
-                    // Timeout
-                    this.collector.emit("benchmark", input,
-                            new Values(suDoc,
-                                    System.currentTimeMillis(),
-                                    "timeout")
-                    );
-                    collector.ack(input);
-                    //TODO Log the error
-                    return;
-                }*/
-
                 suDoc = this.mapper.writeValueAsString(su);
             }
+            // In case the updates does not have provenance, it is added here.
+            // Transitional
+            suDoc = this.mapper.writeValueAsString(initializeProvenance(su, soid, streamid));
+
         } catch (Exception e) {
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
             // TODO Log the error

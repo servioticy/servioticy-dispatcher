@@ -24,6 +24,7 @@ import backtype.storm.tuple.Tuple;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.UpdateDescriptor;
+import com.servioticy.datamodel.sensorupdate.ProvenanceUnit;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.serviceobject.SOGroup;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
@@ -31,7 +32,6 @@ import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SOProcessor;
 import com.servioticy.dispatcher.SOProcessor010;
 import com.servioticy.dispatcher.SUCache;
-import com.servioticy.queueclient.KestrelThriftClient;
 import com.servioticy.queueclient.QueueClient;
 import com.servioticy.queueclient.QueueClientException;
 import com.servioticy.restclient.*;
@@ -178,7 +178,6 @@ public class StreamProcessorBolt implements IRichBolt {
 
     private Map<String, FutureRestResponse> getStreamSUAsyncResponses(Set<String> streamIds, SO so) throws RestClientException, RestClientErrorCodeException {
         Map<String, FutureRestResponse> rrs = new HashMap();
-        Map<String, SensorUpdate> streamDocs = new HashMap<String, SensorUpdate>();
         for(String streamId: streamIds){
             if(!so.getStreams(this.mapper).containsKey(streamId)){
                 continue;
@@ -216,6 +215,28 @@ public class StreamProcessorBolt implements IRichBolt {
         );
 
         return frr;
+    }
+
+    private ArrayList<ArrayList<ProvenanceUnit>> mergeProvenance(SensorUpdate trigger, List<SensorUpdate> reads,
+                                                                 ProvenanceUnit pu){
+        ArrayList<ProvenanceUnit> provPath;
+        ArrayList<SensorUpdate> sus = new ArrayList<SensorUpdate>();
+        ArrayList<ArrayList<ProvenanceUnit>> provenance = new ArrayList<ArrayList<ProvenanceUnit>>();
+
+        sus.add(trigger);
+        sus.addAll(reads);
+
+        for(SensorUpdate su: sus){
+            ArrayList<ArrayList<ProvenanceUnit>> suProvenance = su.getProvenance();
+            if(suProvenance==null) continue;
+            for(int i = 0; i < suProvenance.size(); i++){
+                provPath = new ArrayList<ProvenanceUnit>();
+                if(i == 0) provPath.add(pu);
+                provPath.addAll(suProvenance.get(i));
+                provenance.add(provPath);
+            }
+        }
+        return provenance;
     }
 
     public void execute(Tuple input) {
@@ -280,10 +301,17 @@ public class StreamProcessorBolt implements IRichBolt {
             // At this point we know for sure that at least one input SU is newer
 
             sensorUpdates = new HashMap<String, SensorUpdate>();
+
+            Map<String, SensorUpdate> readSUs;
             try {
-                sensorUpdates.putAll(this.getStreamSUs(streamSURRs));
+                Map<String, SensorUpdate> streamSUs = this.getStreamSUs(streamSURRs);
+                Map<String, SensorUpdate> groupSUs = this.getGroupSUs(groupSURRs);
+                readSUs = new HashMap<String, SensorUpdate>();
+                readSUs.putAll(streamSUs);
+                readSUs.putAll(groupSUs);
+                sensorUpdates.putAll(streamSUs);
                 sensorUpdates.put(streamId, previousSU);
-                sensorUpdates.putAll(this.getGroupSUs(groupSURRs));
+                sensorUpdates.putAll(groupSUs);
                 sensorUpdates.put(originId, su);
             } catch (Exception e) {
                 LOG.warn(soId + ":" + streamId + " (" + originId + ") error obtaining sources", e);
@@ -311,6 +339,11 @@ public class StreamProcessorBolt implements IRichBolt {
                     collector.ack(input);
                     return;
                 }
+                ArrayList<ArrayList<ProvenanceUnit>> provenance = this.mergeProvenance(su,
+                        new ArrayList<SensorUpdate>(readSUs.values()),
+                            new ProvenanceUnit(soId, streamId, System.currentTimeMillis()));
+                resultSU.setProvenance(provenance);
+                resultSU.setOriginId(null);
                 resultSUDoc = this.mapper.writeValueAsString(resultSU);
 
             } catch (ScriptException e) {
@@ -320,21 +353,6 @@ public class StreamProcessorBolt implements IRichBolt {
                 return;
             }
 
-
-            // The output update descriptor
-            UpdateDescriptor ud = new UpdateDescriptor();
-            ud.setSoid(soId);
-            ud.setStreamid(streamId);
-            ud.setSu(resultSU);
-            String upDescriptorDoc = this.mapper.writeValueAsString(ud);
-
-            // Remove the data that doesn't need to be stored.
-            resultSU.setTriggerPath(null);
-            resultSU.setPathTimestamps(null);
-            resultSU.setOriginId(null);
-
-            resultSUDoc = this.mapper.writeValueAsString(resultSU);
-
             // Send to the API
             restClient.restRequest(
                     dc.restBaseURL
@@ -342,17 +360,17 @@ public class StreamProcessorBolt implements IRichBolt {
                             + streamId, resultSUDoc,
                     RestClient.PUT,
                     null);
-
-            if(dc.benchmark) {
-                String[] fromStr = {so.getId(), streamId};
-                resultSU.setTriggerPath(su.getTriggerPath());
-                resultSU.setPathTimestamps(su.getPathTimestamps());
+            if(dc.benchmark){
                 resultSU.setOriginId(su.getOriginId());
-
-                resultSU.getTriggerPath().add(new ArrayList<String>(Arrays.asList(fromStr)));
-                resultSU.getPathTimestamps().add(System.currentTimeMillis());
             }
-		    // Put to the queue
+            // The output update descriptor
+            UpdateDescriptor ud = new UpdateDescriptor();
+            ud.setSoid(soId);
+            ud.setStreamid(streamId);
+            ud.setSu(resultSU);
+            String upDescriptorDoc = this.mapper.writeValueAsString(ud);
+
+            // Put to the queue
             try{
                 if(!qc.isConnected()) {
                     qc.connect();
