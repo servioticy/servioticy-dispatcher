@@ -230,10 +230,6 @@ public class SOProcessor010 extends SOProcessor{
             return null;
         }
 
-        su.setTriggerPath(new ArrayList<ArrayList<String>>());
-
-        su.setPathTimestamps(new ArrayList<Long>());
-
         this.mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         String resultSUDoc = this.mapper.writeValueAsString(su);
         if(!inputDocs.containsKey("result")){
