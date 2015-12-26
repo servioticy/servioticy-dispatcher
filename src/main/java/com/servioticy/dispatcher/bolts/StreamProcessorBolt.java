@@ -339,9 +339,11 @@ public class StreamProcessorBolt implements IRichBolt {
                     collector.ack(input);
                     return;
                 }
+                // TODO The suId generation should be a shared method with the API
                 ArrayList<ArrayList<ProvenanceUnit>> provenance = this.mergeProvenance(su,
                         new ArrayList<SensorUpdate>(readSUs.values()),
-                            new ProvenanceUnit(soId, streamId, System.currentTimeMillis()));
+                            new ProvenanceUnit(soId, streamId, soId + "-" + streamId + "-" + resultSU.getLastUpdate(),
+                                    System.currentTimeMillis()));
                 resultSU.setProvenance(provenance);
                 resultSU.setOriginId(null);
                 resultSUDoc = this.mapper.writeValueAsString(resultSU);
