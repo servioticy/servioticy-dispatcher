@@ -114,6 +114,10 @@ public class DispatcherTopology {
                 .shuffleGrouping("prepare", "stream");
         builder.setBolt("streamprocessor", new StreamProcessorBolt(dc), 12)
                 .shuffleGrouping("streamdispatcher", "default");
+        builder.setBolt("reputation", new ReputationBolt(dc), 12)
+                .shuffleGrouping("streamprocessor")
+                .shuffleGrouping("internaldispatcher")
+                .shuffleGrouping("externaldispatcher");
 
         if (dc.benchmark) {
             builder.setBolt("benchmark", new BenchmarkBolt(dc))

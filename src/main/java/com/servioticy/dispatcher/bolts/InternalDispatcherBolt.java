@@ -19,8 +19,12 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.reputation.OnBehalf;
+import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.datamodel.subscription.InternalSubscription;
 import com.servioticy.dispatcher.DispatcherContext;
@@ -103,6 +107,16 @@ public class InternalDispatcherBolt implements IRichBolt {
 						dc.internalPubPassword);
 			}
 			publisher.publishMessage(internalSub.getDestination(), suStr);
+
+			Reputation reputation = new Reputation();
+			reputation.setAction(Reputation.ACTION_READ);
+			reputation.setSoId(sourceSOId);
+			reputation.setStreamId(streamId);
+			reputation.setSuId(su.getId());
+			reputation.setOnBehalf(new OnBehalf());
+			reputation.getOnBehalf().setType(OnBehalf.TYPE_PUBSUB_INTERNAL);
+			reputation.getOnBehalf().setTopic(internalSub.getDestination());
+			collector.emit("reputation", input, new Values(mapper.writeValueAsString(reputation)));
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
@@ -116,6 +130,7 @@ public class InternalDispatcherBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
+		declarer.declareStream("reputation", new Fields("reputation"));
 	}
 
 	public Map<String, Object> getComponentConfiguration() {

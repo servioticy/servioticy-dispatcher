@@ -17,7 +17,11 @@ package com.servioticy.dispatcher.bolts;
 
 import java.util.Map;
 
+import backtype.storm.tuple.Fields;
+import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.reputation.OnBehalf;
+import com.servioticy.datamodel.reputation.Reputation;
 import org.apache.log4j.Logger;
 
 import backtype.storm.task.OutputCollector;
@@ -83,6 +87,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
 		String sourceSOId;
 		String streamId;
 		try{
+
 			su = mapper.readValue(input.getStringByField("su"),
 					SensorUpdate.class);
 			externalSub = mapper.readValue(input.getStringByField("subsdoc"),
@@ -106,8 +111,21 @@ public class ExternalDispatcherBolt implements IRichBolt {
 				publisher.connect(dc.externalPubUser,
 						dc.externalPubPassword);
 			}
-			publisher.publishMessage(externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates", suStr);
+			String topic = externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates";
+			publisher.publishMessage(topic, suStr);
 			LOG.info("Message pubished on topic "+externalSub.getDestination()+"/"+sourceSOId+"/streams/"+streamId+"/updates");
+
+			Reputation reputation = new Reputation();
+			reputation.setAction(Reputation.ACTION_READ);
+			reputation.setSoId(sourceSOId);
+			reputation.setStreamId(streamId);
+			reputation.setSuId(su.getId());
+			reputation.setOnBehalf(new OnBehalf());
+			reputation.getOnBehalf().setType(OnBehalf.TYPE_PUBSUB_EXTERNAL);
+			reputation.getOnBehalf().setTopic(topic);
+			collector.emit("reputation", input, new Values(mapper.writeValueAsString(reputation)));
+
+
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
 			collector.fail(input);
@@ -121,6 +139,7 @@ public class ExternalDispatcherBolt implements IRichBolt {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
+		declarer.declareStream("reputation", new Fields("reputation"));
 	}
 
 	public Map<String, Object> getComponentConfiguration() {
