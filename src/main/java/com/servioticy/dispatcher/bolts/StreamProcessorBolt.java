@@ -21,9 +21,13 @@ import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servioticy.datamodel.UpdateDescriptor;
+import com.servioticy.datamodel.reputation.Discard;
+import com.servioticy.datamodel.reputation.OnBehalf;
+import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.datamodel.sensorupdate.ProvenanceUnit;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.serviceobject.SOGroup;
@@ -91,7 +95,8 @@ public class StreamProcessorBolt implements IRichBolt {
         this.mapper = new ObjectMapper();
         try {
             if (this.qc == null) {
-                qc = QueueClient.factory(dc.updatesFeedbackAddress, dc.updatesQueue, "com.servioticy.queueclient.KafkaClient", null);
+                qc = QueueClient.factory(dc.updatesFeedbackAddress, dc.updatesQueue,
+                        "com.servioticy.queueclient.KafkaClient", null);
 
             }
             qc.connect();
@@ -104,7 +109,10 @@ public class StreamProcessorBolt implements IRichBolt {
 		}
 	}
 
-    private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException {
+    private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs, Reputation reputation,
+                                                  Tuple input)
+            throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException,
+            InterruptedException {
 		Map<String, SensorUpdate> groupDocs = new HashMap<String, SensorUpdate>();
 
         for(Map.Entry<String, FutureRestResponse> frrEntry: rrs.entrySet()){
@@ -126,14 +134,23 @@ public class StreamProcessorBolt implements IRichBolt {
                 continue;
             }
 
-			groupDocs.put(docId, this.mapper.readValue(rr.getResponse(), SensorUpdate.class));
+            SensorUpdate su = this.mapper.readValue(rr.getResponse(), SensorUpdate.class);
+            reputation.setSoId(su.getSoId());
+            reputation.setStreamId(su.getStreamId());
+            reputation.setSuId(su.getId());
+            collector.emit("reputation", input,
+                    new Values(mapper.writeValueAsString(reputation))
+            );
+
+			groupDocs.put(docId, su);
 			
 		}
 		
 		return groupDocs;
 	}
 
-    private Map<String, FutureRestResponse> getGroupSUAsyncResponses(Set<String>  groupIds, SO so) throws RestClientException, RestClientErrorCodeException, JsonProcessingException {
+    private Map<String, FutureRestResponse> getGroupSUAsyncResponses(Set<String>  groupIds, SO so)
+            throws RestClientException, RestClientErrorCodeException, JsonProcessingException {
         Map<String, FutureRestResponse> rrs = new HashMap();
         if(so.getGroups() == null){
             return rrs;
@@ -148,7 +165,8 @@ public class StreamProcessorBolt implements IRichBolt {
         return rrs;
     }
 
-    private FutureRestResponse getGroupSUAsyncResponse(String groupId, SO so) throws RestClientException, RestClientErrorCodeException, JsonProcessingException {
+    private FutureRestResponse getGroupSUAsyncResponse(String groupId, SO so)
+            throws RestClientException, RestClientErrorCodeException, JsonProcessingException {
         FutureRestResponse frr;
 
         SOGroup group = so.getGroups().get(groupId);
@@ -164,19 +182,23 @@ public class StreamProcessorBolt implements IRichBolt {
         return frr;
     }
 
-    private Map<String, SensorUpdate> getStreamSUs(Map<String, FutureRestResponse> frrs) throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException, InterruptedException {
+    private Map<String, SensorUpdate> getStreamSUs(Map<String, FutureRestResponse> frrs, Reputation reputation,
+                                                   Tuple input)
+            throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException,
+            InterruptedException {
         Map<String, SensorUpdate> streamDocs = new HashMap<String, SensorUpdate>();
 
         for(Map.Entry<String, FutureRestResponse> frrEntry: frrs.entrySet()) {
             FutureRestResponse frr = frrEntry.getValue();
             String docId = frrEntry.getKey();
             RestResponse rr;
-            streamDocs.put(docId, getStreamSU(frr));
+            streamDocs.put(docId, getStreamSU(frr, reputation, input));
         }
 		return streamDocs;
 	}
 
-    private Map<String, FutureRestResponse> getStreamSUAsyncResponses(Set<String> streamIds, SO so) throws RestClientException, RestClientErrorCodeException {
+    private Map<String, FutureRestResponse> getStreamSUAsyncResponses(Set<String> streamIds, SO so) throws
+            RestClientException, RestClientErrorCodeException {
         Map<String, FutureRestResponse> rrs = new HashMap();
         for(String streamId: streamIds){
             if(!so.getStreams(this.mapper).containsKey(streamId)){
@@ -188,7 +210,9 @@ public class StreamProcessorBolt implements IRichBolt {
         return rrs;
     }
 
-    private SensorUpdate getStreamSU(FutureRestResponse frr) throws RestClientErrorCodeException, IOException, RestClientException, ExecutionException, InterruptedException {
+    private SensorUpdate getStreamSU(FutureRestResponse frr, Reputation reputation, Tuple input)
+            throws RestClientErrorCodeException, IOException, RestClientException, ExecutionException,
+            InterruptedException {
         RestResponse rr;
         try {
             rr = frr.get();
@@ -202,10 +226,20 @@ public class StreamProcessorBolt implements IRichBolt {
         if(rr.getHttpCode() == 204){
             return null;
         }
-        return this.mapper.readValue(rr.getResponse(), SensorUpdate.class);
+        SensorUpdate su = this.mapper.readValue(rr.getResponse(), SensorUpdate.class);
+        if(reputation != null) {
+            reputation.setSoId(su.getSoId());
+            reputation.setStreamId(su.getStreamId());
+            reputation.setSuId(su.getId());
+
+            collector.emit("reputation", input, new Values(mapper.writeValueAsString(reputation)));
+        }
+
+        return su;
     }
 
-    private FutureRestResponse getStreamSUAsyncResponse(String streamId, SO so) throws RestClientException, RestClientErrorCodeException {
+    private FutureRestResponse getStreamSUAsyncResponse(String streamId, SO so)
+            throws RestClientException, RestClientErrorCodeException {
         FutureRestResponse frr;
         frr = restClient.restRequest(
                 dc.restBaseURL
@@ -254,10 +288,27 @@ public class StreamProcessorBolt implements IRichBolt {
         Map<String, SensorUpdate> sensorUpdates;
         Map<String, FutureRestResponse> streamSURRs;
         Map<String, FutureRestResponse> groupSURRs;
+        Reputation writeReputation = new Reputation();
+
         try {
             su = this.mapper.readValue(suDoc, SensorUpdate.class);
             so = this.mapper.readValue(soDoc, SO.class);
             sop = SOProcessor.factory(so, this.mapper);
+
+            // stream write reputation document
+            // TODO reputation.setOwnerId(so.getOwnerId())
+            writeReputation.setSoId(soId);
+            writeReputation.setStreamId(streamId);
+            writeReputation.setAction(Reputation.ACTION_WRITE);
+            writeReputation.setOnBehalf(new OnBehalf());
+            writeReputation.getOnBehalf().setType(OnBehalf.TYPE_STREAM);
+            writeReputation.getOnBehalf().setSoId(su.getSoId());
+            writeReputation.getOnBehalf().setStreamId(su.getStreamId());
+
+            // TODO reputation.getOnBehalf().setUserId(GET_SO(su.getSoId()).getOwnerId())
+            writeReputation.getOnBehalf().setSuId(su.getId());
+            writeReputation.setTimestamp(System.currentTimeMillis());
+
 
             // Begin all HTTP requests
             previousSURR = this.getStreamSUAsyncResponse(streamId, so);
@@ -288,12 +339,19 @@ public class StreamProcessorBolt implements IRichBolt {
 
             // Get the last update from the current stream
 
-            previousSU = this.getStreamSU(previousSURR);
+            previousSU = this.getStreamSU(previousSURR, null, null);
 
             // There is already a newer generated update than the one received
             if (previousSU != null) {
-                if (su.getLastUpdate() <= previousSU.getLastUpdate()) {
+                if (su.getLastUpdate() <= previousSU.getLastUpdate() ) {
                     BenchmarkBolt.send(collector, input, dc, suDoc, "old");
+                    String logMsg = "There is already a newer generated update than the one received: " +
+                            previousSU.getLastUpdate() + " >= " + su.getLastUpdate();
+                    LOG.info(logMsg);
+                    writeReputation.setDiscard(new Discard());
+                    writeReputation.getDiscard().setReason(Discard.REASON_OLD_TRIGGER);
+                    writeReputation.getDiscard().setMessage(logMsg);
+                    collector.emit("reputation", input, new Values(mapper.writeValueAsString(writeReputation)));
                     collector.ack(input);
                     return;
                 }
@@ -304,8 +362,15 @@ public class StreamProcessorBolt implements IRichBolt {
 
             Map<String, SensorUpdate> readSUs;
             try {
-                Map<String, SensorUpdate> streamSUs = this.getStreamSUs(streamSURRs);
-                Map<String, SensorUpdate> groupSUs = this.getGroupSUs(groupSURRs);
+                Reputation readReputation = new Reputation();
+                readReputation.setOnBehalf(new OnBehalf());
+                readReputation.getOnBehalf().setSoId(soId);
+                readReputation.getOnBehalf().setStreamId(streamId);
+                readReputation.getOnBehalf().setSuId(su.getId());
+                // TODO readReputation.getOnBehalf().setUserid(so.getUserId());
+
+                Map<String, SensorUpdate> streamSUs = this.getStreamSUs(streamSURRs, readReputation, input);
+                Map<String, SensorUpdate> groupSUs = this.getGroupSUs(groupSURRs, readReputation, input);
                 readSUs = new HashMap<String, SensorUpdate>();
                 readSUs.putAll(streamSUs);
                 readSUs.putAll(groupSUs);
@@ -334,8 +399,13 @@ public class StreamProcessorBolt implements IRichBolt {
             try {
                 resultSU = sop.getResultSU(streamId, sensorUpdates, originId, timestamp);
                 if (resultSU == null) {
-                    LOG.info(soId + ":" + streamId + " (" + originId + ") composition filtered");
+                    String logMsg = soId + ":" + streamId + " (" + originId + ") composition filtered";
+                    LOG.info(logMsg);
                     BenchmarkBolt.send(collector, input, dc, suDoc, "filtered");
+                    writeReputation.setDiscard(new Discard());
+                    writeReputation.getDiscard().setReason(Discard.REASON_FILTERED);
+                    writeReputation.getDiscard().setMessage(logMsg);
+                    collector.emit("reputation", input, new Values(mapper.writeValueAsString(writeReputation)));
                     collector.ack(input);
                     return;
                 }
@@ -349,7 +419,12 @@ public class StreamProcessorBolt implements IRichBolt {
                 resultSUDoc = this.mapper.writeValueAsString(resultSU);
 
             } catch (ScriptException e) {
-                LOG.warn(soId + ":" + streamId + " (" + originId + ") error executing JS code", e);
+                String logMsg = soId + ":" + streamId + " (" + originId + ") error executing JS code";
+                LOG.warn(logMsg, e);
+                writeReputation.setDiscard(new Discard());
+                writeReputation.getDiscard().setReason(Discard.REASON_SCRIPT_ERROR);
+                writeReputation.getDiscard().setMessage(logMsg);
+                collector.emit("reputation", input, new Values(mapper.writeValueAsString(writeReputation)));
                 BenchmarkBolt.send(collector, input, dc, suDoc, "script-error");
                 collector.ack(input);
                 return;
@@ -365,6 +440,10 @@ public class StreamProcessorBolt implements IRichBolt {
             if(dc.benchmark){
                 resultSU.setOriginId(su.getOriginId());
             }
+
+            // Send to reputation
+            collector.emit("reputation", input, new Values(mapper.writeValueAsString(writeReputation)));
+
             // The output update descriptor
             UpdateDescriptor ud = new UpdateDescriptor();
             ud.setSoid(soId);
@@ -399,15 +478,29 @@ public class StreamProcessorBolt implements IRichBolt {
                 collector.fail(input);
                 return;
             }
-            LOG.error(soId + ":" + streamId + " (" + originId + ") error returned by the API with code "
+            String logMsg =  soId + ":" + streamId + " (" + originId + ") error returned by the API with code "
                     + e.getRestResponse().getHttpCode() + ": " +
-                                e.getRestResponse().getResponse(), e);
+                    e.getRestResponse().getResponse();
+            LOG.error(logMsg, e);
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            writeReputation.setDiscard(new Discard());
+            writeReputation.getDiscard().setReason(Discard.REASON_ACCESSIBILITY);
+            writeReputation.getDiscard().setMessage(logMsg);
+            try {
+                collector.emit("reputation", input, new Values(mapper.writeValueAsString(writeReputation)));
+            } catch (JsonProcessingException e1) {}
             collector.ack(input);
             return;
         } catch (Exception e) {
-            LOG.warn(soId + ":" + streamId + " (" + originId + ") composition error. JSON malformed?" + suDoc, e);
+            String logMsg = soId + ":" + streamId + " (" + originId + ") composition error. JSON malformed?" + suDoc;
+            LOG.warn(logMsg, e);
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
+            writeReputation.setDiscard(new Discard());
+            writeReputation.getDiscard().setReason(Discard.REASON_COMPOSITION_ERROR);
+            writeReputation.getDiscard().setMessage(logMsg);
+            try {
+                collector.emit("reputation", input, new Values(mapper.writeValueAsString(writeReputation)));
+            } catch (JsonProcessingException e1) {}
             collector.ack(input);
             return;
         }
@@ -427,6 +520,7 @@ public class StreamProcessorBolt implements IRichBolt {
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
+        declarer.declareStream("reputation", new Fields("reputation"));
 
     }
 

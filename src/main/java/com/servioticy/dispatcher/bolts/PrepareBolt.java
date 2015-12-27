@@ -31,7 +31,6 @@ import com.servioticy.restclient.RestClient;
 import com.servioticy.restclient.RestResponse;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
@@ -71,26 +70,6 @@ public class PrepareBolt implements IRichBolt {
 
     }
 
-    public static SensorUpdate initializeProvenance(SensorUpdate su, String soid, String streamid){
-        if(su.getProvenance() == null){
-            su.setProvenance(new ArrayList<ArrayList<ProvenanceUnit>>());
-        }
-        if(su.getProvenance().isEmpty()){
-            su.getProvenance().add(new ArrayList<ProvenanceUnit>());
-        }
-        if(su.getProvenance().get(0) == null){
-            su.getProvenance().set(0, new ArrayList<ProvenanceUnit>());
-        }
-        if(su.getProvenance().get(0).isEmpty()){
-            su.getProvenance().get(0).add(new ProvenanceUnit(soid, streamid, System.currentTimeMillis()));
-
-        }
-        if(su.getProvenance().get(0).get(0) == null){
-            su.getProvenance().get(0).set(0, new ProvenanceUnit(soid, streamid, System.currentTimeMillis()));
-        }
-        return su;
-    }
-
     public void execute(Tuple input) {
         RestResponse rr;
         FutureRestResponse frr;
@@ -108,9 +87,6 @@ public class PrepareBolt implements IRichBolt {
                 }
                 suDoc = this.mapper.writeValueAsString(su);
             }
-            // In case the updates does not have provenance, it is added here.
-            // Transitional
-            suDoc = this.mapper.writeValueAsString(initializeProvenance(su, soid, streamid));
 
         } catch (Exception e) {
             BenchmarkBolt.send(collector, input, dc, suDoc, "error");
