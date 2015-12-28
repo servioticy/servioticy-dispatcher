@@ -32,10 +32,7 @@ import com.servioticy.datamodel.sensorupdate.ProvenanceUnit;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.serviceobject.SOGroup;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
-import com.servioticy.dispatcher.DispatcherContext;
-import com.servioticy.dispatcher.SOProcessor;
-import com.servioticy.dispatcher.SOProcessor010;
-import com.servioticy.dispatcher.SUCache;
+import com.servioticy.dispatcher.*;
 import com.servioticy.queueclient.QueueClient;
 import com.servioticy.queueclient.QueueClientException;
 import com.servioticy.restclient.*;
@@ -110,7 +107,7 @@ public class StreamProcessorBolt implements IRichBolt {
 	}
 
     private Map<String, SensorUpdate> getGroupSUs(Map<String, FutureRestResponse> rrs, Reputation reputation,
-                                                  Tuple input)
+                                                  SO so, Tuple input)
             throws IOException, RestClientException, RestClientErrorCodeException, ExecutionException,
             InterruptedException {
 		Map<String, SensorUpdate> groupDocs = new HashMap<String, SensorUpdate>();
@@ -135,6 +132,20 @@ public class StreamProcessorBolt implements IRichBolt {
             }
 
             SensorUpdate su = this.mapper.readValue(rr.getResponse(), SensorUpdate.class);
+            reputation.setSoId(su.getSoId());
+            reputation.setStreamId(su.getStreamId());
+            reputation.setSuId(su.getId());
+
+            if(!Auth.check(so, su)){
+                reputation.setDiscard(new Discard());
+                reputation.getDiscard().setReason(Discard.REASON_NO_AUTH);
+                reputation.getDiscard().setMessage("No authorization to use SU '" + su.getId() + "' on SO '" +
+                        so.getId() + "'");
+                collector.emit("reputation", input,
+                    new Values(mapper.writeValueAsString(reputation))
+                );
+                return null;
+            }
             reputation.setSoId(su.getSoId());
             reputation.setStreamId(su.getStreamId());
             reputation.setSuId(su.getId());
@@ -370,7 +381,13 @@ public class StreamProcessorBolt implements IRichBolt {
                 // TODO readReputation.getOnBehalf().setUserid(so.getUserId());
 
                 Map<String, SensorUpdate> streamSUs = this.getStreamSUs(streamSURRs, readReputation, input);
-                Map<String, SensorUpdate> groupSUs = this.getGroupSUs(groupSURRs, readReputation, input);
+                Map<String, SensorUpdate> groupSUs = this.getGroupSUs(groupSURRs, readReputation, so, input);
+                if (groupSUs == null) {
+                    LOG.info(soId + ":" + streamId + " (" + originId +
+                            ") doesn't have permissions to read one or more sources. Discarding composition.");
+                    collector.ack(input);
+                    return;
+                }
                 readSUs = new HashMap<String, SensorUpdate>();
                 readSUs.putAll(streamSUs);
                 readSUs.putAll(groupSUs);
