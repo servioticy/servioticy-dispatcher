@@ -289,37 +289,25 @@ public class StreamProcessorBolt implements IRichBolt {
         FutureRestResponse previousSURR;
         SensorUpdate previousSU;
         SO so;
+        Reputation writeReputation = new Reputation();
         String soId = input.getStringByField("soid");
         String streamId = input.getStringByField("streamid");
         String suDoc = input.getStringByField("su");
         String soDoc = input.getStringByField("so");
+        String writeRepDoc = input.getStringByField("reputation");
         String originId = input.getStringByField("originid");
         SOProcessor sop;
         long timestamp;
         Map<String, SensorUpdate> sensorUpdates;
         Map<String, FutureRestResponse> streamSURRs;
         Map<String, FutureRestResponse> groupSURRs;
-        Reputation writeReputation = new Reputation();
 
         try {
             su = this.mapper.readValue(suDoc, SensorUpdate.class);
             so = this.mapper.readValue(soDoc, SO.class);
+            writeReputation = mapper.readValue(writeRepDoc, Reputation.class);
+
             sop = SOProcessor.factory(so, this.mapper);
-
-            // stream write reputation document
-            // TODO reputation.setOwnerId(so.getOwnerId())
-            writeReputation.setSoId(soId);
-            writeReputation.setStreamId(streamId);
-            writeReputation.setAction(Reputation.ACTION_WRITE);
-            writeReputation.setOnBehalf(new OnBehalf());
-            writeReputation.getOnBehalf().setType(OnBehalf.TYPE_STREAM);
-            writeReputation.getOnBehalf().setSoId(su.getSoId());
-            writeReputation.getOnBehalf().setStreamId(su.getStreamId());
-
-            // TODO reputation.getOnBehalf().setUserId(GET_SO(su.getSoId()).getOwnerId())
-            writeReputation.getOnBehalf().setSuId(su.getId());
-            writeReputation.setTimestamp(System.currentTimeMillis());
-
 
             // Begin all HTTP requests
             previousSURR = this.getStreamSUAsyncResponse(streamId, so);
@@ -457,7 +445,7 @@ public class StreamProcessorBolt implements IRichBolt {
             if(dc.benchmark){
                 resultSU.setOriginId(su.getOriginId());
             }
-
+            writeReputation.setSuId(su.getId());
             // Send to reputation
             collector.emit("reputation", input, new Values(mapper.writeValueAsString(writeReputation)));
 

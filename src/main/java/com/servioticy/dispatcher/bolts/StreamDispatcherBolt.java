@@ -23,10 +23,14 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.reputation.Discard;
+import com.servioticy.datamodel.reputation.OnBehalf;
+import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.datamodel.serviceobject.SO;
 import com.servioticy.datamodel.serviceobject.SOGroup;
 import com.servioticy.datamodel.subscription.SOSubscription;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
+import com.servioticy.dispatcher.Auth;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SOProcessor;
 import com.servioticy.dispatcher.SOProcessor010;
@@ -110,15 +114,27 @@ public class StreamDispatcherBolt implements IRichBolt {
                 }
             }
 
+            SensorUpdate su = this.mapper.readValue(suDoc, SensorUpdate.class);
+
             SOProcessor sop = SOProcessor.factory(so, this.mapper);
             if(sop.getClass() == SOProcessor010.class) {
                 soDoc = ((SOProcessor010)sop).replaceAliases();
                 ((SOProcessor010)sop).compileJSONPaths();
             }
 
-            SensorUpdate su = this.mapper.readValue(suDoc, SensorUpdate.class);
-
             boolean emitted = false;
+            boolean authorized = Auth.check(so, su);
+            Reputation reputation = new Reputation();
+            // TODO reputation.setOwnerId(so.getOwnerId())
+            reputation.setSoId(destination);
+            reputation.setAction(Reputation.ACTION_WRITE);
+            reputation.setOnBehalf(new OnBehalf());
+            reputation.getOnBehalf().setType(OnBehalf.TYPE_STREAM);
+            reputation.getOnBehalf().setSoId(su.getSoId());
+            reputation.getOnBehalf().setStreamId(su.getStreamId());
+            // TODO reputation.getOnBehalf().setUserId(GET_SO(su.getSoId()).getOwnerId())
+            reputation.getOnBehalf().setSuId(su.getId());
+
             for (String streamIdByDoc : sop.getStreamsBySourceId(docId)) {
                 // If the SU comes from the same stream than it is going, it must be stopped
 //                boolean beenThere = false;
@@ -130,16 +146,30 @@ public class StreamDispatcherBolt implements IRichBolt {
 //                if (beenThere) {
 //                    continue;
 //                }
+                reputation.setStreamId(streamIdByDoc);
+                if(!authorized){
+
+                    reputation.setDiscard(new Discard());
+                    reputation.getDiscard().setReason(Discard.REASON_NO_AUTH);
+                    reputation.getDiscard().setMessage("No authorization to use SU '" + su.getId() + "' on SO '" +
+                            so.getId() + "'");
+                    collector.emit("reputation", input,
+                            new Values(mapper.writeValueAsString(reputation))
+                    );
+                    continue;
+                }
                 this.collector.emit("default", input,
                         new Values(destination,
                                 streamIdByDoc,
                                 soDoc,
                                 docId,
-                                suDoc));
+                                suDoc,
+                                mapper.writeValueAsString(reputation)));
                 emitted = true;
             }
             if (!emitted) {
                 BenchmarkBolt.send(collector, input, dc, suDoc, "no-stream");
+                // TODO Reputation if the group *and* the stream does not exist.
             }
         } catch(RestClientErrorCodeException e){
             if(e.getRestResponse().getHttpCode()>= 500){
@@ -166,7 +196,8 @@ public class StreamDispatcherBolt implements IRichBolt {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declareStream("default", new Fields("soid", "streamid", "so", "originid", "su"));
+        declarer.declareStream("default", new Fields("soid", "streamid", "so", "originid", "su", "reputation"));
+        declarer.declareStream("reputation", new Fields("reputation"));
         if (dc.benchmark) declarer.declareStream("benchmark", new Fields("su", "stopts", "reason"));
     }
 
