@@ -23,10 +23,12 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servioticy.datamodel.reputation.Discard;
 import com.servioticy.datamodel.reputation.OnBehalf;
 import com.servioticy.datamodel.reputation.Reputation;
 import com.servioticy.datamodel.sensorupdate.SensorUpdate;
 import com.servioticy.datamodel.subscription.InternalSubscription;
+import com.servioticy.dispatcher.Auth;
 import com.servioticy.dispatcher.DispatcherContext;
 import com.servioticy.dispatcher.SUCache;
 import com.servioticy.dispatcher.publishers.Publisher;
@@ -102,12 +104,6 @@ public class InternalDispatcherBolt implements IRichBolt {
 
 		String suStr = input.getStringByField("su");
 		try {
-			if (!publisher.isConnected()) {
-				publisher.connect(dc.internalPubUser,
-						dc.internalPubPassword);
-			}
-			publisher.publishMessage(internalSub.getDestination(), suStr);
-
 			Reputation reputation = new Reputation();
 			reputation.setAction(Reputation.ACTION_READ);
 			reputation.setSoId(sourceSOId);
@@ -116,6 +112,25 @@ public class InternalDispatcherBolt implements IRichBolt {
 			reputation.setOnBehalf(new OnBehalf());
 			reputation.getOnBehalf().setType(OnBehalf.TYPE_PUBSUB_INTERNAL);
 			reputation.getOnBehalf().setTopic(internalSub.getDestination());
+
+			if(!Auth.check(internalSub, su)){
+				reputation.setDiscard(new Discard());
+				reputation.getDiscard().setReason(Discard.REASON_NO_AUTH);
+				reputation.getDiscard().setMessage("No authorization to read SU '" + su.getId() + "' from topic '" +
+						internalSub.getDestination() + "'");
+				collector.emit("reputation", input,
+						new Values(mapper.writeValueAsString(reputation))
+				);
+				collector.ack(input);
+				return;
+			}
+			if (!publisher.isConnected()) {
+				publisher.connect(dc.internalPubUser,
+						dc.internalPubPassword);
+			}
+			publisher.publishMessage(internalSub.getDestination(), suStr);
+
+
 			collector.emit("reputation", input, new Values(mapper.writeValueAsString(reputation)));
 		} catch (Exception e) {
 			LOG.error("FAIL", e);
