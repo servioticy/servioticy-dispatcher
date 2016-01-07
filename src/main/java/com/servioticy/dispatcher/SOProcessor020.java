@@ -226,27 +226,22 @@ public class SOProcessor020 extends SOProcessor{
                 return null;
             } else {
                 TypeReference type;
-                Class dataClass;
-                boolean array = false;
 
                 switch (parseType(channel.getType())) {
                     case TYPE_ARRAY_NUMBER:
                         type = new TypeReference<List<Double>>(){};
-                        array = true;
                         break;
                     case TYPE_NUMBER:
                         type = new TypeReference<Double>(){};
                         break;
                     case TYPE_ARRAY_BOOLEAN:
                         type = new TypeReference<List<Boolean>>(){};
-                        array = true;
                         break;
                     case TYPE_BOOLEAN:
                         type = new TypeReference<Boolean>(){};
                         break;
                     case TYPE_ARRAY_STRING:
                         type = new TypeReference<List<String>>(){};
-                        array = true;
                         break;
                     case TYPE_STRING:
                         type = new TypeReference<String>(){};
@@ -254,7 +249,6 @@ public class SOProcessor020 extends SOProcessor{
                     // non-primitive types
                     case TYPE_ARRAY_GEOPOINT:
                         type = new TypeReference<List<GeoPoint>>(){};
-                        array = true;
                         break;
                     case TYPE_GEOPOINT:
                         type = new TypeReference<GeoPoint>(){};
